@@ -8,6 +8,8 @@ package com.example.repository.MySQL;
 import com.example.dao.ProductoDAO;
 
 import java.sql.Connection;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.List;
 
 import com.example.entity.Producto;
@@ -20,6 +22,22 @@ public class MySQLProductoDAO implements ProductoDAO {
     public MySQLProductoDAO(Connection connection) {
         this.conn = connection;
         crearTablaSiNoExiste();
+    }
+
+
+    private void crearTablaSiNoExiste() {
+        String sql = " CREATE TABLE IF NOT EXISTS Producto ("+
+            "idProducto INT AUTO_INCREMENT PRIMARY KEY,"+
+            "nombre VARCHAR(45),"+
+            "valor FLOAT"+
+        ")"
+        ;
+
+    try (Statement stmt = conn.createStatement()) {
+        stmt.executeUpdate(sql);
+    } catch (SQLException e) {
+        e.printStackTrace();
+    }
     }
 
 
