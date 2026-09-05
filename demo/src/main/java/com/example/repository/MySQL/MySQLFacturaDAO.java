@@ -144,4 +144,26 @@ public class MySQLFacturaDAO implements FacturaDAO {
 
         return facturas;
     }
+
+    /**
+     * Crear una factura en la base de datos
+     * Recibe una Factura
+     * INSERT INTO Factura
+     * Primer ? por idFactura (int)
+     * Segundo ? por idCliente (int)
+     * Execute consulta
+     * @param factura factura a guardar
+     */
+    @Override
+    public void create(Factura factura) {
+        String sql = "INSERT INTO Factura (idFactura, idCliente) VALUES (?, ?)";
+
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, factura.getIdFactura());
+            ps.setInt(2, factura.getIdCliente());
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
 }
