@@ -24,10 +24,10 @@ public class MySQLClienteDAO implements ClienteDAO {
 
         /* crea la tabla si no existe */
     private void crearTablaSiNoExiste() {
-        String sql = "CREATE TABLE IF NOT EXISTS cliente ("
-                + "idCliente INT AUTO_INCREMENT PRIMARY KEY,"
-                + "nombre VARCHAR(500) NOT NULL,"
-                + "email VARCHAR(150) NOT NULL UNIQUE,"
+        String sql = "CREATE TABLE IF NOT EXISTS Cliente ("
+                + "idCliente INT PRIMARY KEY,"
+                + "nombre VARCHAR(500),"
+                + "email VARCHAR(150)"
                 + ")";
         try (Statement stmt = conn.createStatement()) {
             stmt.execute(sql);

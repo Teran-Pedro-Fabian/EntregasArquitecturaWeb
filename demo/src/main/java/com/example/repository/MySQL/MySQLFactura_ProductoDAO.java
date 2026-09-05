@@ -33,7 +33,8 @@ class MySQLFactura_ProductoDAO implements  Factura_ProductoDAO {
                 "cantidad INT,"+
                 "PRIMARY KEY (idFactura, idProducto),"+
                 "FOREIGN KEY (idFactura) REFERENCES Factura(idFactura),"+
-                "FOREIGN KEY (idProducto) REFERENCES Producto(idProducto)";
+                "FOREIGN KEY (idProducto) REFERENCES Producto(idProducto)" +
+                ")";
 
         try (Statement stmt = conn.createStatement()) {
             stmt.executeUpdate(sql);
