@@ -54,36 +54,81 @@ class MySQLFactura_ProductoDAO implements  Factura_ProductoDAO {
         } catch (SQLException e) {
             e.printStackTrace();
         }
+        return null;
     }
 
     @Override
     public List<Factura_Producto> fintAll() {
-        throw new UnsupportedOperationException("Not supported yet.");
+        String sql = "SELECT * FROM Factura_Producto";
+        List<Factura_Producto> list = new java.util.ArrayList<>();
+        try (Statement stmt = conn.createStatement()) {
+            var rs = stmt.executeQuery(sql);
+            while (rs.next()) {
+                Factura_Producto fp = new Factura_Producto();
+                fp.setIdFactura(rs.getInt("idFactura"));
+                fp.setIdProducto(rs.getInt("idProducto"));
+                fp.setCantidad(rs.getInt("cantidad"));
+                list.add(fp);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return list;
     }
 
     @Override
     public void create(Factura_Producto c) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        String sql = "INSERT INTO Factura_Producto (idFactura, idProducto, cantidad) VALUES (" +
+                c.getIdFactura() + ", " +
+                c.getIdProducto() + ", " +
+                c.getCantidad() + ")";
+        try (Statement stmt = conn.createStatement()) {
+            stmt.executeUpdate(sql);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
     public void update(Factura_Producto c) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        String sql = "UPDATE Factura_Producto SET cantidad = " + c.getCantidad() +
+                " WHERE idFactura = " + c.getIdFactura() +
+                " AND idProducto = " + c.getIdProducto();
+        try (Statement stmt = conn.createStatement()) {
+            stmt.executeUpdate(sql);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
     public void delete(Long id) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        String sql = "DELETE FROM Factura_Producto WHERE idFactura = " + id;
+        try (Statement stmt = conn.createStatement()) {
+            stmt.executeUpdate(sql);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
     public void deleteByCliente(Long FPId) {
-        throw new UnsupportedOperationException("Not supported yet.");
+        String sql = "DELETE FROM Factura_Producto WHERE idFactura = " + FPId;
+        try (Statement stmt = conn.createStatement()) {
+            stmt.executeUpdate(sql);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
     public void deleteAll() {
-        throw new UnsupportedOperationException("Not supported yet.");
+        String sql = "DELETE FROM Factura_Producto";
+        try (Statement stmt = conn.createStatement()) {
+            stmt.executeUpdate(sql);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
     }
 
 

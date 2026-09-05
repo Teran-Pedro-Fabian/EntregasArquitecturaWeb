@@ -1,5 +1,5 @@
 package com.example.dto;
 
-public record ProductoMayorRecaudacion() {
+public record ProductoMayorRecaudacion(String nombre, int recaudacion) {
 
 }
