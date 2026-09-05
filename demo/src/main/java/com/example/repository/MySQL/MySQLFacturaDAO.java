@@ -22,13 +22,13 @@ public class MySQLFacturaDAO implements FacturaDAO {
     }
 
 
-
+    //idFactura sale del csv y asi mantener la relacion con Factura_Producto
     private void crearTablaSiNoExiste() {
         String sql = "CREATE TABLE IF NOT EXISTS Factura ("+
-            "idFactura INT AUTO_INCREMENT PRIMARY KEY,"+
-            "idCliente INT,"+
-            "FOREIGN KEY (idCliente) REFERENCES Cliente(idcliente)"+
-        ")";
+                "idFactura INT PRIMARY KEY," +
+                "idCliente INT," +
+                "FOREIGN KEY (idCliente) REFERENCES Cliente(idCliente)" +
+                ")";
         
         try (Statement stmt = conn.createStatement()) {
             stmt.executeUpdate(sql);
