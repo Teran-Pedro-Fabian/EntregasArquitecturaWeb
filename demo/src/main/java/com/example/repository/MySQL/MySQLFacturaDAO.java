@@ -166,4 +166,26 @@ public class MySQLFacturaDAO implements FacturaDAO {
             e.printStackTrace();
         }
     }
+
+    /**
+     * Actualizar una factura en la base de datos
+     * Recibe una Factura
+     * UPDATE Factura
+     * Primer ? por idCliente
+     * segundo ? por idFactura
+     * Execute el update
+     * @param factura factura a updatear
+     */
+    @Override
+    public void update(Factura factura) {
+        String sql = "UPDATE Factura SET idCliente = ? WHERE idFactura = ?";
+
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, factura.getIdCliente());
+            ps.setInt(2, factura.getIdFactura());
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
 }
