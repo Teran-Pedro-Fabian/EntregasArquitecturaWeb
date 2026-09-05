@@ -188,4 +188,24 @@ public class MySQLFacturaDAO implements FacturaDAO {
             e.printStackTrace();
         }
     }
+
+    /**
+     * Eliminar una factura de la base de datos
+     * Recibe id de la factura
+     * DELETE FROM Factura
+     * El ? por idFactura
+     * Execute el update
+     * @param id id de la factura a deletear
+     */
+    @Override
+    public void delete(Long id) {
+        String sql = "DELETE FROM Factura WHERE idFactura = ?";
+
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setLong(1, id);
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
 }
