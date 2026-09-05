@@ -105,4 +105,43 @@ public class MySQLFacturaDAO implements FacturaDAO {
 
         return facturas;
     }
+
+    /**
+     * Busca todas las facturas que tengan un producto
+     * Recibe el idProducto
+     * Hace JOIN entre Factura y Factura_Producto
+     * Reemplaza ? por el idProducto
+     * Ejecuta la consulta
+     * Recorre las filas encontradas
+     * Crea una Factura por cada fila
+     * Carga idFactura e idCliente
+     * Agrega cada factura a la lista
+     * Devuelve la lista de facturas
+     * @param productoId id del producto a buscar
+     * @return lista de facturas que tienen el producto
+     */
+    @Override
+    public List<Factura> fintAllFacturasDeProducto(int productoId) {
+        String sql = "SELECT f.idFactura, f.idCliente FROM Factura f "
+                + "JOIN Factura_Producto fp ON f.idFactura = fp.idFactura "
+                + "WHERE fp.idProducto = ?";
+
+        List<Factura> facturas = new ArrayList<>();
+
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, productoId);
+            ResultSet rs = ps.executeQuery();
+
+            while (rs.next()) {
+                Factura factura = new Factura();
+                factura.setIdFactura(rs.getInt("idFactura"));
+                factura.setIdCliente(rs.getInt("idCliente"));
+                facturas.add(factura);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return facturas;
+    }
 }
