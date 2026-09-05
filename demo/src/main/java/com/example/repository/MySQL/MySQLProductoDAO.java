@@ -29,7 +29,7 @@ public class MySQLProductoDAO implements ProductoDAO {
 
     private void crearTablaSiNoExiste() {
         String sql = " CREATE TABLE IF NOT EXISTS Producto ("+
-            "idProducto INT AUTO_INCREMENT PRIMARY KEY,"+
+            "idProducto INT PRIMARY KEY,"+
             "nombre VARCHAR(45),"+
             "valor FLOAT"+
         ")"
