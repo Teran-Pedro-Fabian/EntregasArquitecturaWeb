@@ -24,7 +24,7 @@ public final class MySQLConnectionManager implements ConnectionManager {
     // --- Configuración de conexión ---
     private static final String URL = "jdbc:mysql://localhost:3306/facturacion";
     private static final String USER = "usuario";
-    private static final String PASSWORD = "usuario123";
+    private static final String PASSWORD = "usuario123"; // contraseña vacía
 
     // --- Constructor privado ---
     private MySQLConnectionManager() {
