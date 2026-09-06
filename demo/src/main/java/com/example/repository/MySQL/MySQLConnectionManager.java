@@ -22,9 +22,9 @@ public final class MySQLConnectionManager implements ConnectionManager {
     private Connection connection; // java.sql.Connection (para SQL)
 
     // --- Configuración de conexión ---
-    private static final String URL = "jdbc:mysql://localhost:3306/mysql_dao_DB?createDatabaseIfNotExist=true";
-    private static final String USER = "root";
-    private static final String PASSWORD = ""; // contraseña vacía
+    private static final String URL = "jdbc:mysql://localhost:3306/facturacion";
+    private static final String USER = "usuario";
+    private static final String PASSWORD = "usuario123";
 
     // --- Constructor privado ---
     private MySQLConnectionManager() {

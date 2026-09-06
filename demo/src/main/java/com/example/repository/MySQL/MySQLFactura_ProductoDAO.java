@@ -6,6 +6,7 @@
 package com.example.repository.MySQL;
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
@@ -30,7 +31,7 @@ class MySQLFactura_ProductoDAO implements  Factura_ProductoDAO {
                 "cantidad INT,"+
                 "PRIMARY KEY (idFactura, idProducto),"+
                 "FOREIGN KEY (idFactura) REFERENCES Factura(idFactura),"+
-                "FOREIGN KEY (idProducto) REFERENCES Producto(idProducto)";
+                "FOREIGN KEY (idProducto) REFERENCES Producto(idProducto))";
 
         try (Statement stmt = conn.createStatement()) {
             stmt.executeUpdate(sql);
@@ -41,9 +42,10 @@ class MySQLFactura_ProductoDAO implements  Factura_ProductoDAO {
 
     @Override
     public Factura_Producto findById(int id) {
-        String sql = "SELECT  * From Factura_Producto WHERE idFactura = " + id;
-        try (Statement stmt = conn.createStatement()) {
-            var rs = stmt.executeQuery(sql);
+        String sql = "SELECT * FROM Factura_Producto WHERE idFactura = ?";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, id);
+            var rs = ps.executeQuery();
             if (rs.next()) {
                 Factura_Producto fp = new Factura_Producto();
                 fp.setIdFactura(rs.getInt("idFactura"));
@@ -78,12 +80,12 @@ class MySQLFactura_ProductoDAO implements  Factura_ProductoDAO {
 
     @Override
     public void create(Factura_Producto c) {
-        String sql = "INSERT INTO Factura_Producto (idFactura, idProducto, cantidad) VALUES (" +
-                c.getIdFactura() + ", " +
-                c.getIdProducto() + ", " +
-                c.getCantidad() + ")";
-        try (Statement stmt = conn.createStatement()) {
-            stmt.executeUpdate(sql);
+        String sql = "INSERT INTO Factura_Producto (idFactura, idProducto, cantidad) VALUES (?, ?, ?)";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, c.getIdFactura());
+            ps.setInt(2, c.getIdProducto());
+            ps.setInt(3, c.getCantidad());
+            ps.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -91,11 +93,12 @@ class MySQLFactura_ProductoDAO implements  Factura_ProductoDAO {
 
     @Override
     public void update(Factura_Producto c) {
-        String sql = "UPDATE Factura_Producto SET cantidad = " + c.getCantidad() +
-                " WHERE idFactura = " + c.getIdFactura() +
-                " AND idProducto = " + c.getIdProducto();
-        try (Statement stmt = conn.createStatement()) {
-            stmt.executeUpdate(sql);
+        String sql = "UPDATE Factura_Producto SET cantidad = ? WHERE idFactura = ? AND idProducto = ?";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, c.getCantidad());
+            ps.setInt(2, c.getIdFactura());
+            ps.setInt(3, c.getIdProducto());
+            ps.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -103,9 +106,10 @@ class MySQLFactura_ProductoDAO implements  Factura_ProductoDAO {
 
     @Override
     public void delete(Long id) {
-        String sql = "DELETE FROM Factura_Producto WHERE idFactura = " + id;
-        try (Statement stmt = conn.createStatement()) {
-            stmt.executeUpdate(sql);
+        String sql = "DELETE FROM Factura_Producto WHERE idFactura = ?";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setLong(1, id);
+            ps.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -113,9 +117,10 @@ class MySQLFactura_ProductoDAO implements  Factura_ProductoDAO {
 
     @Override
     public void deleteByCliente(Long FPId) {
-        String sql = "DELETE FROM Factura_Producto WHERE idFactura = " + FPId;
-        try (Statement stmt = conn.createStatement()) {
-            stmt.executeUpdate(sql);
+        String sql = "DELETE FROM Factura_Producto WHERE idFactura = ?";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setLong(1, FPId);
+            ps.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
         }
