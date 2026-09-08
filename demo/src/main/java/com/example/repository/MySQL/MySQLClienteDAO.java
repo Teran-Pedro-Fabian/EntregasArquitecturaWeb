@@ -2,6 +2,7 @@ package com.example.repository.MySQL;
 
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
@@ -38,9 +39,10 @@ public class MySQLClienteDAO implements ClienteDAO {
 
     @Override
     public Cliente findById(int id) {
-        String sql = "SELECT  * From cliente WHERE idCliente = " + id;
-        try (Statement stmt = conn.createStatement()) {
-            var rs = stmt.executeQuery(sql);
+        String sql = "SELECT * FROM Cliente WHERE idCliente = ?";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, id);
+            var rs = ps.executeQuery();
             if (rs.next()) {
                 Cliente c = new Cliente();
                 c.setIdCliente(rs.getInt("idCliente"));
@@ -61,10 +63,10 @@ public class MySQLClienteDAO implements ClienteDAO {
     @Override
     public List<ClienteConFacturacion> fintAllOrdenadoPorFacturacion() {
         String sql = "SELECT c.idCliente, c.nombre, c.email, SUM(p.valor * fp.cantidad) AS facturacion "
-                + "FROM cliente c "
-                + "LEFT JOIN factura f ON c.idCliente = f.idCliente "
-                + "LEFT JOIN factura_producto fp ON f.idFactura = fp.idFactura "
-                + "LEFT JOIN producto p ON fp.idProducto = p.idProducto "
+                + "FROM Cliente c "
+                + "LEFT JOIN Factura f ON c.idCliente = f.idCliente "
+                + "LEFT JOIN Factura_Producto fp ON f.idFactura = fp.idFactura "
+                + "LEFT JOIN Producto p ON fp.idProducto = p.idProducto "
                 + "GROUP BY c.idCliente, c.nombre, c.email "
                 + "ORDER BY facturacion DESC";
         
@@ -84,9 +86,12 @@ public class MySQLClienteDAO implements ClienteDAO {
 
     @Override
     public void create(Cliente c) {
-        String sql = "INSERT INTO cliente (nombre, email) VALUES ('" + c.getNombre() + "', '" + c.getEmail() + "')";
-        try (Statement stmt = conn.createStatement()) {
-            stmt.executeUpdate(sql);
+        String sql = "INSERT INTO Cliente (idCliente, nombre, email) VALUES (?, ?, ?)";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, c.getIdCliente());
+            ps.setString(2, c.getNombre());
+            ps.setString(3, c.getEmail());
+            ps.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -94,9 +99,12 @@ public class MySQLClienteDAO implements ClienteDAO {
 
     @Override
     public void update(Cliente c) {
-        String sql = "UPDATE cliente SET nombre = '" + c.getNombre() + "', email = '" + c.getEmail() + "' WHERE idCliente = " + c.getIdCliente();
-        try (Statement stmt = conn.createStatement()) {
-            stmt.executeUpdate(sql);
+        String sql = "UPDATE Cliente SET nombre = ?, email = ? WHERE idCliente = ?";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, c.getNombre());
+            ps.setString(2, c.getEmail());
+            ps.setInt(3, c.getIdCliente());
+            ps.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -104,9 +112,10 @@ public class MySQLClienteDAO implements ClienteDAO {
 
     @Override
     public void delete(Long id) {
-        String sql = "DELETE FROM cliente WHERE idCliente = " + id;
-        try (Statement stmt = conn.createStatement()) {
-            stmt.executeUpdate(sql);
+        String sql = "DELETE FROM Cliente WHERE idCliente = ?";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setLong(1, id);
+            ps.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -114,9 +123,10 @@ public class MySQLClienteDAO implements ClienteDAO {
 
     @Override
     public void deleteByCliente(Long clienteId) {
-        String sql = "DELETE FROM cliente WHERE idCliente = " + clienteId;
-        try (Statement stmt = conn.createStatement()) {
-            stmt.executeUpdate(sql);
+        String sql = "DELETE FROM Cliente WHERE idCliente = ?";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setLong(1, clienteId);
+            ps.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -124,7 +134,7 @@ public class MySQLClienteDAO implements ClienteDAO {
 
     @Override
     public void deleteAll() {
-        String sql = "DELETE FROM cliente";
+        String sql = "DELETE FROM Cliente";
         try (Statement stmt = conn.createStatement()) {
             stmt.executeUpdate(sql);
         } catch (SQLException e) {

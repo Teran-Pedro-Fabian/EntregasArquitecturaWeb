@@ -6,6 +6,7 @@
 package com.example.repository.MySQL;
 
 import com.example.dao.ProductoDAO;
+import com.example.dto.ProductoMayorRecaudacion;
 import com.example.entity.Producto;
 
 import java.sql.Connection;
@@ -40,6 +41,32 @@ public class MySQLProductoDAO implements ProductoDAO {
     } catch (SQLException e) {
         e.printStackTrace();
     }
+    }
+
+
+    /* este metodo extrae todos los productos y calcula la recaudacion
+    de cada uno de ellos, posteriormente los ordena por recaudacion y 
+    selecciona el primero */
+    @Override 
+    public ProductoMayorRecaudacion getProductoConMasRecaudacion() {
+        String sql = "SELECT p.nombre, SUM(fp.cantidad * p.valor) AS recaudacion " +
+                "FROM Producto p " +
+                "JOIN Factura_Producto fp ON p.idProducto = fp.idProducto " +
+                "GROUP BY p.idProducto " +
+                "ORDER BY recaudacion DESC " +
+                "LIMIT 1";
+
+        try (Statement stmt = conn.createStatement()) {
+            var rs = stmt.executeQuery(sql);
+            if (rs.next()) {
+                String nombre = rs.getString("nombre");
+                int recaudacion = rs.getInt("recaudacion");
+                return new ProductoMayorRecaudacion(nombre, recaudacion);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
     /**
@@ -204,13 +231,6 @@ public class MySQLProductoDAO implements ProductoDAO {
         }
     }
 
-    /**
-     * punto 3 del enunciado a realizar
-     */
-    @Override
-    public Producto findByProductoQueMasRecaudo() {
-        return null;
-    }
 
 
 }
