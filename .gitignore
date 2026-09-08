@@ -1,2 +1,5 @@
 .idea/
 demo/target/
+
+# Carpeta personal de Alan - ignorar todo el contenido
+alan/*

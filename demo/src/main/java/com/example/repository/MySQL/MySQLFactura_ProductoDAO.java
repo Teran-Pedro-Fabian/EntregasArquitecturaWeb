@@ -16,7 +16,7 @@ import java.util.List;
 import com.example.dao.Factura_ProductoDAO;
 import com.example.entity.Factura_Producto;
 
-class MySQLFactura_ProductoDAO implements  Factura_ProductoDAO {
+public class MySQLFactura_ProductoDAO implements Factura_ProductoDAO {
 
     private final Connection conn;
 
@@ -45,9 +45,10 @@ class MySQLFactura_ProductoDAO implements  Factura_ProductoDAO {
 
     @Override
     public Factura_Producto findById(int id) {
-        String sql = "SELECT  * From Factura_Producto WHERE idFactura = " + id;
-        try (Statement stmt = conn.createStatement()) {
-            var rs = stmt.executeQuery(sql);
+        String sql = "SELECT * FROM Factura_Producto WHERE idFactura = ?";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, id);
+            var rs = ps.executeQuery();
             if (rs.next()) {
                 Factura_Producto fp = new Factura_Producto();
                 fp.setIdFactura(rs.getInt("idFactura"));

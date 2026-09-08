@@ -5,16 +5,16 @@
 
 package com.example.repository.MySQL;
 
-import com.example.dao.FacturaDAO;
-import com.example.entity.Factura;
-
 import java.sql.Connection;
-import java.sql.SQLException;
-import java.sql.Statement;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
+
+import com.example.dao.FacturaDAO;
+import com.example.entity.Factura;
 
 
 public class MySQLFacturaDAO implements FacturaDAO {
