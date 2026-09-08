@@ -86,10 +86,11 @@ public class MySQLClienteDAO implements ClienteDAO {
 
     @Override
     public void create(Cliente c) {
-        String sql = "INSERT INTO Cliente (nombre, email) VALUES (?, ?)";
+        String sql = "INSERT INTO Cliente (idCliente, nombre, email) VALUES (?, ?, ?)";
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, c.getNombre());
-            ps.setString(2, c.getEmail());
+            ps.setInt(1, c.getIdCliente());
+            ps.setString(2, c.getNombre());
+            ps.setString(3, c.getEmail());
             ps.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();

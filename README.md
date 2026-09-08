@@ -32,11 +32,11 @@ Asegurarse de tener instalados y configurados en el `PATH`:
 
 ⚠️ **Directorio correcto:** **`demo/DB`** (donde vive el `docker-compose.yml`, NO la raíz, NO `demo/`)
 
-Archivo de configuración Docker: [docker-compose.yml](file:///c:/Users/asus/Desktop/Estudio/UNICEN/Arquis%202026/Entregables/EntregasArquitecturaWeb/demo/DB/docker-compose.yml)
+Archivo de configuración Docker: [docker-compose.yml](demo/DB/docker-compose.yml)
 
 ```bash
-# 1. Entrar al directorio demo/DB (RUTA ABSOLUTA EJEMPLO para Windows — reemplazá por TU ruta si la distinta)
-cd "C:\Users\asus\Desktop\Estudio\UNICEN\Arquis 2026\Entregables\EntregasArquitecturaWeb\demo\DB"
+# 1. PARADO EN LA RAIZ DEL PROYECTO, entrar al directorio demo/DB
+cd demo/DB
 
 # 2. Levantar el contenedor (la primera vez descarga la imagen mysql:8.4 ~500MB, tarda)
 docker compose up -d
@@ -71,8 +71,8 @@ docker logs mysql-facturacion
 
 - **Error:** `Bind for 0.0.0.0:3306 failed: port is already allocated`
   → Tenés otro MySQL local corriendo en el `3306`. Solución:
-  1. Abrí [docker-compose.yml](file:///c:/Users/asus/Desktop/Estudio/UNICEN/Arquis%202026/Entregables/EntregasArquitecturaWeb/demo/DB/docker-compose.yml) y cambiá el puerto expuesto, por ejemplo: `"3307:3306"`
-  2. Abrí [MySQLConnectionManager.java](file:///c:/Users/asus/Desktop/Estudio/UNICEN/Arquis%202026/Entregables/EntregasArquitecturaWeb/demo/src/main/java/com/example/repository/MySQL/MySQLConnectionManager.java#L25-L27) y actualizá la URL a:
+  1. Abrí [docker-compose.yml](demo/DB/docker-compose.yml) y cambiá el puerto expuesto, por ejemplo: `"3307:3306"`
+  2. Abrí [MySQLConnectionManager.java](demo/src/main/java/com/example/repository/MySQL/MySQLConnectionManager.java#L25-L27) y actualizá la URL a:
      ```java
      private static final String URL = "jdbc:mysql://localhost:3307/facturacion";
      ```
@@ -88,8 +88,8 @@ docker logs mysql-facturacion
 ⚠️ **Directorio correcto:** **`demo/`** (donde vive `pom.xml`. ❌ NO ejecutar esto en `demo/DB` — ahí no hay pom.xml y Maven falla con *"Goal requires a project to execute but there is no POM in this directory"*).
 
 ```bash
-# Entrar al directorio demo/ (RUTA ABSOLUTA EJEMPLO Windows)
-cd "C:\Users\asus\Desktop\Estudio\UNICEN\Arquis 2026\Entregables\EntregasArquitecturaWeb\demo"
+# PARADO EN LA RAIZ DEL PROYECTO, entrar al directorio demo/
+cd demo/
 
 # Descargar todas las dependencias (mysql-connector, lombok, commons-csv)
 mvn dependency:resolve
@@ -103,7 +103,8 @@ mvn dependency:resolve
 ⚠️ **Directorio correcto:** `demo/` (mismo que el paso anterior).
 
 ```bash
-cd "C:\Users\asus\Desktop\Estudio\UNICEN\Arquis 2026\Entregables\EntregasArquitecturaWeb\demo"
+# PARADO EN LA RAIZ DEL PROYECTO, entrar al directorio demo/
+cd demo/
 
 mvn clean compile
 ```
@@ -118,7 +119,6 @@ mvn clean compile
 ```
 Si en vez de eso ves `BUILD FAILURE`:
 - Leé el mensaje. La causa más común (arreglada a esta altura) era duplicados en `MySQLProductoDAO`.
-- Si el error persiste: revisá el reporte actualizado en [reporte_errores_codigo.md](file:///c:/Users/asus/Desktop/Estudio/UNICEN/Arquis%202026/Entregables/EntregasArquitecturaWeb/alan/reporte_errores_codigo.md) para la lista de issues pendientes.
 
 ---
 
@@ -127,37 +127,101 @@ Si en vez de eso ves `BUILD FAILURE`:
 ⚠️ **Directorio correcto:** `demo/`
 
 ```bash
-cd "C:\Users\asus\Desktop\Estudio\UNICEN\Arquis 2026\Entregables\EntregasArquitecturaWeb\demo"
+# PARADO EN LA RAIZ DEL PROYECTO, entrar al directorio demo/
+cd demo/
 
-mvn exec:java -Dexec.mainClass="com.example.Main"
+mvn exec:java "-Dexec.mainClass=com.example.Main"
 ```
 
-#### Qué hace el Main ACTUALMENTE (etapa inicial del proyecto):
-> El `Main.java` actual **solo crea el esquema de tablas** en la base (Punto 1 del integrador) al instanciar los 4 DAOs.
+#### Qué hace el Main ACTUALMENTE (consignas completadas):
+> El `Main.java` actual ejecuta **todas las consignas del integrador** en este orden:
 >
-> Aún **no implementa**:
-> - ❌ Carga masiva desde archivos CSV (`demo/DB/Datos/*.csv`)
-> - ❌ Ejecución de los 3 reportes del enunciado
-> - ❌ Impresión por consola de resultados
->
-> Cuando agreguemos esas features al Main, esta sección se actualizará. Mientras tanto, el objetivo del Main es PROBAR que la conexión funciona y las tablas se crean bien.
+> 1️⃣ **Creación de tablas** → al instanciar los 4 DAOs (CREATE TABLE IF NOT EXISTS)
+> 2️⃣ **Limpieza de datos** → `deleteAll()` en orden inverso de FK para evitar violaciones de integridad
+> 3️⃣ **Carga masiva CSV** → 4 archivos de `demo/DB/Datos/` en orden correcto (respeta FK):
+>    - `clientes.csv` → 100 registros
+>    - `productos.csv` → 100 registros
+>    - `facturas.csv` → 511 registros
+>    - `facturas-productos.csv` → ~2590 registros
+> 4️⃣ **Reporte 1** → Clientes ordenados por facturación total (DESC)
+> 5️⃣ **Reporte 2** → Producto con mayor recaudación
+> 6️⃣ **Reporte 3** → Facturas que contienen el producto `idProducto = 1`
+> 7️⃣ **Cierre** → `factory.shutdown()` cierra la conexión de forma segura.
 
-Código actual de [Main.java](file:///c:/Users/asus/Desktop/Estudio/UNICEN/Arquis%202026/Entregables/EntregasArquitecturaWeb/demo/src/main/java/com/example/Main.java):
+Código actual de [Main.java](demo/src/main/java/com/example/Main.java):
 ```java
+// 1 - Instancia DAOs (crea tablas)
 DAOFactory factory = DAOFactory.getInstance(DBType.MYSQL);
-factory.createClienteDAO();
-factory.createProductoDAO();
-factory.createFacturaDAO();
-factory.createFactura_ProductoDAO();
+ClienteDAO clienteDAO = factory.createClienteDAO();
+ProductoDAO productoDAO = factory.createProductoDAO();
+FacturaDAO facturaDAO = factory.createFacturaDAO();
+Factura_ProductoDAO fpDAO = factory.createFactura_ProductoDAO();
+
+// 2 - Limpia datos previos
+fpDAO.deleteAll();
+facturaDAO.deleteAll();
+productoDAO.deleteAll();
+clienteDAO.deleteAll();
+
+// 3 - Carga masiva CSV (Apache Commons CSV)
+//   Clientes → Productos → Facturas → Factura_Producto
+
+// 4 - Reporte 1: clientes por facturacion DESC
+List<ClienteConFacturacion> r1 = clienteDAO.fintAllOrdenadoPorFacturacion();
+
+// 5 - Reporte 2: producto con mayor recaudacion
+ProductoMayorRecaudacion r2 = productoDAO.getProductoConMasRecaudacion();
+
+// 6 - Reporte 3: facturas que tienen el producto id=1
+List<Factura> r3 = facturaDAO.fintAllFacturasDeProducto(1);
+
 factory.shutdown();
 ```
+
+#### Nota importante sobre **PowerShell**:
+> En PowerShell el flag `-D` se interpreta como parámetro propio de PS y rompe el comando Maven.
+> ✅ **Usar el comando que ya figura arriba con comillas dobles** alrededor del `-D...`:
+> ```powershell
+> mvn exec:java "-Dexec.mainClass=com.example.Main"
+> ```
+> Si usás **CMD clásico** (no PowerShell), sí funciona el formato sin comillas.
 
 #### Resultado ESPERADO en CONSOLA:
 ```
 Conexión establecida correctamente con MySQL.
-Hello world!
+Tablas creadas correctamente.
+
+Cargados 100 registros de Clientes
+Cargados 100 registros de Productos
+Cargados 511 registros de Facturas
+Cargados 2590 registros de Factura_Producto
+
+============================================================
+REPORTE 1: Clientes ordenados por facturacion total (DESC)
+============================================================
+POS  | NOMBRE                              | EMAIL                                          | FACTURACION $
+----------------------------------------------------------------------------------------------
+1    | Xxxxxxx X. Xxxxxxx                  | xxxxx@xxxx.xxx                                 | $XXXX
+...
+(100 filas)
+
+============================================================
+REPORTE 2: Producto con mayor recaudacion
+============================================================
+Producto    : <nombre del producto>
+Recaudacion : $XXXX
+
+============================================================
+REPORTE 3: Facturas que contienen el producto id=1
+(Nombre del producto: "nisl sem,")
+============================================================
+NRO FACTURA     | ID CLIENTE
+---------------------------------
+XXX             | XX
+...
+
+Proceso completo - todas las consignas ejecutadas correctamente.
 ```
-*(El `Hello world!` está intencionalmente — es parte del checklist de verificación del README, no borrarlo hasta que el Main imprima reportes reales).*
 
 ---
 
@@ -205,8 +269,8 @@ Producto
 ### Paso 6️⃣ — Apagado SEGURO (cuando termines de probar)
 
 ```bash
-# Entrar a demo/DB para los comandos docker compose
-cd "C:\Users\asus\Desktop\Estudio\UNICEN\Arquis 2026\Entregables\EntregasArquitecturaWeb\demo\DB"
+# PARADO EN LA RAIZ DEL PROYECTO, entrar a demo/DB para los comandos docker compose
+cd demo/DB
 
 # Opción 1: Apagar y CONSERVAR los datos (proximas ejecuciones retoman donde quedaste)
 docker compose down
@@ -226,10 +290,10 @@ docker compose down -v
 | 1b | MySQL listo para conexiones | ☐ | `docker logs mysql-facturacion` → `ready for connections` |
 | 2 | Dependencias Maven resueltas | ☐ | `mvn dependency:resolve` en `demo/` → BUILD SUCCESS |
 | 3 | Código compila | ☐ | `mvn clean compile` en `demo/` → BUILD SUCCESS |
-| 4 | Main ejecuta sin error | ☐ | Consola muestra `Conexión establecida...` + `Hello world!` |
+| 4 | Main ejecuta sin error | ☐ | Consola muestra `Conexión establecida...` + contadores de carga + 3 reportes |
 | 5 | Tablas creadas en BD | ☐ | `SHOW TABLES;` → `Cliente, Factura, Factura_Producto, Producto` |
-| 6 | (futuro) Datos CSV cargados | ☐ | `SELECT COUNT(*) FROM Cliente;` > 0 |
-| 7 | (futuro) Reportes OK | ☐ | Consola imprime los 3 reportes del enunciado |
+| 6 | Datos CSV cargados correctamente | ☐ | `SELECT COUNT(*) FROM Cliente;` = 100, `Producto` = 100, `Factura` = 511 |
+| 7 | Reportes del enunciado OK | ☐ | Consola imprime Reporte 1 (ranking clientes) + Reporte 2 (top producto) + Reporte 3 (facturas x producto) |
 
 ---
 
@@ -237,8 +301,8 @@ docker compose down -v
 
 Si en un futuro modificás credenciales o puertos, acordate de actualizar AMBOS archivos (son espejo):
 
-1. [docker-compose.yml](file:///c:/Users/asus/Desktop/Estudio/UNICEN/Arquis%202026/Entregables/EntregasArquitecturaWeb/demo/DB/docker-compose.yml) → define lo que usa Docker
-2. [MySQLConnectionManager.java](file:///c:/Users/asus/Desktop/Estudio/UNICEN/Arquis%202026/Entregables/EntregasArquitecturaWeb/demo/src/main/java/com/example/repository/MySQL/MySQLConnectionManager.java#L25-L27) → define lo que usa el código Java
+1. [docker-compose.yml](demo/DB/docker-compose.yml) → define lo que usa Docker
+2. [MySQLConnectionManager.java](demo/src/main/java/com/example/repository/MySQL/MySQLConnectionManager.java#L25-L27) → define lo que usa el código Java
 
 Valores por defecto actuales (coinciden en ambos archivos):
 ```java
@@ -248,7 +312,7 @@ PASSWORD = "usuario123";
 ```
 *Nota: las credenciales están hardcodeadas por decisión de diseño para un TP académico — en producción deberían estar en variables de entorno.*
 
-### Dependencias Maven declaradas (en [pom.xml](file:///c:/Users/asus/Desktop/Estudio/UNICEN/Arquis%202026/Entregables/EntregasArquitecturaWeb/demo/pom.xml)):
+### Dependencias Maven declaradas (en [pom.xml](demo/pom.xml)):
 - `mysql-connector-j:26.7.0` — Driver JDBC oficial de MySQL
 - `lombok:1.18.38` — Anotaciones `@Data`, `@NoArgsConstructor`, etc. en entidades
 - `commons-csv:1.9.0` — Parser de CSV (para etapa de carga masiva de datos)
@@ -375,10 +439,6 @@ El enum `DBType` declara: `MYSQL`, `DERBY`, `POSTGRES`, `MONGO`. Actualmente sol
 
 - **Paso 1:** Asegurate de ejecutar `mvn clean compile` **dentro del directorio `demo/`** (no en la raíz, no en `demo/DB`).
 - **Paso 2:** Leé el mensaje de error completo del `BUILD FAILURE`. Maven dice EXACTAMENTE en qué archivo y línea falló.
-- **Paso 3:** Revisá el reporte actualizado de issues pendientes en:
-  [reporte_errores_codigo.md](file:///c:/Users/asus/Desktop/Estudio/UNICEN/Arquis%202026/Entregables/EntregasArquitecturaWeb/alan/reporte_errores_codigo.md)
-  (ahí se documentan todos los bugs conocidos, su impacto, y la solución paso a paso).
-- Los bugs CRÍTICOS originales fueron resueltos, pero pueden quedar issues de categoría ALTO / MEDIO pendientes según etapa del desarrollo.
 
 ### 5. Error: "Table 'facturacion.X' doesn't exist" al consultar
 - Asegurarse de haber corrido el `Main` al menos una vez (el esquema se crea "on demand" al instanciar los DAOs).
@@ -410,33 +470,9 @@ El enum `DBType` declara: `MYSQL`, `DERBY`, `POSTGRES`, `MONGO`. Actualmente sol
 - **Causa:** Ejecutaste `mvn ...` estando parado en `demo/DB` (o cualquier directorio que no sea `demo/`). Solo el directorio `demo/` contiene el `pom.xml`.
 - **Solución:**
   ```bash
-  cd "C:\Users\asus\Desktop\Estudio\UNICEN\Arquis 2026\Entregables\EntregasArquitecturaWeb\demo"
+  cd "\demo"
   mvn dependency:resolve
   ```
   El **mismo `cd demo/` es necesario** para `mvn clean compile` y para `mvn exec:java ...`. Solo los comandos de **Docker** (`docker compose up/down/logs`) requieren estar en `demo/DB`.
 
----
-
-## 📝 Consignas del Integrador 1
-
-> Texto original de las consignas del enunciado del Ejercicio Integrador 1 (incluye consignas de otros dominios además de facturación, para referencia futura):
-
-1) Considere el diseño de un registro de estudiantes, con la siguiente información: nombres,
-apellido, edad, género, número de documento, ciudad de residencia, número de libreta
-universitaria, carrera(s) en la que está inscripto, antigüedad en cada una de esas carreras, y
-si se graduó o no. Diseñar el diagrama de objetos y el diagrama DER correspondiente.
-
-2) Implementar consultas para:
-- a) dar de alta un estudiante
-- b) matricular un estudiante en una carrera
-- c) recuperar todos los estudiantes, y especificar algún criterio de ordenamiento simple.
-- d) recuperar un estudiante, en base a su número de libreta universitaria.
-- e) recuperar todos los estudiantes, en base a su género.
-- f) recuperar las carreras con estudiantes inscriptos, y ordenar por cantidad de inscriptos.
-- g) recuperar los estudiantes de una determinada carrera, filtrado por ciudad de residencia.
-
-3) Generar un reporte de las carreras, que para cada carrera incluya información de los
-inscriptos y egresados por año. Se deben ordenar las carreras alfabéticamente, y presentar
-los años de manera cronológica.
-
-Nota: las consultas deben ser resueltas mayormente en JPQL, y no en código Java.
+--- 
