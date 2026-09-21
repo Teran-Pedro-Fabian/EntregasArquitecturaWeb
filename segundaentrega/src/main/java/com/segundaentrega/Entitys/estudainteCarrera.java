@@ -16,7 +16,7 @@ import lombok.Setter;
 @Getter 
 @Setter 
 @NoArgsConstructor 
-public class estudainteCarrera {
+public class EstudainteCarrera {
     @Id
     private int id;
     @ManyToOne 
