@@ -2,11 +2,11 @@ package com.segundaentrega.Entitys;
 
 import java.util.List;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
-import jakarta.persistence.Table;
-import jakarta.persistence.Column;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -33,5 +33,5 @@ public class CarreraEntity {
     private int duracion;
 
     @OneToMany(mappedBy="carrera")
-    private List<estudainteCarrera> estudiantes;
+    private List<EstudainteCarrera> estudiantes;
 }

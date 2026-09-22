@@ -66,6 +66,10 @@ public interface EstudianteCarreraRepository extends JpaRepository<EstudainteCar
             """)
     public List<EstudainteCarrera> FindAllOrderByEstudiantes();
 
-
-    public List<Estudiante> FindAllEstudianteFilter(carrera C)
+        @Query("""
+                SELECT ec
+                FROM EstudainteCarrera ec
+                WHERE ec.id_carrera =: idCarr
+                """)
+        public List<EstudainteCarrera> FindAllEstudianteFilterCarrera(@Param("idCarr") int idCarr);
 }
