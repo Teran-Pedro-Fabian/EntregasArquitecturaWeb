@@ -6,70 +6,91 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import com.segundaentrega.Entitys.EstudainteCarrera;
+import com.segundaentrega.Entitys.EstudianteCarrera;
+import com.segundaentrega.Entitys.EstudianteEntity;
 
-public interface EstudianteCarreraRepository extends JpaRepository<EstudainteCarrera, Integer> {
+public interface EstudianteCarreraRepository extends JpaRepository<EstudianteCarrera, Integer> {
 
     @Query("""
             SELECT ec
             FROM EstudianteCarrera ec
-            WHERE ec.id_carrera =:idCarrera
+            WHERE ec.carrera.id = :idCarrera
             """)
-    public EstudainteCarrera FindByIdCarrera(@Param("idCarrera") int idCarrera);
-
-
-    @Query ("""
-            SELECT ec.id_carrera
-            FROM EstudianteCarrera ec
-            """)
-    public List<EstudainteCarrera> FindAll();
-
-    @Query ("""
-            SELECT ec
-            FROM EstudianteCarrera ec
-            WHERE ec.id_estudiante =:idEstudiante
-            """)
-    public EstudainteCarrera findByEstudiante(@Param("idEstudiante") int idEstudiante);
-
-
-    @Query ("""
-            INSERT INTO EstidainteCarrera(id, id_estudiante, id_carrera, inscripcion, graduacion, antiguedad)
-            VALUES (:#{#estCarr.id}, :#{#estCarr.id_estudiante}, :#{#estCarr.id_carrera}, :#{#inscripcion}, 
-            :#{#estCarr.graduacion}, :#{#estCarr.antiguedad})
-            """)
-    public void Insert(@Param("estCarr") EstudainteCarrera estCarr);
+    public EstudianteCarrera FindByIdCarrera(@Param("idCarrera") int idCarrera);
 
 
     @Query("""
-            UPDATE EstudainteCarrera ec 
-            SET ec.id_estudiante = :#{#estCarr.id_estudiante}, 
-                ec.id_carrera = :#{#estCarr.id_carrera},
+            SELECT ec.carrera
+            FROM EstudianteCarrera ec
+            """)
+    public List<EstudianteCarrera> FindAll();
+
+
+    @Query("""
+            SELECT ec
+            FROM EstudianteCarrera ec
+            WHERE ec.estudiante.DNI = :idEstudiante
+            """)
+    public EstudianteCarrera findByEstudiante(@Param("idEstudiante") int idEstudiante);
+
+
+    @Query("""
+            INSERT INTO EstudianteCarrera(id, estudiante, carrera, inscripcion, graduacion, antiguedad)
+            VALUES (:#{#estCarr.id}, :#{#estCarr.estudiante}, :#{#estCarr.carrera},
+                    :#{#estCarr.inscripcion}, :#{#estCarr.graduacion}, :#{#estCarr.antiguedad})
+            """)
+    public void Insert(@Param("estCarr") EstudianteCarrera estCarr);
+
+
+    @Query("""
+            UPDATE EstudianteCarrera ec
+            SET ec.estudiante = :#{#estCarr.estudiante},
+                ec.carrera = :#{#estCarr.carrera},
                 ec.inscripcion = :#{#estCarr.inscripcion},
                 ec.graduacion = :#{#estCarr.graduacion},
                 ec.antiguedad = :#{#estCarr.antiguedad}
             WHERE ec.id = :#{#estCarr.id}
             """)
-    public void Update(@Param("estCarr") EstudainteCarrera estCarr);
+    public void Update(@Param("estCarr") EstudianteCarrera estCarr);
+
 
     @Query("""
-            DELETE 
-            FROM EstudainteCarrera ec
-            WHERE ec.id =: id 
+            DELETE
+            FROM EstudianteCarrera ec
+            WHERE ec.id = :id
             """)
     public void delete(@Param("id") int id);
 
 
     @Query("""
-            SELECT ec , 
-            FROM EstudainteCarrera ec
-            ORDER BY ec.id_estudiante
+            SELECT ec
+            FROM EstudianteCarrera ec
+            ORDER BY ec.estudiante.DNI
             """)
-    public List<EstudainteCarrera> FindAllOrderByEstudiantes();
+    public List<EstudianteCarrera> FindAllOrderByEstudiantes();
 
-        @Query("""
-                SELECT ec
-                FROM EstudainteCarrera ec
-                WHERE ec.id_carrera =: idCarr
-                """)
-        public List<EstudainteCarrera> FindAllEstudianteFilterCarrera(@Param("idCarr") int idCarr);
+
+    @Query("""
+            SELECT ec
+            FROM EstudianteCarrera ec
+            WHERE ec.carrera.id = :idCarr
+            """)
+    public List<EstudianteCarrera> FindAllEstudianteFilterCarrera(@Param("idCarr") int idCarr);
+
+    /**
+     * Recupera estudiantes de una carrera determinada
+     * filtra los estudiantes por ciudad de residencia
+     */
+    @Query("""
+        SELECT e
+        FROM EstudianteCarrera ec
+        JOIN ec.estudiante e
+        JOIN ec.carrera c
+        WHERE c.id = :idCarrera
+        AND e.ciudad = :ciudad
+        """)
+    public List<EstudianteEntity> FindEstudiantesByCarreraAndCiudad(
+            @Param("idCarrera") int idCarrera,
+            @Param("ciudad") String ciudad
+    );
 }
