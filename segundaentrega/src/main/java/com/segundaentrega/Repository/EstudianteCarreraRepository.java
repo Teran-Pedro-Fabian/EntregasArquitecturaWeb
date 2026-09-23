@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import com.segundaentrega.Entitys.EstudianteCarrera;
+import com.segundaentrega.Entitys.EstudianteEntity;
 
 public interface EstudianteCarreraRepository extends JpaRepository<EstudianteCarrera, Integer> {
 
@@ -75,4 +76,21 @@ public interface EstudianteCarreraRepository extends JpaRepository<EstudianteCar
             WHERE ec.carrera.id = :idCarr
             """)
     public List<EstudianteCarrera> FindAllEstudianteFilterCarrera(@Param("idCarr") int idCarr);
+
+    /**
+     * Recupera estudiantes de una carrera determinada
+     * filtra los estudiantes por ciudad de residencia
+     */
+    @Query("""
+        SELECT e
+        FROM EstudianteCarrera ec
+        JOIN ec.estudiante e
+        JOIN ec.carrera c
+        WHERE c.id = :idCarrera
+        AND e.ciudad = :ciudad
+        """)
+    public List<EstudianteEntity> FindEstudiantesByCarreraAndCiudad(
+            @Param("idCarrera") int idCarrera,
+            @Param("ciudad") String ciudad
+    );
 }

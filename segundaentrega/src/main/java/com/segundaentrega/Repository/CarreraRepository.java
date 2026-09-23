@@ -8,6 +8,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 public interface CarreraRepository extends JpaRepository<CarreraEntity, Integer> {
 
     @Modifying
@@ -28,4 +30,19 @@ public interface CarreraRepository extends JpaRepository<CarreraEntity, Integer>
             VALUES (:#{#carrera.id}, :#{#carrera.carrera}, :#{#carrera.duracion})
             """, nativeQuery = true)
     public int InsertCarrera(@Param("carrera") CarreraEntity carrera);
+
+    /**
+     * Recupera las carreras que tienen estudiantes inscriptos
+     * agrupa por carrera
+     * cuenta la cantidad de inscriptos
+     * ordena de mayor a menor
+     */
+    @Query("""
+        SELECT c
+        FROM CarreraEntity c
+        JOIN c.estudiantes ec
+        GROUP BY c
+        ORDER BY COUNT(ec) DESC
+        """)
+    public List<CarreraEntity> FindCarrerasOrderByInscriptos();
 }
