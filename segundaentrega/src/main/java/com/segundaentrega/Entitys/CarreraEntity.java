@@ -12,26 +12,22 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-
-
-
-
-@Entity 
+@Entity
 @Table(name = "carrera")
-@AllArgsConstructor 
-@Getter 
-@Setter 
-@NoArgsConstructor 
+@AllArgsConstructor
+@Getter
+@Setter
+@NoArgsConstructor
 public class CarreraEntity {
 
-    @Id 
-    @Column(name="id_carrera")
+    @Id
+    @Column(name = "id_carrera")
     private int id;
 
     private String carrera;
 
     private int duracion;
 
-    @OneToMany(mappedBy="carrera")
-    private List<EstudainteCarrera> estudiantes;
+    @OneToMany(mappedBy = "carrera")
+    private List<EstudianteCarrera> estudiantes;
 }
