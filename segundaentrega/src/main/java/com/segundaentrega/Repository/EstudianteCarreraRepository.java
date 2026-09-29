@@ -3,8 +3,10 @@ package com.segundaentrega.Repository;
 import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.segundaentrega.Entitys.EstudianteCarrera;
 import com.segundaentrega.Entitys.EstudianteEntity;
@@ -34,6 +36,8 @@ public interface EstudianteCarreraRepository extends JpaRepository<EstudianteCar
     public EstudianteCarrera findByEstudiante(@Param("idEstudiante") int idEstudiante);
 
 
+    @Modifying
+    @Transactional
     @Query("""
             INSERT INTO EstudianteCarrera(id, estudiante, carrera, inscripcion, graduacion, antiguedad)
             VALUES (:#{#estCarr.id}, :#{#estCarr.estudiante}, :#{#estCarr.carrera},
@@ -42,6 +46,8 @@ public interface EstudianteCarreraRepository extends JpaRepository<EstudianteCar
     public void Insert(@Param("estCarr") EstudianteCarrera estCarr);
 
 
+    @Modifying
+    @Transactional
     @Query("""
             UPDATE EstudianteCarrera ec
             SET ec.estudiante = :#{#estCarr.estudiante},
@@ -54,6 +60,8 @@ public interface EstudianteCarreraRepository extends JpaRepository<EstudianteCar
     public void Update(@Param("estCarr") EstudianteCarrera estCarr);
 
 
+    @Modifying
+    @Transactional
     @Query("""
             DELETE
             FROM EstudianteCarrera ec
@@ -93,4 +101,40 @@ public interface EstudianteCarreraRepository extends JpaRepository<EstudianteCar
             @Param("idCarrera") int idCarrera,
             @Param("ciudad") String ciudad
     );
+
+    /**
+     * Punto 3
+     * Cuenta inscriptos agrupados por carrera y por año de inscripción.
+     * Devuelve resultados ordenados por nombre de carrera ASC y año ASC.
+     */
+    @Query("""
+        SELECT NEW com.segundaentrega.dto.ConteoCarreraAnualDTO(
+            ec.carrera.carrera,
+            ec.inscripcion,
+            COUNT(ec)
+        )
+        FROM EstudianteCarrera ec
+        GROUP BY ec.carrera.carrera, ec.inscripcion
+        ORDER BY ec.carrera.carrera ASC, ec.inscripcion ASC
+        """)
+    public List<com.segundaentrega.dto.ConteoCarreraAnualDTO> countInscriptosPorCarreraYAnio();
+
+    /**
+     * Punto 3
+     * Cuenta egresados agrupados por carrera y por año de graduación.
+     * Excluye los registros con graduacion = 0 (no egresados).
+     * Devuelve resultados ordenados por nombre de carrera ASC y año ASC.
+     */
+    @Query("""
+        SELECT NEW com.segundaentrega.dto.ConteoCarreraAnualDTO(
+            ec.carrera.carrera,
+            ec.graduacion,
+            COUNT(ec)
+        )
+        FROM EstudianteCarrera ec
+        WHERE ec.graduacion <> 0
+        GROUP BY ec.carrera.carrera, ec.graduacion
+        ORDER BY ec.carrera.carrera ASC, ec.graduacion ASC
+        """)
+    public List<com.segundaentrega.dto.ConteoCarreraAnualDTO> countEgresadosPorCarreraYAnio();
 }
