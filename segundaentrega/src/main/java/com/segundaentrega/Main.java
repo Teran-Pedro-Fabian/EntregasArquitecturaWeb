@@ -13,6 +13,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ConfigurableApplicationContext;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @SpringBootApplication
 public class Main {
@@ -37,7 +38,7 @@ public class Main {
         punto2g(estudianteCarreraRepo, carreraRepo);
         punto3(estudianteCarreraRepo);
 
-        limpiarDatosFake(estudianteRepo, estudianteCarreraRepo);
+        // limpiarDatosFake(estudianteRepo, estudianteCarreraRepo);
 
         separador();
         System.out.println("Fin de la ejecucion.");
@@ -60,6 +61,8 @@ public class Main {
             System.out.printf("  OK: Estudiante guardado -> DNI=%d, LU=%d, %s %s, ciudad=%s%n",
                     guardado.getDNI(), guardado.getLU(), guardado.getNombre(),
                     guardado.getApellido(), guardado.getCiudad());
+            //borrar estudiante fake para limpiar datos posteriores
+            repo.deleteById(99999999);
         } else {
             System.out.println("  ERROR: No se encontro el estudiante despues de guardar.");
         }
@@ -70,11 +73,11 @@ public class Main {
                                 CarreraRepository carreraRepo) {
         encabezado("2b) Matricular un estudiante en una carrera");
         Optional<EstudianteEntity> optE = estudianteRepo.findById(99999999);
-        List<CarreraEntity> carreras = carreraRepo.findAll();
         if (optE.isEmpty()) {
             System.out.println("  ERROR: Estudiante fake (DNI=99999999) no encontrado.");
             return;
         }
+        List<CarreraEntity> carreras = carreraRepo.findAll();
         if (carreras.isEmpty()) {
             System.out.println("  ERROR: No hay carreras cargadas para matricular.");
             return;
@@ -87,6 +90,13 @@ public class Main {
         EstudianteEntity estudiante = optE.get();
         EstudianteCarrera ec = new EstudianteCarrera(99999, estudiante, carrera, 2024, 0, 1);
         ecRepo.save(ec);
+
+        Optional<EstudianteCarrera> opt = ecRepo.findById(99999);
+        if (opt.isEmpty()) {
+            System.out.println("  ERROR: Matriculacion id=99999 no encontrada despues de guardar.");
+            return;
+        }
+        ec = opt.get();
         System.out.printf("  OK: Matriculacion guardada (id=%d)%n", ec.getId());
         System.out.printf("     -> Estudiante: DNI=%d (%s %s)%n",
                 estudiante.getDNI(), estudiante.getNombre(), estudiante.getApellido());
@@ -94,39 +104,49 @@ public class Main {
                 carrera.getId(), carrera.getCarrera(), carrera.getDuracion());
         System.out.printf("     -> Inscripcion=%d, Graduacion=%d, Antiguedad=%d%n",
                 ec.getInscripcion(), ec.getGraduacion(), ec.getAntiguedad());
+
+        ecRepo.deleteById(99999);
     }
 
     private static void punto2c(EstudianteRepository repo) {
         encabezado("2c) Recuperar todos los estudiantes (orden simple por DNI ASC)");
         List<EstudianteEntity> estudiantes = repo.FindAllOrderByDNI();
         System.out.println("Total estudiantes: " + estudiantes.size());
-        estudiantes.forEach(e -> System.out.printf("  DNI=%-10d LU=%-6d %s %s%n",
-                e.getDNI(), e.getLU(), e.getNombre(), e.getApellido()));
+        estudiantes.forEach(e -> System.out.printf("  DNI=%-10d LU=%-6d %s %s%n", 
+                            e.getDNI(), e.getLU(), e.getNombre(), e.getApellido()));
     }
 
     private static void punto2d(EstudianteRepository repo) {
         encabezado("2d) Recuperar estudiante por numero de libreta universitaria");
         List<EstudianteEntity> todos = repo.FindAllOrderByDNI();
-        if (!todos.isEmpty()) {
-            int luEjemplo = todos.get(0).getLU();
-            EstudianteEntity e = repo.FindByNumeroDeLibreta(luEjemplo);
-            if (e != null) {
-                System.out.printf("  Encontrado: LU=%d -> DNI=%d %s %s (ciudad: %s)%n",
-                        e.getLU(), e.getDNI(), e.getNombre(), e.getApellido(), e.getCiudad());
-            } else {
-                System.out.println("  No se encontro estudiante con LU=" + luEjemplo);
-            }
-        } else {
+        if (todos.isEmpty()) {
             System.out.println("  Sin datos para probar.");
+            return;
         }
+        int luEjemplo = todos.get(0).getLU();
+        EstudianteEntity e = repo.FindByNumeroDeLibreta(luEjemplo);
+        if (e == null) {
+            System.out.println("  No se encontro estudiante con LU=" + luEjemplo);
+            return;
+        }
+        System.out.printf("  Encontrado: LU=%d -> DNI=%d %s %s (ciudad: %s)%n",
+        e.getLU(), e.getDNI(), e.getNombre(), e.getApellido(), e.getCiudad());
+        
+        
     }
 
     private static void punto2e(EstudianteRepository repo) {
         encabezado("2e) Recuperar estudiantes por genero");
-        List<EstudianteEntity> masculinos = repo.FindByGerero("M");
-        List<EstudianteEntity> femeninos = repo.FindByGerero("F");
-        System.out.println("  Genero 'M': " + masculinos.size() + " estudiantes");
-        System.out.println("  Genero 'F': " + femeninos.size() + " estudiantes");
+        List<EstudianteEntity> todos = repo.FindAllOrderByDNI();
+        if (todos.isEmpty()) {
+            System.out.println("  Sin datos para probar.");
+            return;
+        }
+        Set<String> generos = todos.stream()
+                .map(EstudianteEntity::getGenero)
+                .collect(Collectors.toSet());
+        System.out.println("  Generos encontrados: " + generos);
+        generos.forEach(g -> System.out.println("  Genero '" + g + "': " + repo.FindByGenero(g).size() + " estudiantes"));
     }
 
     private static void punto2f(CarreraRepository repo) {
@@ -146,7 +166,7 @@ public class Main {
             return;
         }
         CarreraEntity carrera = carreras.get(0);
-        String ciudadPrueba = "Tandil";
+        String ciudadPrueba = "Rauch";
         List<EstudianteEntity> estudiantes = ecRepo.FindEstudiantesByCarreraAndCiudad(carrera.getId(), ciudadPrueba);
         System.out.printf("  Carrera: id=%d -> %s%n", carrera.getId(), carrera.getCarrera());
         System.out.printf("  Ciudad filtrada: '%s'%n", ciudadPrueba);
@@ -159,7 +179,7 @@ public class Main {
         }
     }
 
-    private static void limpiarDatosFake(EstudianteRepository estudianteRepo,
+    /* private static void limpiarDatosFake(EstudianteRepository estudianteRepo,
                                          EstudianteCarreraRepository ecRepo) {
         encabezado("Limpieza de datos fake insertados durante la prueba");
         if (ecRepo.existsById(99999)) {
@@ -177,7 +197,7 @@ public class Main {
         if (!estudianteRepo.existsById(99999999) && !ecRepo.existsById(99999)) {
             System.out.println("  Verificacion final: No quedan residuos de datos fake en la base.");
         }
-    }
+    } */
 
     private static void punto3(EstudianteCarreraRepository repo) {
         encabezado("3) Reporte de carreras: inscriptos y egresados por anio (orden alfabetico + cronologico)");

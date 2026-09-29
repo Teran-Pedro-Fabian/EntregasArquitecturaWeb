@@ -31,7 +31,7 @@ public interface EstudianteRepository
               FROM EstudianteEntity e
               WHERE e.genero = :genero
               """)
-       public List<EstudianteEntity> FindByGerero(@Param("genero") String genero);
+       public List<EstudianteEntity> FindByGenero(@Param("genero") String genero);
        
 
        @Query ("""
