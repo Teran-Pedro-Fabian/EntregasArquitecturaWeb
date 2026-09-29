@@ -8,6 +8,7 @@ import com.segundaentrega.dto.ReporteCarreraAnualDTO;
 import com.segundaentrega.Entitys.CarreraEntity;
 import com.segundaentrega.Entitys.EstudianteCarrera;
 import com.segundaentrega.Entitys.EstudianteEntity;
+import com.segundaentrega.utils.CargarDatosCSV;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ConfigurableApplicationContext;
@@ -20,6 +21,9 @@ public class Main {
 
     public static void main(String[] args) {
         ConfigurableApplicationContext ctx = SpringApplication.run(Main.class, args);
+
+        CargarDatosCSV cargarDatosCSV = ctx.getBean(CargarDatosCSV.class);
+        cargarDatosCSV.cargarTodo();
 
         EstudianteRepository estudianteRepo = ctx.getBean(EstudianteRepository.class);
         CarreraRepository carreraRepo = ctx.getBean(CarreraRepository.class);
@@ -38,11 +42,11 @@ public class Main {
         punto2g(estudianteCarreraRepo, carreraRepo);
         punto3(estudianteCarreraRepo);
 
-        // limpiarDatosFake(estudianteRepo, estudianteCarreraRepo);
-
         separador();
         System.out.println("Fin de la ejecucion.");
         separador();
+
+        cargarDatosCSV.vaciarDB();
 
         ctx.close();
     }

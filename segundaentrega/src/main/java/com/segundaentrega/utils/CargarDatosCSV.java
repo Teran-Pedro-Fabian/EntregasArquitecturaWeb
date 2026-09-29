@@ -10,7 +10,6 @@ import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 
 import java.io.BufferedReader;
@@ -28,7 +27,7 @@ import java.util.Arrays;
 import java.util.List;
 
 @Component
-public class CargarDatosCSV implements CommandLineRunner {
+public class CargarDatosCSV {
 
     private static final String DATOS_CLASSPATH = "DB/";
 
@@ -41,18 +40,22 @@ public class CargarDatosCSV implements CommandLineRunner {
     @Autowired
     private EstudianteCarreraRepository estudianteCarreraRepo;
 
-    @Override
-    public void run(String... args) {
-        if (carreraRepo.count() > 0 && estudianteRepo.count() > 0 && estudianteCarreraRepo.count() > 0) {
-            System.out.println("[CargarDatosCSV] Tablas con datos detectados. Se omite carga de CSV (idempotente).");
-            return;
-        }
-
-        System.out.println("[CargarDatosCSV] Tablas vacias detectadas. Iniciando carga de CSV...");
+    public void cargarTodo() {
+        System.out.println("[CargarDatosCSV] Iniciando carga de CSV...");
         cargarCarreras();
         cargarEstudiantes();
         cargarEstudianteCarrera();
         System.out.println("[CargarDatosCSV] Carga finalizada correctamente.");
+    }
+
+    public void vaciarDB() {
+        System.out.println("[CargarDatosCSV] Iniciando vaciado de tablas (orden por FKs)...");
+
+        estudianteCarreraRepo.deleteAll();
+        estudianteRepo.deleteAll();
+        carreraRepo.deleteAll();
+
+        System.out.println("[CargarDatosCSV] Vaciado finalizado correctamente.");
     }
 
     private void cargarCarreras() {
