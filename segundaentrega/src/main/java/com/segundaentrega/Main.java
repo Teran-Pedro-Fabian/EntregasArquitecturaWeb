@@ -62,11 +62,10 @@ public class Main {
         Optional<EstudianteEntity> opt = repo.findById(99999999);
         if (opt.isPresent()) {
             EstudianteEntity guardado = opt.get();
-            System.out.printf("  OK: Estudiante guardado -> DNI=%d, LU=%d, %s %s, ciudad=%s%n",
+            System.out.printf(
+                    "  OK: Estudiante guardado -> DNI=%d, LU=%d, %s %s, ciudad=%s%n",
                     guardado.getDNI(), guardado.getLU(), guardado.getNombre(),
                     guardado.getApellido(), guardado.getCiudad());
-            //borrar estudiante fake para limpiar datos posteriores
-            repo.deleteById(99999999);
         } else {
             System.out.println("  ERROR: No se encontro el estudiante despues de guardar.");
         }
@@ -102,14 +101,13 @@ public class Main {
         }
         ec = opt.get();
         System.out.printf("  OK: Matriculacion guardada (id=%d)%n", ec.getId());
-        System.out.printf("     -> Estudiante: DNI=%d (%s %s)%n",
-                estudiante.getDNI(), estudiante.getNombre(), estudiante.getApellido());
-        System.out.printf("     -> Carrera: id=%d (%s, duracion=%d anios)%n",
-                carrera.getId(), carrera.getCarrera(), carrera.getDuracion());
-        System.out.printf("     -> Inscripcion=%d, Graduacion=%d, Antiguedad=%d%n",
-                ec.getInscripcion(), ec.getGraduacion(), ec.getAntiguedad());
+        System.out.printf("     -> Estudiante: DNI=%d (%s %s)%n", estudiante.getDNI(), estudiante.getNombre(), estudiante.getApellido());
+        System.out.printf("     -> Carrera: id=%d (%s, duracion=%d anios)%n", carrera.getId(), carrera.getCarrera(), carrera.getDuracion());
 
+        System.out.printf("     -> Inscripcion=%d, Graduacion=%d, Antiguedad=%d%n", ec.getInscripcion(), ec.getGraduacion(), ec.getAntiguedad());
+        // Limpiar datos usados en 2a y 2b
         ecRepo.deleteById(99999);
+        estudianteRepo.deleteById(99999999);
     }
 
     private static void punto2c(EstudianteRepository repo) {
