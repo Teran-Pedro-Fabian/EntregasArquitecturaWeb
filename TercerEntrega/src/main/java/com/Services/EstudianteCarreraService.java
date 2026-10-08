@@ -63,7 +63,7 @@ public class EstudianteCarreraService implements BaseService<EstudianteCarrera> 
      * pero si no existia lanzaba una EntityNotFoundException
      * por lo que nunca llegaba al else ni retornaba false
      * Modificacion, existsById() para verificar si existe
-     * y deleteById() para eliminarla
+     * y delete() para eliminarla
      */
     @Override
     public boolean delete(Long id) throws Exception {
@@ -72,7 +72,7 @@ public class EstudianteCarreraService implements BaseService<EstudianteCarrera> 
         if (!ECRepository.existsById(idMatricula)) {
             return false;
         }
-        ECRepository.deleteById(idMatricula);
+        ECRepository.delete(idMatricula);
         return true;
     }
 
