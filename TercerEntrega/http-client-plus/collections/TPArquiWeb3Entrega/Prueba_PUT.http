@@ -12,3 +12,51 @@ Content-Type: application/json
   },
   "egresado": true
 }
+
+
+### Actualizar matricula que ya existe
+### Resultado: 200 OK
+PUT http://localhost:8080/EstudianteCarrera/1
+Content-Type: application/json
+
+{
+  "inscripcion": 2017,
+  "graduacion": 2022,
+  "antiguedad": 5
+}
+
+
+### Modificar antiguedad 5 -> 6
+### Resultado: ID 1, antiguedad 6
+PUT http://localhost:8080/EstudianteCarrera/1
+Content-Type: application/json
+
+{
+  "inscripcion": 2017,
+  "graduacion": 2022,
+  "antiguedad": 6
+}
+
+
+### Verificar
+### Resultado: antiguedad 6
+GET http://localhost:8080/EstudianteCarrera/1
+Accept: application/json
+
+
+### Resetear values: 6 -> 5
+### Resultado: antiguedad 5
+PUT http://localhost:8080/EstudianteCarrera/1
+Content-Type: application/json
+
+{
+  "inscripcion": 2017,
+  "graduacion": 2022,
+  "antiguedad": 5
+}
+
+
+### Verificar
+### Resultado: antiguedad 5
+GET http://localhost:8080/EstudianteCarrera/1
+Accept: application/json
