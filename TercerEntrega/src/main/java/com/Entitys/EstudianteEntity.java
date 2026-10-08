@@ -1,0 +1,45 @@
+package com.Entitys;
+
+import java.util.List;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+@Entity
+@Table(name = "estudiante")
+@AllArgsConstructor
+@Getter
+@Setter
+@NoArgsConstructor
+public class EstudianteEntity {
+
+    @Id
+    @Column(name = "DNI")
+    private int DNI;
+
+    private String nombre;
+
+    private String apellido;
+
+    private int edad;
+
+    private String genero;
+
+    private String ciudad;
+
+    private int LU;
+
+    @OneToMany(mappedBy = "estudiante")
+    @JsonManagedReference
+    @JsonIgnore
+    private List<EstudianteCarrera> carreras;
+}
