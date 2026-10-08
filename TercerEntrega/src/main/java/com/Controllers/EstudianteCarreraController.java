@@ -8,7 +8,7 @@ import com.dtos.EstudianteCarreraConDNIEstudianteDTO;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
-
+import org.springframework.http.ResponseEntity;
 import java.util.List;
 
 
@@ -42,14 +42,21 @@ public class EstudianteCarreraController {
         return ECS.update(id, entity);
     }
 
+    /*
+     * findById() para verificar si existia la matricula
+     * pero si no existia lanzaba un NotFoundException
+     * por lo que nunca llegaba al else ni retornaba false
+     * Modificacion ECS.delete(id) para delegar al Service
+     * Elimina -> 204 No Content
+     * No existe -> 404 Not Found
+     */
     @DeleteMapping("/{id}")
-    public boolean delete(@PathVariable Long id) throws Exception {
-        if (findById(Math.toIntExact(id)) != null) {
-            ECS.delete(id);
-            return true;
-        }else  {
-            return false;
+    public ResponseEntity<Void> delete(@PathVariable Long id) throws Exception {
+        if (ECS.delete(id)) {
+            return ResponseEntity.noContent().build();
         }
+        // return 404
+        return ResponseEntity.notFound().build();
     }
 
     @GetMapping("idCarrera/{id}")

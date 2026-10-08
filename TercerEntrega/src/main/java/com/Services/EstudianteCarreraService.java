@@ -57,14 +57,23 @@ public class EstudianteCarreraService implements BaseService<EstudianteCarrera> 
         return ECRepository.save(existente);
     }
 
+
+    /*
+     * findById() verifica si existia la matricula
+     * pero si no existia lanzaba una EntityNotFoundException
+     * por lo que nunca llegaba al else ni retornaba false
+     * Modificacion, existsById() para verificar si existe
+     * y deleteById() para eliminarla
+     */
     @Override
     public boolean delete(Long id) throws Exception {
-        if (findById(Math.toIntExact(id)) != null) {
-            ECRepository.delete(Math.toIntExact(id));
-            return true;
-        }else  {
+        int idMatricula = Math.toIntExact(id);
+        // Verificar si existe antes de eliminar
+        if (!ECRepository.existsById(idMatricula)) {
             return false;
         }
+        ECRepository.deleteById(idMatricula);
+        return true;
     }
 
 
