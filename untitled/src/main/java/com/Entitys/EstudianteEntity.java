@@ -2,6 +2,8 @@ package com.Entitys;
 
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -37,5 +39,7 @@ public class EstudianteEntity {
     private int LU;
 
     @OneToMany(mappedBy = "estudiante")
+    @JsonManagedReference
+    @JsonIgnore
     private List<EstudianteCarrera> carreras;
 }

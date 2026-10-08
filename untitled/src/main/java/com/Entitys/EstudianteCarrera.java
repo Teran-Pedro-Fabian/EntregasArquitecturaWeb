@@ -1,5 +1,6 @@
 package com.Entitys;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
@@ -23,6 +24,7 @@ public class EstudianteCarrera {
 
     @ManyToOne
     @JoinColumn(name = "id_estudiante")
+    @JsonBackReference
     private EstudianteEntity estudiante;
 
     @ManyToOne
