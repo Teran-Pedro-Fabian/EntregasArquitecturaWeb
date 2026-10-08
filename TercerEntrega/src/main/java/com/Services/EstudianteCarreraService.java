@@ -45,9 +45,16 @@ public class EstudianteCarreraService implements BaseService<EstudianteCarrera> 
         return ECRepository.save(entity);
     }
 
+
     @Override
     public EstudianteCarrera update(Long id, EstudianteCarrera entity) throws Exception {
-        return ECRepository.save(entity);
+        int idMatricula = Math.toIntExact(id);
+        EstudianteCarrera existente = ECRepository.findById(idMatricula).orElseThrow(() -> new EntityNotFoundException("No existe una matricula con id: " + id));
+        existente.setInscripcion(entity.getInscripcion());
+        existente.setGraduacion(entity.getGraduacion());
+        existente.setAntiguedad(entity.getAntiguedad());
+
+        return ECRepository.save(existente);
     }
 
     @Override

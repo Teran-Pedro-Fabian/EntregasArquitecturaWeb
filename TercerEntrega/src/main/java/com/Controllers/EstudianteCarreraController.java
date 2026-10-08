@@ -39,7 +39,7 @@ public class EstudianteCarreraController {
 
     @PutMapping("/{id}")
     public EstudianteCarrera update(@PathVariable Long id, @RequestBody EstudianteCarrera entity) throws Exception {
-        return ECS.save(entity);
+        return ECS.update(id, entity);
     }
 
     @DeleteMapping("/{id}")
