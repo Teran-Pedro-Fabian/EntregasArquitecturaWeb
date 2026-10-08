@@ -10,7 +10,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.http.ResponseEntity;
 import java.util.List;
-
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 @RestController
 @RequestMapping("/EstudianteCarrera")
@@ -26,9 +27,19 @@ public class EstudianteCarreraController {
         return ECS.findAll();
     }
 
+    /*
+     * findById() lanza un NotFoundException
+     * cuando no encontraba la matricula
+     * El Controller no maneja la excepcion y retorna 500
+     * Modificacion, se captura la excepcion y retorna 404
+     */
     @GetMapping("/{id}")
     public EstudianteCarrera findById(@PathVariable int id) throws Exception {
-        return ECS.findById(id);
+        try {
+            return ECS.findById(id);
+        } catch (EntityNotFoundException e) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
+        }
     }
 
 
@@ -37,9 +48,19 @@ public class EstudianteCarreraController {
         return ECS.save(entity);
     }
 
+    /*
+     * update() lanza un NotFoundException
+     * cuando se intenta actualizar una matricula que no existe
+     * El Controller no maneja la excepcion y retorna 500
+     * Modificacion, se captura la excepcion y retorna 404
+     */
     @PutMapping("/{id}")
     public EstudianteCarrera update(@PathVariable Long id, @RequestBody EstudianteCarrera entity) throws Exception {
-        return ECS.update(id, entity);
+        try {
+            return ECS.update(id, entity);
+        } catch (EntityNotFoundException e) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
+        }
     }
 
     /*

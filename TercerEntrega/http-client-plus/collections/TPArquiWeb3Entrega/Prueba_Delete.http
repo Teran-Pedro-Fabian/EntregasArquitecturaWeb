@@ -23,3 +23,8 @@ Accept: application/json
 ### Eliminar matricula que no existe
 ### Resultado: 404 Not Found
 DELETE http://localhost:8080/EstudianteCarrera/99999999
+
+### Buscar matricula eliminada
+### Resultado: 404 Not Found
+GET http://localhost:8080/EstudianteCarrera/0
+Accept: application/json

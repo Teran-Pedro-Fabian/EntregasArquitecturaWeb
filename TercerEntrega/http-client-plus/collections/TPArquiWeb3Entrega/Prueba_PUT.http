@@ -60,3 +60,45 @@ Content-Type: application/json
 ### Resultado: antiguedad 5
 GET http://localhost:8080/EstudianteCarrera/1
 Accept: application/json
+
+
+
+### Buscar matricula que existe
+### Resultado: 200 OK
+GET http://localhost:8080/EstudianteCarrera/1
+Accept: application/json
+
+
+### Buscar matricula que no existe
+### Antes: 500 Internal Server Error
+### Resultado: 404 Not Found
+GET http://localhost:8080/EstudianteCarrera/99999999
+Accept: application/json
+
+
+### Actualizar matricula que no existe
+### Antes: 500 Internal Server Error
+### Resultado: 404 Not Found
+PUT http://localhost:8080/EstudianteCarrera/99999999
+Content-Type: application/json
+
+{
+  "inscripcion": 2017,
+  "graduacion": 2022,
+  "antiguedad": 5
+}
+
+
+### Actualizar matricula con ID diferente en JSON
+### URL ID 1
+### JSON ID 99999999
+### Resultado: 200 OK && retorna ID 1
+PUT http://localhost:8080/EstudianteCarrera/1
+Content-Type: application/json
+
+{
+  "id": 99999999,
+  "inscripcion": 2017,
+  "graduacion": 2022,
+  "antiguedad": 5
+}
