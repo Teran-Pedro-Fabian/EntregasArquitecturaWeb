@@ -1,28 +1,32 @@
 package com;
 
 
+import com.Repositorys.CarreraRepository;
+import com.Repositorys.EstudianteCarreraRepository;
+import com.Repositorys.EstudianteRepository;
 import com.utils.CargarDatosCSV;
-import jakarta.annotation.PostConstruct;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-
-import java.io.IOException;
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.context.annotation.Bean;
 
 @SpringBootApplication
     public class SpringApp {
 
-        @Autowired
-        private CargarDatosCSV cargarDatosCSV;
-
-        public static void main(String[] args) {
-            SpringApplication.run(SpringApp.class, args);
-
-        }
-
-        @PostConstruct
-        public void init() throws IOException {
-            cargarDatosCSV.cargarTodo();
-        }
-
+    public static void main(String[] args) {
+        SpringApplication.run(SpringApp.class, args);
     }
+
+    @Bean
+    public CommandLineRunner cargarDatos(CargarDatosCSV cargarDatosCSV, CarreraRepository carreraRepo,
+                                         EstudianteRepository estudianteRepo,
+                                         EstudianteCarreraRepository estudianteCarreraRepo) {
+        return args -> {
+            if (carreraRepo.count() == 0 && estudianteRepo.count() == 0 && estudianteCarreraRepo.count() == 0) {
+                cargarDatosCSV.cargarTodo();
+            } else {
+                System.out.println("La DB ya esta cargada");
+            }
+        };
+    }
+}
