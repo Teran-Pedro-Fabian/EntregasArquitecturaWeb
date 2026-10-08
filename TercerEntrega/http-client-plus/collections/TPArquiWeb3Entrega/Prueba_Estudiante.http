@@ -32,3 +32,43 @@ Content-Type: application/json
   "ciudad": "Tandil",
   "lu": 999998
 }
+
+
+### Casos de Testing
+
+### DNI duplicado
+### Resultado: 409 Conflict
+POST http://localhost:8080/Estudiante
+Content-Type: application/json
+
+{
+  "dni": 40123456,
+  "nombre": "PruebaDuplicado",
+  "apellido": "Integrador",
+  "edad": 23,
+  "genero": "Masculino",
+  "ciudad": "Tandil",
+  "lu": 999997
+}
+
+
+### LU duplicada
+### Resultado: 409 Conflict
+POST http://localhost:8080/Estudiante
+Content-Type: application/json
+
+{
+  "dni": 40123458,
+  "nombre": "PruebaLU",
+  "apellido": "Duplicada",
+  "edad": 24,
+  "genero": "Masculino",
+  "ciudad": "Tandil",
+  "lu": 999999
+}
+
+
+### LU no existente
+### Resultado: 404 Not Found
+GET http://localhost:8080/Estudiante/libreta/99999999
+Accept: application/json
