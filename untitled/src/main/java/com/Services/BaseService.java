@@ -1,5 +1,7 @@
 package com.Services;
 
+import com.Entitys.EstudianteCarrera;
+
 import java.util.List;
 
 public interface BaseService <P>{
@@ -19,7 +21,7 @@ public interface BaseService <P>{
      * @return Entidad coincidente con id.
      * @throws Exception e
      */
-    public P findById(Long id)throws Exception;
+    public P findById(int id)throws Exception;
 
     /**
      * Servicio encargado de persistir una entidad ingresada por parámetro.
@@ -45,4 +47,6 @@ public interface BaseService <P>{
      * @throws Exception e
      */
     public boolean delete(Long id)throws Exception;
+
+
 }

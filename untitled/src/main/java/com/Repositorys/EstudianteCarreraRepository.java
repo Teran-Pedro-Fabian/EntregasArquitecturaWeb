@@ -19,11 +19,11 @@ public interface EstudianteCarreraRepository extends JpaRepository<EstudianteCar
             FROM EstudianteCarrera ec
             WHERE ec.carrera.id = :idCarrera
             """)
-    public EstudianteCarrera FindByIdCarrera(@Param("idCarrera") int idCarrera);
+    public List<EstudianteCarrera> findByIdCarrera(@Param("idCarrera") int idCarrera);
 
 
     @Query("""
-            SELECT ec.carrera
+            SELECT ec
             FROM EstudianteCarrera ec
             """)
     public List<EstudianteCarrera> FindAll();
@@ -34,7 +34,7 @@ public interface EstudianteCarreraRepository extends JpaRepository<EstudianteCar
             FROM EstudianteCarrera ec
             WHERE ec.estudiante.DNI = :idEstudiante
             """)
-    public EstudianteCarrera findByEstudiante(@Param("idEstudiante") int idEstudiante);
+    public List<EstudianteCarrera> findByEstudiante(@Param("idEstudiante") int idEstudiante);
 
 
     @Modifying

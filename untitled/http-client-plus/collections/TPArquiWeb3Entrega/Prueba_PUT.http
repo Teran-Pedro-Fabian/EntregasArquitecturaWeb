@@ -1,0 +1,14 @@
+### Prueba PUT
+PUT http://localhost:8080/EstudianteCarrera/1
+Content-Type: application/json
+
+{
+  "id": 1,
+  "estudiante": {
+    "id": 1
+  },
+  "carrera": {
+    "id": 20
+  },
+  "egresado": true
+}
