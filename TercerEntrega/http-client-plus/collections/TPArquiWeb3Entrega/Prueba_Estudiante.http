@@ -1,0 +1,34 @@
+### GET request to example server
+GET https://examples.http-client.intellij.net/get
+    ?generated-in=IntelliJ IDEA
+
+### GET
+### 2C
+GET http://localhost:8080/Estudiante
+Accept: application/json
+
+
+### 2D
+GET http://localhost:8080/Estudiante/libreta/72976
+Accept: application/json
+
+
+### 2E
+GET http://localhost:8080/Estudiante/genero/Masculino
+Accept: application/json
+
+
+### POST
+### 2A
+POST http://localhost:8080/Estudiante
+Content-Type: application/json
+
+{
+  "dni": 40123457,
+  "nombre": "Prueba",
+  "apellido": "Integrador",
+  "edad": 22,
+  "genero": "Masculino",
+  "ciudad": "Tandil",
+  "lu": 999998
+}
