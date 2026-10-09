@@ -12,3 +12,176 @@ Content-Type: application/json
   },
   "egresado": true
 }
+
+
+### Actualizar matricula que ya existe
+### Resultado: 200 OK
+PUT http://localhost:8080/EstudianteCarrera/1
+Content-Type: application/json
+
+{
+  "inscripcion": 2017,
+  "graduacion": 2022,
+  "antiguedad": 5
+}
+
+
+### Modificar antiguedad 5 -> 6
+### Resultado: ID 1, antiguedad 6
+PUT http://localhost:8080/EstudianteCarrera/1
+Content-Type: application/json
+
+{
+  "inscripcion": 2017,
+  "graduacion": 2022,
+  "antiguedad": 6
+}
+
+
+### Verificar
+### Resultado: antiguedad 6
+GET http://localhost:8080/EstudianteCarrera/1
+Accept: application/json
+
+
+### Resetear values: 6 -> 5
+### Resultado: antiguedad 5
+PUT http://localhost:8080/EstudianteCarrera/1
+Content-Type: application/json
+
+{
+  "inscripcion": 2017,
+  "graduacion": 2022,
+  "antiguedad": 5
+}
+
+
+### Verificar
+### Resultado: antiguedad 5
+GET http://localhost:8080/EstudianteCarrera/1
+Accept: application/json
+
+
+
+### Buscar matricula que existe
+### Resultado: 200 OK
+GET http://localhost:8080/EstudianteCarrera/1
+Accept: application/json
+
+
+### Buscar matricula que no existe
+### Antes: 500 Internal Server Error
+### Resultado: 404 Not Found
+GET http://localhost:8080/EstudianteCarrera/99999999
+Accept: application/json
+
+
+### Actualizar matricula que no existe
+### Antes: 500 Internal Server Error
+### Resultado: 404 Not Found
+PUT http://localhost:8080/EstudianteCarrera/99999999
+Content-Type: application/json
+
+{
+  "inscripcion": 2017,
+  "graduacion": 2022,
+  "antiguedad": 5
+}
+
+
+### Actualizar matricula con ID diferente en JSON
+### URL ID 1
+### JSON ID 99999999
+### Resultado: 200 OK && retorna ID 1
+PUT http://localhost:8080/EstudianteCarrera/1
+Content-Type: application/json
+
+{
+  "id": 99999999,
+  "inscripcion": 2017,
+  "graduacion": 2022,
+  "antiguedad": 5
+}
+
+### Inscripcion == 0
+### Resultado: 400
+PUT http://localhost:8080/EstudianteCarrera/1
+Content-Type: application/json
+
+{
+  "inscripcion": 0,
+  "graduacion": 2022,
+  "antiguedad": 5
+}
+
+
+### Inscripcion -1
+### Resultado: 400
+PUT http://localhost:8080/EstudianteCarrera/1
+Content-Type: application/json
+
+{
+  "inscripcion": -1,
+  "graduacion": 2022,
+  "antiguedad": 5
+}
+
+
+### Graduacion -1
+### Resultado: 400
+PUT http://localhost:8080/EstudianteCarrera/1
+Content-Type: application/json
+
+{
+  "inscripcion": 2017,
+  "graduacion": -1,
+  "antiguedad": 5
+}
+
+
+### Graduacion < inscripcion
+### Resultado: 400
+PUT http://localhost:8080/EstudianteCarrera/1
+Content-Type: application/json
+
+{
+  "inscripcion": 2017,
+  "graduacion": 2015,
+  "antiguedad": 5
+}
+
+
+### Antiguedad -1
+### Resultado: 400
+PUT http://localhost:8080/EstudianteCarrera/1
+Content-Type: application/json
+
+{
+  "inscripcion": 2017,
+  "graduacion": 2022,
+  "antiguedad": -1
+}
+
+
+### Graduacion == 0
+### Resultado: 200
+PUT http://localhost:8080/EstudianteCarrera/900005
+Content-Type: application/json
+
+{
+  "inscripcion": 2026,
+  "graduacion": 0,
+  "antiguedad": 0
+}
+
+
+### Verificar
+### Resultado: ID 1, inscripcion 2017, graduacion 2022, antiguedad 5
+GET http://localhost:8080/EstudianteCarrera/1
+Accept: application/json
+
+
+### Verificar
+### Resultado: ID 900005, inscripcion 2026, graduacion 0, antiguedad 0
+GET http://localhost:8080/EstudianteCarrera/900005
+Accept: application/json

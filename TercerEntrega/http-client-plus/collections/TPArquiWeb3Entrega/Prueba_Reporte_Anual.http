@@ -1,0 +1,10 @@
+### GET request to example server
+GET https://examples.http-client.intellij.net/get
+    ?generated-in=IntelliJ IDEA
+
+### Reporte anual inscriptos & egresados
+### Resultado: 200
+### 117 registros ordenados
+### 0  duplicados/incorrectos
+GET http://localhost:8080/EstudianteCarrera/ReporteAnual
+Accept: application/json

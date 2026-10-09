@@ -1,0 +1,30 @@
+### GET request to example server
+GET https://examples.http-client.intellij.net/get
+    ?generated-in=IntelliJ IDEA
+
+
+### Buscar matricula
+### Resultado: ID 0 existente
+GET http://localhost:8080/EstudianteCarrera/0
+Accept: application/json
+
+
+### Eliminar matricula
+### Resultado: 204 No Content
+DELETE http://localhost:8080/EstudianteCarrera/0
+
+
+### Verificar
+### Resultado: 0 matriculas con ID 0
+GET http://localhost:8080/EstudianteCarrera
+Accept: application/json
+
+
+### Eliminar matricula que no existe
+### Resultado: 404 Not Found
+DELETE http://localhost:8080/EstudianteCarrera/99999999
+
+### Buscar matricula eliminada
+### Resultado: 404 Not Found
+GET http://localhost:8080/EstudianteCarrera/0
+Accept: application/json

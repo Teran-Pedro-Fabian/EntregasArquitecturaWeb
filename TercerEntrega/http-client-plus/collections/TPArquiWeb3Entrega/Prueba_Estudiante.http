@@ -1,0 +1,74 @@
+### GET request to example server
+GET https://examples.http-client.intellij.net/get
+    ?generated-in=IntelliJ IDEA
+
+### GET
+### 2C
+GET http://localhost:8080/Estudiante
+Accept: application/json
+
+
+### 2D
+GET http://localhost:8080/Estudiante/libreta/72976
+Accept: application/json
+
+
+### 2E
+GET http://localhost:8080/Estudiante/genero/Masculino
+Accept: application/json
+
+
+### POST
+### 2A
+POST http://localhost:8080/Estudiante
+Content-Type: application/json
+
+{
+  "dni": 40123457,
+  "nombre": "Prueba",
+  "apellido": "Integrador",
+  "edad": 22,
+  "genero": "Masculino",
+  "ciudad": "Tandil",
+  "lu": 999998
+}
+
+
+### Casos de Testing
+
+### DNI duplicado
+### Resultado: 409 Conflict
+POST http://localhost:8080/Estudiante
+Content-Type: application/json
+
+{
+  "dni": 40123456,
+  "nombre": "PruebaDuplicado",
+  "apellido": "Integrador",
+  "edad": 23,
+  "genero": "Masculino",
+  "ciudad": "Tandil",
+  "lu": 999997
+}
+
+
+### LU duplicada
+### Resultado: 409 Conflict
+POST http://localhost:8080/Estudiante
+Content-Type: application/json
+
+{
+  "dni": 40123458,
+  "nombre": "PruebaLU",
+  "apellido": "Duplicada",
+  "edad": 24,
+  "genero": "Masculino",
+  "ciudad": "Tandil",
+  "lu": 999999
+}
+
+
+### LU no existente
+### Resultado: 404 Not Found
+GET http://localhost:8080/Estudiante/libreta/99999999
+Accept: application/json
