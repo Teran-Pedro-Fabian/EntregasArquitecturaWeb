@@ -102,3 +102,86 @@ Content-Type: application/json
   "graduacion": 2022,
   "antiguedad": 5
 }
+
+### Inscripcion == 0
+### Resultado: 400
+PUT http://localhost:8080/EstudianteCarrera/1
+Content-Type: application/json
+
+{
+  "inscripcion": 0,
+  "graduacion": 2022,
+  "antiguedad": 5
+}
+
+
+### Inscripcion -1
+### Resultado: 400
+PUT http://localhost:8080/EstudianteCarrera/1
+Content-Type: application/json
+
+{
+  "inscripcion": -1,
+  "graduacion": 2022,
+  "antiguedad": 5
+}
+
+
+### Graduacion -1
+### Resultado: 400
+PUT http://localhost:8080/EstudianteCarrera/1
+Content-Type: application/json
+
+{
+  "inscripcion": 2017,
+  "graduacion": -1,
+  "antiguedad": 5
+}
+
+
+### Graduacion < inscripcion
+### Resultado: 400
+PUT http://localhost:8080/EstudianteCarrera/1
+Content-Type: application/json
+
+{
+  "inscripcion": 2017,
+  "graduacion": 2015,
+  "antiguedad": 5
+}
+
+
+### Antiguedad -1
+### Resultado: 400
+PUT http://localhost:8080/EstudianteCarrera/1
+Content-Type: application/json
+
+{
+  "inscripcion": 2017,
+  "graduacion": 2022,
+  "antiguedad": -1
+}
+
+
+### Graduacion == 0
+### Resultado: 200
+PUT http://localhost:8080/EstudianteCarrera/900005
+Content-Type: application/json
+
+{
+  "inscripcion": 2026,
+  "graduacion": 0,
+  "antiguedad": 0
+}
+
+
+### Verificar
+### Resultado: ID 1, inscripcion 2017, graduacion 2022, antiguedad 5
+GET http://localhost:8080/EstudianteCarrera/1
+Accept: application/json
+
+
+### Verificar
+### Resultado: ID 900005, inscripcion 2026, graduacion 0, antiguedad 0
+GET http://localhost:8080/EstudianteCarrera/900005
+Accept: application/json

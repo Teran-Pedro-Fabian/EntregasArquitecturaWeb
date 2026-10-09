@@ -12,6 +12,9 @@ import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Service;
+import com.dtos.ReporteCarreraAnualDTO;
+import java.util.Map;
+import java.util.TreeMap;
 
 
 import java.util.ArrayList;
@@ -46,6 +49,28 @@ public class EstudianteCarreraService implements BaseService<EstudianteCarrera> 
 
     }
 
+    /*
+     * Verificar que los años de la matricula sean validos
+     * inscripcion > 0
+     * graduacion >= 0 (si el estudiante no egreso)
+     * egreso > inscripcion
+     * La antiguedad no puede ser negativa
+     */
+    private void validarAnios(EstudianteCarrera entity) {
+        if (entity.getInscripcion() <= 0) {
+            throw new IllegalArgumentException("Año de inscripcion no valido");
+        }
+        if (entity.getGraduacion() < 0) {
+            throw new IllegalArgumentException("Año de graduacion no valido");
+        }
+        if (entity.getGraduacion() != 0 && entity.getGraduacion() < entity.getInscripcion()) {
+            throw new IllegalArgumentException("La graduacion no puede ser antes de la inscripcion");
+        }
+        if (entity.getAntiguedad() < 0) {
+            throw new IllegalArgumentException("Antiguedad no valida");
+        }
+    }
+
 
     /*
      * save() guardada la matricula directamente
@@ -63,6 +88,7 @@ public class EstudianteCarreraService implements BaseService<EstudianteCarrera> 
         if (entity.getId() <= 0) {
             throw new IllegalArgumentException("ID de matricula no valido");
         }
+        validarAnios(entity);
         // Verificar que no exista otra matricula con el mismo ID
         if (ECRepository.existsById(entity.getId())) {
             throw new IllegalStateException("Ya existe una matricula con ese ID");
@@ -73,6 +99,16 @@ public class EstudianteCarreraService implements BaseService<EstudianteCarrera> 
         // Verificar que exista la carrera
         CarreraEntity carrera = carreraRepository.findById(entity.getCarrera().getId()).orElseThrow(() -> new EntityNotFoundException("No existe la carrera"));
 
+        /*
+         * solo se verifica que el ID de la matricula no estuviera repetido
+         * pero un estudiante podia inscribirse dos veces en la misma carrera
+         * usando ID diferentes
+         * Modificacion, se verifica si ya existe la inscripcion
+         * Si existe -> 409
+         */
+        if (ECRepository.existeInscripcion(estudiante.getDNI(), carrera.getId())) {
+            throw new IllegalStateException("El estudiante ya esta inscripto en esa carrera");
+        }
         entity.setEstudiante(estudiante);
         entity.setCarrera(carrera);
         return ECRepository.save(entity);
@@ -83,6 +119,7 @@ public class EstudianteCarreraService implements BaseService<EstudianteCarrera> 
     public EstudianteCarrera update(Long id, EstudianteCarrera entity) throws Exception {
         int idMatricula = Math.toIntExact(id);
         EstudianteCarrera existente = ECRepository.findById(idMatricula).orElseThrow(() -> new EntityNotFoundException("No existe una matricula con id: " + id));
+        validarAnios(entity);
         existente.setInscripcion(entity.getInscripcion());
         existente.setGraduacion(entity.getGraduacion());
         existente.setAntiguedad(entity.getAntiguedad());
@@ -141,5 +178,31 @@ public class EstudianteCarreraService implements BaseService<EstudianteCarrera> 
 
     public List<ConteoCarreraAnualDTO> countEgresadosPorCarreraYAnio(){
         return ECRepository.countEgresadosPorCarreraYAnio();
+    }
+
+    /*
+     * 2.h
+     * Juntar los inscriptos y egresados por carrera y año
+     * Si en un año no hay inscriptos o egresados se deja en 0
+     * Ordenado por carrera y año
+     */
+    public List<ReporteCarreraAnualDTO> generarReporteAnual() {
+        Map<String, Map<Integer, ReporteCarreraAnualDTO>> reporte = new TreeMap<>();
+        for (ConteoCarreraAnualDTO dato : ECRepository.countInscriptosPorCarreraYAnio()) {
+            Map<Integer, ReporteCarreraAnualDTO> anios = reporte.computeIfAbsent(dato.getCarrera(), c -> new TreeMap<>());
+            ReporteCarreraAnualDTO fila = anios.computeIfAbsent(
+                    dato.getAnio(),anio -> new ReporteCarreraAnualDTO(dato.getCarrera(), anio, 0, 0));
+            fila.setInscriptos(dato.getCantidad());
+        }
+        for (ConteoCarreraAnualDTO dato : ECRepository.countEgresadosPorCarreraYAnio()) {
+            Map<Integer, ReporteCarreraAnualDTO> anios = reporte.computeIfAbsent(dato.getCarrera(), c -> new TreeMap<>());
+            ReporteCarreraAnualDTO fila = anios.computeIfAbsent(dato.getAnio(),anio -> new ReporteCarreraAnualDTO(dato.getCarrera(), anio, 0, 0));
+            fila.setEgresados(dato.getCantidad());
+        }
+        List<ReporteCarreraAnualDTO> resultado = new ArrayList<>();
+        for (Map<Integer, ReporteCarreraAnualDTO> anios : reporte.values()) {
+            resultado.addAll(anios.values());
+        }
+        return resultado;
     }
 }

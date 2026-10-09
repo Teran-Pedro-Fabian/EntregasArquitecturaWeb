@@ -99,3 +99,47 @@ Content-Type: application/json
 GET http://localhost:8080/EstudianteCarrera/900005
 Accept: application/json
 
+### Inscripcion duplicada
+### Resultado: 409
+POST http://localhost:8080/EstudianteCarrera
+Content-Type: application/json
+
+{
+  "id": 900006,
+  "estudiante": {
+    "dni": 40123456
+  },
+  "carrera": {
+    "id": 1
+  },
+  "inscripcion": 2026,
+  "graduacion": 0,
+  "antiguedad": 0
+}
+
+### Verificar
+### Resultado: solo existe la matricula 900005
+### 900006 no se guardo
+GET http://localhost:8080/EstudianteCarrera/900006
+Accept: application/json
+
+
+### Inscripcion == 0
+### Resultado: 400
+### DB no guarda
+POST http://localhost:8080/EstudianteCarrera
+Content-Type: application/json
+
+{
+  "id": 900007,
+  "estudiante": {
+    "dni": 40123456
+  },
+  "carrera": {
+    "id": 1
+  },
+  "inscripcion": 0,
+  "graduacion": 0,
+  "antiguedad": 0
+}
+

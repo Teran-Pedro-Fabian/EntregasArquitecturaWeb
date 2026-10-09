@@ -138,4 +138,16 @@ public interface EstudianteCarreraRepository extends JpaRepository<EstudianteCar
         ORDER BY ec.carrera.carrera ASC, ec.graduacion ASC
         """)
     public List<ConteoCarreraAnualDTO> countEgresadosPorCarreraYAnio();
+
+    /**
+     * Verificar si un estudiante ya esta inscripto en una carrera
+     * utilizando el DNI y el ID de la carrera
+     */
+    @Query("""
+    SELECT CASE WHEN COUNT(ec) > 0 THEN true ELSE false END
+    FROM EstudianteCarrera ec
+    WHERE ec.estudiante.DNI = :dni
+    AND ec.carrera.id = :idCarrera
+    """)
+    public boolean existeInscripcion(@Param("dni") int dni, @Param("idCarrera") int idCarrera);
 }
