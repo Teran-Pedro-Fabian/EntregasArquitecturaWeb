@@ -12,6 +12,7 @@ import org.springframework.http.ResponseEntity;
 import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
+import com.dtos.ReporteCarreraAnualDTO;
 
 @RestController
 @RequestMapping("/EstudianteCarrera")
@@ -139,6 +140,14 @@ public class EstudianteCarreraController {
         return ECS.countEgresadosPorCarreraYAnio();
     }
 
+    /*
+     * Reporte anual de carreras
+     * Mostrar inscriptos y egresados por carrera y año
+     */
+    @GetMapping("/ReporteAnual")
+    public List<ReporteCarreraAnualDTO> generarReporteAnual() {
+        return ECS.generarReporteAnual();
+    }
 
 
 }

@@ -143,3 +143,67 @@ Content-Type: application/json
   "antiguedad": 0
 }
 
+### Crear matricula ID == 0
+### Resultado: 400 Bad Request
+POST http://localhost:8080/EstudianteCarrera
+Content-Type: application/json
+
+{
+  "id": 0,
+  "estudiante": {"dni": 40123456},
+  "carrera": {"id": 1},
+  "inscripcion": 2026,
+  "graduacion": 0,
+  "antiguedad": 0
+}
+
+
+### Crear matricula ID == -1
+### Resultado: 400
+POST http://localhost:8080/EstudianteCarrera
+Content-Type: application/json
+
+{
+  "id": -1,
+  "estudiante": {"dni": 40123456},
+  "carrera": {"id": 1},
+  "inscripcion": 2026,
+  "graduacion": 0,
+  "antiguedad": 0
+}
+
+
+### Crear matricula sin estudiante
+### Resultado: 400
+POST http://localhost:8080/EstudianteCarrera
+Content-Type: application/json
+
+{
+  "id": 900008,
+  "carrera": {"id": 1},
+  "inscripcion": 2026,
+  "graduacion": 0,
+  "antiguedad": 0
+}
+
+### Inscribir estudiante en una carrera donde ya esta inscripto
+### Matriculas: 79 y 82
+### Resultado: 409
+### No se inserta la matricula 900009 en SQL
+### Las matriculas originales se mantienen
+POST http://localhost:8080/EstudianteCarrera
+Content-Type: application/json
+
+{
+  "id": 900009,
+  "estudiante": {
+    "dni": 64472668
+  },
+  "carrera": {
+    "id": 7
+  },
+  "inscripcion": 2026,
+  "graduacion": 0,
+  "antiguedad": 0
+}
+
