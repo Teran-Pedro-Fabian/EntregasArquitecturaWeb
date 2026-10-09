@@ -2,7 +2,10 @@ package com.Services;
 
 import com.Entitys.EstudianteCarrera;
 import com.Entitys.EstudianteEntity;
+import com.Entitys.CarreraEntity;
 import com.Repositorys.EstudianteCarreraRepository;
+import com.Repositorys.EstudianteRepository;
+import com.Repositorys.CarreraRepository;
 import com.dtos.ConteoCarreraAnualDTO;
 import com.dtos.EstudianteCarreraConDNIEstudianteDTO;
 import jakarta.persistence.EntityNotFoundException;
@@ -19,8 +22,12 @@ public class EstudianteCarreraService implements BaseService<EstudianteCarrera> 
 
     @Autowired
     private EstudianteCarreraRepository ECRepository;
-
-    public  EstudianteCarreraService() {}
+    @Autowired
+    private EstudianteRepository estudianteRepository;
+    @Autowired
+    private CarreraRepository carreraRepository;
+    
+    public EstudianteCarreraService() {}
 
     @Override
     public List<EstudianteCarrera> findAll() throws Exception {
@@ -40,8 +47,34 @@ public class EstudianteCarreraService implements BaseService<EstudianteCarrera> 
     }
 
 
+    /*
+     * save() guardada la matricula directamente
+     * sin verificar si el estudiante o la carrera existian
+     * Si no existian la DB rechazaba el registro y retornaba 500
+     * Modificacion, se verifican las relaciones antes de guardar
+     */
     @Override
     public EstudianteCarrera save(EstudianteCarrera entity) throws Exception {
+        // Verificar que se reciban estudiante y carrera
+        if (entity.getEstudiante() == null || entity.getCarrera() == null) {
+            throw new IllegalArgumentException("Debe indicar estudiante y carrera");
+        }
+        // Verificar que el ID sea valido
+        if (entity.getId() <= 0) {
+            throw new IllegalArgumentException("ID de matricula no valido");
+        }
+        // Verificar que no exista otra matricula con el mismo ID
+        if (ECRepository.existsById(entity.getId())) {
+            throw new IllegalStateException("Ya existe una matricula con ese ID");
+        }
+        // Verificar que exista el estudiante
+        EstudianteEntity estudiante = estudianteRepository.findById(entity.getEstudiante().getDNI()).orElseThrow(() -> new EntityNotFoundException("No existe el estudiante"));
+
+        // Verificar que exista la carrera
+        CarreraEntity carrera = carreraRepository.findById(entity.getCarrera().getId()).orElseThrow(() -> new EntityNotFoundException("No existe la carrera"));
+
+        entity.setEstudiante(estudiante);
+        entity.setCarrera(carrera);
         return ECRepository.save(entity);
     }
 

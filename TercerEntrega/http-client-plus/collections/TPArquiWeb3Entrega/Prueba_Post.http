@@ -1,0 +1,101 @@
+### GET request to example server
+GET https://examples.http-client.intellij.net/get
+    ?generated-in=IntelliJ IDEA
+
+### Registrar matricula
+### Resultado: 201 Created
+POST http://localhost:8080/EstudianteCarrera
+Content-Type: application/json
+
+{
+  "id": 900005,
+  "estudiante": {
+    "dni": 40123456
+  },
+  "carrera": {
+    "id": 1
+  },
+  "inscripcion": 2026,
+  "graduacion": 0,
+  "antiguedad": 0
+}
+
+
+### Estudiante que no existe
+### Resultado: 404 Not Found
+POST http://localhost:8080/EstudianteCarrera
+Content-Type: application/json
+
+{
+  "id": 900002,
+  "estudiante": {
+    "dni": 99999999
+  },
+  "carrera": {
+    "id": 15
+  },
+  "inscripcion": 2026,
+  "graduacion": 0,
+  "antiguedad": 0
+}
+
+
+### Carrera que no existe
+### Resultado: 404 Not Found
+POST http://localhost:8080/EstudianteCarrera
+Content-Type: application/json
+
+{
+  "id": 900003,
+  "estudiante": {
+    "dni": 40123456
+  },
+  "carrera": {
+    "id": 999999
+  },
+  "inscripcion": 2026,
+  "graduacion": 0,
+  "antiguedad": 0
+}
+
+
+### Matricula con ID duplicado
+### Resultado: 409 Conflict
+POST http://localhost:8080/EstudianteCarrera
+Content-Type: application/json
+
+{
+  "id": 900001,
+  "estudiante": {
+    "dni": 40123456
+  },
+  "carrera": {
+    "id": 15
+  },
+  "inscripcion": 2026,
+  "graduacion": 0,
+  "antiguedad": 0
+}
+
+
+### Matricula sin carrera
+### Resultado: 400 Bad Request
+POST http://localhost:8080/EstudianteCarrera
+Content-Type: application/json
+
+{
+  "id": 900004,
+  "estudiante": {
+    "dni": 40123456
+  },
+  "inscripcion": 2026,
+  "graduacion": 0,
+  "antiguedad": 0
+}
+
+
+### Buscar matricula registrada
+### Resultado: 200 OK, ID 900005
+GET http://localhost:8080/EstudianteCarrera/900005
+Accept: application/json
+

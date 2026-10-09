@@ -43,9 +43,30 @@ public class EstudianteCarreraController {
     }
 
 
+
+    /*
+     * save() guardaba directamente la matricula
+     * Si el estudiante o carrera no existian retornaba 500
+     * Modificacion, se toma en cuenta las excepciones del Service
+     * Se guarda -> 201
+     * Falta data -> 400
+     * No existe estudiante/carrera -> 404
+     * Duplicados -> 409
+     */
     @PostMapping("")
-    public EstudianteCarrera save(@RequestBody EstudianteCarrera entity) throws Exception {
-        return ECS.save(entity);
+    public ResponseEntity<EstudianteCarrera> save(@RequestBody EstudianteCarrera entity) throws Exception {
+        try {
+            EstudianteCarrera nueva = ECS.save(entity);
+            return ResponseEntity.status(HttpStatus.CREATED).body(nueva);
+        } catch (EntityNotFoundException e) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
+
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
+
+        } catch (IllegalStateException e) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, e.getMessage());
+        }
     }
 
     /*
