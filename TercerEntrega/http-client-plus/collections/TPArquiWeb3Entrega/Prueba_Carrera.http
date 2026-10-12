@@ -1,0 +1,38 @@
+### GET
+### Todas las carreras
+### Resultado: 200 OK, 15 carreras
+GET http://localhost:8080/Carrera
+Accept: application/json
+
+
+### Buscar carrera que existe
+### Resultado: 200 OK, ID 1 TUDAI
+GET http://localhost:8080/Carrera/1
+Accept: application/json
+
+
+### Buscar carrera que no existe
+### Resultado: 404 Not Found
+GET http://localhost:8080/Carrera/999999
+Accept: application/json
+
+
+### 2F
+### Carreras con inscriptos ordenadas por cantidad
+### Resultado: 200 OK, primera TUDAI (ID 1)
+### cantidad ordenada de mayor a menor
+GET http://localhost:8080/Carrera/inscriptos
+Accept: application/json
+
+
+### 2G
+### Estudiantes de TUDAI (ID 1) que viven en Rauch
+### Resultado: 200 OK, 4 estudiantes
+GET http://localhost:8080/EstudianteCarrera/FiltradoPorCarreraYCiudad/1/Rauch
+Accept: application/json
+
+
+### 2G con ciudad sin estudiantes
+### Resultado: 200 OK, lista vacia
+GET http://localhost:8080/EstudianteCarrera/FiltradoPorCarreraYCiudad/1/CiudadInexistente
+Accept: application/json

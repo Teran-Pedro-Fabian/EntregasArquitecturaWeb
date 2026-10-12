@@ -1,6 +1,7 @@
 package com.Repositorys;
 
 import com.Entitys.CarreraEntity;
+import com.dtos.CarreraInscriptosDTO;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -38,11 +39,15 @@ public interface CarreraRepository extends JpaRepository<CarreraEntity, Integer>
      * ordena de mayor a menor
      */
     @Query("""
-        SELECT c
+        SELECT NEW com.dtos.CarreraInscriptosDTO(
+            c.id,
+            c.carrera,
+            COUNT(ec)
+        )
         FROM CarreraEntity c
         JOIN c.estudiantes ec
-        GROUP BY c
-        ORDER BY COUNT(ec) DESC
+        GROUP BY c.id, c.carrera
+        ORDER BY COUNT(ec) DESC, c.carrera ASC
         """)
-    public List<CarreraEntity> FindCarrerasOrderByInscriptos();
+    public List<CarreraInscriptosDTO> FindCarrerasOrderByInscriptos();
 }
