@@ -29,17 +29,20 @@ public class EstudianteCarreraController {
     }
 
     /*
-     * findById() lanza un NotFoundException
-     * cuando no encontraba la matricula
-     * El Controller no maneja la excepcion y retorna 500
-     * Modificacion, se captura la excepcion y retorna 404
+     * Buscar matricula por PK compuesta
+     * DNI del estudiante + ID de carrera
+     * No existe -> 404
      */
-    @GetMapping("/{id}")
-    public EstudianteCarrera findById(@PathVariable int id) throws Exception {
+    @GetMapping("/{dni}/{idCarrera}")
+    public EstudianteCarrera findById(
+            @PathVariable int dni,
+            @PathVariable int idCarrera) throws Exception {
+
         try {
-            return ECS.findById(id);
+            return ECS.findById(dni, idCarrera);
         } catch (EntityNotFoundException e) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND, e.getMessage());
         }
     }
 
@@ -71,36 +74,34 @@ public class EstudianteCarreraController {
     }
 
     /*
-     * update() lanza un NotFoundException
-     * cuando se intenta actualizar una matricula que no existe
-     * El Controller no maneja la excepcion y retorna 500
-     * Modificacion, se captura la excepcion y retorna 404
+     * Actualizar matricula por PK compuesta
+     * Solo modificar los datos de inscripcion
+     * No existe -> 404
+     * Datos invalidos -> 400
      */
-    @PutMapping("/{id}")
-    public EstudianteCarrera update(@PathVariable Long id, @RequestBody EstudianteCarrera entity) throws Exception {
+    @PutMapping("/{dni}/{idCarrera}")
+    public EstudianteCarrera update(@PathVariable int dni, @PathVariable int idCarrera, @RequestBody EstudianteCarrera entity) throws Exception {
         try {
-            return ECS.update(id, entity);
+            return ECS.update(dni, idCarrera, entity);
         } catch (EntityNotFoundException e) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND, e.getMessage());
         } catch (IllegalArgumentException e) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST, e.getMessage());
         }
     }
 
     /*
-     * findById() para verificar si existia la matricula
-     * pero si no existia lanzaba un NotFoundException
-     * por lo que nunca llegaba al else ni retornaba false
-     * Modificacion ECS.delete(id) para delegar al Service
-     * Elimina -> 204 No Content
-     * No existe -> 404 Not Found
+     * Eliminar matricula por PK compuesta
+     * Elimina -> 204
+     * No existe -> 404
      */
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) throws Exception {
-        if (ECS.delete(id)) {
+    @DeleteMapping("/{dni}/{idCarrera}")
+    public ResponseEntity<Void> delete(@PathVariable int dni, @PathVariable int idCarrera) throws Exception {
+        if (ECS.delete(dni, idCarrera)) {
             return ResponseEntity.noContent().build();
         }
-        // return 404
         return ResponseEntity.notFound().build();
     }
 

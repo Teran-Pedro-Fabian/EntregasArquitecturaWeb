@@ -11,7 +11,7 @@ import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-
+import com.Entitys.EstudianteCarreraId;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -91,22 +91,35 @@ public class CargarDatosCSV {
             int idEstudiante = entero(record, "id_estudiante");
             int idCarrera = entero(record, "id_carrera");
 
-            java.util.Optional<EstudianteEntity> optE = estudianteRepo.findById(idEstudiante);
-            java.util.Optional<CarreraEntity> optC = carreraRepo.findById(idCarrera);
+            // Buscar estudiante y carrera
+            java.util.Optional<EstudianteEntity> optE =
+                    estudianteRepo.findById(idEstudiante);
+
+            java.util.Optional<CarreraEntity> optC =
+                    carreraRepo.findById(idCarrera);
 
             if (optE.isEmpty()) {
-                System.out.println("[CargarDatosCSV]   ADVERTENCIA: id_estudiante=" + idEstudiante
-                        + " no existe. Se omite matriculacion (id=" + record.get("id") + ").");
+                System.out.println("[CargarDatosCSV] Estudiante no encontrado: "
+                        + idEstudiante);
                 return;
             }
             if (optC.isEmpty()) {
-                System.out.println("[CargarDatosCSV]   ADVERTENCIA: id_carrera=" + idCarrera
-                        + " no existe. Se omite matriculacion (id=" + record.get("id") + ").");
+                System.out.println("[CargarDatosCSV] Carrera no encontrada: "
+                        + idCarrera);
                 return;
             }
-
+            // Crear PK compuesta
+            EstudianteCarreraId id =
+                    new EstudianteCarreraId(idEstudiante, idCarrera);
+            // Verificar si ya existe la inscripcion
+            if (estudianteCarreraRepo.existsById(id)) {
+                System.out.println("[CargarDatosCSV] Inscripcion duplicada: "
+                        + idEstudiante + " - " + idCarrera);
+                return;
+            }
+            // Guardar matricula
             EstudianteCarrera ec = new EstudianteCarrera(
-                    entero(record, "id"),
+                    id,
                     optE.get(),
                     optC.get(),
                     entero(record, "inscripcion"),
