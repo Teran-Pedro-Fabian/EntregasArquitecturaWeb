@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  # Base de datos para MicroServicioCliente
+  mongodb:
+    image: mongo:latest
+    container_name: mongo-ticketya
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
+  # Base de datos para MicroServicioTicket y MicroServicioLugar
+  postgresql:
+    image: postgres:latest
+    container_name: postgres-ticketya
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=admin
+      - POSTGRES_DB=ticketya_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  mongo_data:
+  postgres_data:
