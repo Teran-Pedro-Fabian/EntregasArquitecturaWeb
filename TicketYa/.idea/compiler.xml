@@ -10,6 +10,7 @@
         <module name="MicroServicioLugar" />
         <module name="MicroServicioCliente" />
         <module name="MicroServicioTicket" />
+        <module name="MicroservicioEvento" />
       </profile>
     </annotationProcessing>
   </component>
@@ -18,6 +19,7 @@
       <module name="MicroServicioCliente" options="-parameters" />
       <module name="MicroServicioLugar" options="-parameters" />
       <module name="MicroServicioTicket" options="-parameters" />
+      <module name="MicroservicioEvento" options="-parameters" />
     </option>
   </component>
 </project>

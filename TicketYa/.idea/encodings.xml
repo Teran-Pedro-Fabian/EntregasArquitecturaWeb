@@ -7,5 +7,7 @@
     <file url="file://$PROJECT_DIR$/MicroServicioLugar/src/main/resources" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/MicroServicioTicket/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/MicroServicioTicket/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/MicroservicioEvento/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/MicroservicioEvento/src/main/resources" charset="UTF-8" />
   </component>
 </project>
