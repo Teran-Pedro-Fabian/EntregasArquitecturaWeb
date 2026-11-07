@@ -11,7 +11,7 @@ import com.microserviciocliente.servise.ClienteService;
 import com.microserviciocliente.servise.PreferenciasService;
 
 @RestController
-@RequestMapping("/clientes") // Todas las rutas de este controller empiezan con /clientes
+@RequestMapping("/clientes")
 public class ClienteController {
 
     @Autowired

@@ -1,4 +1,4 @@
-package com.microservicioticket.repository;
+package com.microservicioticket.Repository;
 
 import com.microservicioticket.entity.TicketEntity;
 import org.springframework.data.jpa.repository.JpaRepository;

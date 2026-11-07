@@ -27,7 +27,8 @@ public class LugarController {
         return new ResponseEntity<>(nuevoLugar, HttpStatus.CREATED);
     }
 
-    @GetMapping
+    // --- TRAE LUGARES ---
+    @GetMapping("/sector/{id}/asiento")
     public ResponseEntity<List<LugarEntity>> listarLugares() {
         return ResponseEntity.ok(lugarService.listarTodosLosLugares());
     }
@@ -64,7 +65,7 @@ public class LugarController {
     /**
      * Endpoint para confirmar la venta después de que el pago sea aprobado.
      */
-    @PostMapping("/confirmar")
+    @PostMapping("/asiento/confirmar")
     public ResponseEntity<?> confirmarVenta(@RequestBody Map<String, Object> request) {
         try {
             Long idAsiento = Long.valueOf(request.get("idAsiento").toString());
@@ -78,7 +79,7 @@ public class LugarController {
     /**
      * Endpoint para cancelar una reserva manualmente (o por timeout).
      */
-    @DeleteMapping("/cancelar/{idAsiento}")
+    @DeleteMapping("/reservas/{idAsiento}")
     public ResponseEntity<?> cancelarReserva(@PathVariable Long idAsiento) {
         try {
             lugarService.cancelarReserva(idAsiento);
@@ -86,5 +87,26 @@ public class LugarController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
         }
+    }
+
+
+    @DeleteMapping("/asientos/liberar/{idAsiento}")
+    public ResponseEntity<?> liberarAsiento(@PathVariable Long idAsiento) {
+        try {
+            lugarService.cancelarReserva(idAsiento);
+            return ResponseEntity.ok("Asiento liberado exitosamente");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        }
+    }
+
+
+    @GetMapping("/buscarPorUbicacion")
+    public ResponseEntity<List<Long>> buscarPorUbicacion(
+            @RequestParam Double lat,
+            @RequestParam Double lon) {
+
+        List<Long> ids = lugarService.buscarIdsPorUbicacionExacta(lat, lon);
+        return ResponseEntity.ok(ids);
     }
 }

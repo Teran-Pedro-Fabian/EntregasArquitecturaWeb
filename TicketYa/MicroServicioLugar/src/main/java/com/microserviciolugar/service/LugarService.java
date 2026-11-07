@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 @Service
 public class LugarService {
@@ -31,7 +32,7 @@ public class LugarService {
 
     @Transactional
     public AsientoEntity reservarAsiento(Long idAsiento, String idCliente) {
-        AsientoEntity asiento = asientoRepository.findByIdWithLock(idAsiento)
+        AsientoEntity asiento = asientoRepository.findByIdWithLugar(idAsiento)
                 .orElseThrow(() -> new RuntimeException("Asiento no encontrado"));
 
         //Verificamos si está disponible
@@ -83,5 +84,13 @@ public class LugarService {
             asientoRepository.save(asiento);
             redisTemplate.delete("reserva:asiento:" + idAsiento);
         }
-}
+    }
+
+    public List<Long> buscarIdsPorUbicacionExacta(Double lat, Double lon) {
+        List<LugarEntity> lugares = lugarRepository.findByLatitudAndLongitud(lat, lon);
+
+        return lugares.stream()
+                .map(LugarEntity::getId)
+                .collect(Collectors.toList());
+    }
 }

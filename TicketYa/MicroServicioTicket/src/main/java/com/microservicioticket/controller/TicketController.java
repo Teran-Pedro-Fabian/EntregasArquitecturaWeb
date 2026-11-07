@@ -25,4 +25,15 @@ public class TicketController {
         TicketEntity ticket = ticketService.obtenerTicket(id);
         return ticket != null ? ResponseEntity.ok(ticket) : ResponseEntity.notFound().build();
     }
+
+
+    @DeleteMapping("/{id}/devolver")
+    public ResponseEntity<?> devolver(@PathVariable Long id) {
+        try {
+            ticketService.devolverTicket(id);
+            return ResponseEntity.ok("Ticket eliminado y asiento liberado exitosamente");
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
 }
