@@ -18,4 +18,11 @@ public class LugarEntity {
     private String direccion;
     private Double longitud;
     private Double latitud;
+
+    public LugarEntity(String estadioArena, String s, double v, double v1) {
+        this.nombre = estadioArena;
+        this.direccion = s;
+        this.longitud = v;
+        this.latitud = v1;
+    }
 }

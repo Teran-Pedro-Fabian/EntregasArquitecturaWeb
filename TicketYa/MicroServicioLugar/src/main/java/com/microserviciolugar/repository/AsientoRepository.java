@@ -13,6 +13,6 @@ import java.util.Optional;
 public interface AsientoRepository extends JpaRepository<AsientoEntity, Long> {
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("SELECT a FROM Asiento a WHERE a.idLugar = :id")
+    @Query("SELECT a FROM AsientoEntity a WHERE a.id = :id")
     Optional<AsientoEntity> findByIdWithLugar(Long id);
 }

@@ -1,0 +1,121 @@
+openapi: 3.0.0
+info:
+  title: TicketYa - MicroServicioCliente
+  description: API para la gestión de perfiles de clientes y sus preferencias personales.
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8081
+    description: Servidor de Desarrollo Local
+
+paths:
+  /cliente:
+    post:
+      summary: Registra nuevo cliente
+      description: Registra un nuevo cliente en el sistema.
+      operationId: registrarCliente
+      tags:
+        - Cliente
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClienteRequest'
+      responses:
+        '201':
+          description: Cliente creado exitosamente.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClienteResponse'
+        '400':
+          description: Error en la solicitud.
+
+  /cliente/{id}:
+    get:
+      summary: obtiene datos del cliente
+      description: Retorna la información del cliente según el ID proporcionado.
+      operationId: obtenerCliente
+      tags:
+        - Cliente
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID del cliente.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Datos del cliente obtenidos exitosamente.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClienteResponse'
+        '404':
+          description: Cliente no encontrado.
+
+  /cleinte/Preferencias:
+    post:
+      summary: actualiza gustos del cliente
+      description: Actualiza la información de preferencias del cliente.
+      operationId: actualizarPreferencias
+      tags:
+        - Cliente
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PreferenciasRequest'
+      responses:
+        '200':
+          description: Preferencias actualizadas.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  mensaje:
+                    type: string
+                    example: "Preferencias actualizadas"
+        '400':
+          description: Error en la solicitud.
+        '404':
+          description: Cliente no encontrado.
+
+components:
+  schemas:
+    ClienteRequest:
+      type: object
+      properties:
+        nombre:
+          type: string
+          example: "Juan Perez"
+
+    ClienteResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "1"
+        nombre:
+          type: string
+          example: "Juan Perez"
+
+    PreferenciasRequest:
+      type: object
+      properties:
+        idCliente:
+          type: string
+          example: "1"
+        tipoEvento:
+          type: string
+          example: "Rock"
+        artistaFavorito:
+          type: string
+          example: "Taylor Swift"
+        ciudad:
+          type: string
+          example: "Buenos Aires"

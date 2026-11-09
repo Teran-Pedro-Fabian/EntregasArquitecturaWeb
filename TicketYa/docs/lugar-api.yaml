@@ -1,0 +1,284 @@
+openapi: 3.0.0
+info:
+  title: TicketYa - MicroServicioLugar
+  description: API para la gestión de recintos, sectores, asientos y control de reservas temporales.
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8083
+    description: Servidor de Desarrollo Local
+
+paths:
+  /lugares:
+    post:
+      summary: Registrar un lugar
+      description: Registra la información física de un recinto (estadio, teatro, etc).
+      operationId: registrarLugar
+      tags:
+        - Lugares
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LugarRequest'
+      responses:
+        '201':
+          description: Lugar registrado exitosamente.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LugarResponse'
+        '400':
+          description: Error en la solicitud.
+
+  /lugares/sectores:
+    post:
+      summary: Crear un sector
+      description: Crea un sector dentro de un lugar asociado a un evento específico.
+      operationId: crearSector
+      tags:
+        - Sectores
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SectorRequest'
+      responses:
+        '201':
+          description: Sector creado exitosamente.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SectorResponse'
+        '400':
+          description: Error en la solicitud.
+        '404':
+          description: El lugar o evento no existe.
+
+  /sectores/{id}/asientos:
+    get:
+      summary: listar asientos y sus estados
+      description: Retorna la lista de asientos de un sector y su estado actual (Disponible, Reservado, Vendido).
+      operationId: listarAsientos
+      tags:
+        - Asientos
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID del sector.
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Lista de asientos obtenida.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AsientoResponse'
+        '404':
+          description: Sector no encontrado.
+
+  /reservar:
+    post:
+      summary: reserva temporal
+      description: Bloquea un asiento temporalmente por 10 minutos.
+      operationId: reservarAsiento
+      tags:
+        - Reservas
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReservaRequest'
+      responses:
+        '200':
+          description: Asiento reservado temporalmente.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  idasiento:
+                    type: integer
+                  expira:
+                    type: string
+                    example: "2026-11-06T12:00:00"
+        '409':
+          description: El asiento ya se encuentra ocupado o reservado.
+
+  /asiento/confirmar:
+    post:
+      summary: confirmar venta
+      description: Cambia el estado del asiento de RESERVADO a VENDIDO.
+      operationId: confirmarVenta
+      tags:
+        - Reservas
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConfirmarRequest'
+      responses:
+        '200':
+          description: Venta confirmada.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  mensaje:
+                    type: string
+                    example: "asiento vendido"
+        '400':
+          description: Error en la solicitud.
+        '404':
+          description: El asiento no existe o no está reservado.
+
+  /reservas/{idAsiento}:
+    delete:
+      summary: librerar asiento
+      description: Libera la reserva temporal del asiento.
+      operationId: liberarReserva
+      tags:
+        - Reservas
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID de la reserva.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Asiento liberado exitosamente.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  mensaje:
+                    type: string
+                    example: "asiento libreado"
+        '404':
+          description: La reserva no existe.
+
+  /lugar/asientos/liberar/{idAsiento}:
+    delete:
+      summary: elimina reseravas
+      description: Elimina la reserva del asiento indicado.
+      operationId: eliminarReserva
+      tags:
+        - Reservas
+      parameters:
+        - name: idAsiento
+          in: path
+          required: true
+          description: ID del asiento.
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Reserva eliminada correctamente.
+
+  /lugar/buscarPorUbicacion:
+    get:
+      summary: busca lugares por distintos parametros
+      description: Retorna los IDs de los lugares que coinciden con la ubicación proporcionada.
+      operationId: buscarPorUbicacion
+      tags:
+        - Lugares
+      parameters:
+        - name: lat
+          in: query
+          required: true
+          schema:
+            type: number
+        - name: lon
+          in: query
+          required: true
+          schema:
+            type: number
+      responses:
+        '200':
+          description: Lista de IDs de lugares obtenida.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: integer
+                  example: 1
+
+components:
+  schemas:
+    LugarRequest:
+      type: object
+      properties:
+        nombre:
+          type: string
+        descripcion:
+          type: string
+        longitud:
+          type: number
+        latitud:
+          type: number
+
+    LugarResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+        nombre:
+          type: string
+
+    SectorRequest:
+      type: object
+      properties:
+        idEvento:
+          type: integer
+        idlugar:
+          type: integer
+        nombre:
+          type: string
+        precio:
+          type: number
+        cupos:
+          type: integer
+
+    SectorResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+        nombre:
+          type: string
+
+    AsientoResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+        estado:
+          type: string
+          example: "DISPONIBLE"
+
+    ReservaRequest:
+      type: object
+      properties:
+        idAsiento:
+          type: integer
+        idCliente:
+          type: string
+
+    ConfirmarRequest:
+      type: object
+      properties:
+        idAsiento:
+          type: integer

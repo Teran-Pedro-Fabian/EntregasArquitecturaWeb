@@ -1,6 +1,7 @@
 package com.microserviciolugar.controller;
 
 
+import com.microserviciolugar.cleaner.LugarCleaner;
 import com.microserviciolugar.entity.AsientoEntity;
 import com.microserviciolugar.entity.LugarEntity;
 import com.microserviciolugar.entity.SectorEntity;
@@ -19,21 +20,23 @@ public class LugarController {
 
     @Autowired
     private LugarService lugarService;
+    @Autowired
+    private LugarCleaner lugarCleaner;
 
-    // --- GESTIÓN DE RECINTOS (LUGAR) ---
+
     @PostMapping
     public ResponseEntity<LugarEntity> crearLugar(@RequestBody LugarEntity lugar) {
         LugarEntity nuevoLugar = lugarService.guardarLugar(lugar);
         return new ResponseEntity<>(nuevoLugar, HttpStatus.CREATED);
     }
 
-    // --- TRAE LUGARES ---
+
     @GetMapping("/sector/{id}/asiento")
     public ResponseEntity<List<LugarEntity>> listarLugares() {
         return ResponseEntity.ok(lugarService.listarTodosLosLugares());
     }
 
-    // --- GESTIÓN DE SECTORES ---
+
 
     @PostMapping("/sectores")
     public ResponseEntity<SectorEntity> crearSector(@RequestBody SectorEntity sector) {
@@ -41,12 +44,8 @@ public class LugarController {
         return new ResponseEntity<>(nuevoSector, HttpStatus.CREATED);
     }
 
-    // --- EL CORAZÓN DEL SISTEMA: RESERVAS Y ASIENTOS ---
 
-    /**
-     * Endpoint para reservar un asiento temporalmente.
-     * Body esperado: {"idAsiento": 1, "idCliente": "ID_DE_MONGO"}
-     */
+
     @PostMapping("/reservar")
     public ResponseEntity<?> reservarAsiento(@RequestBody Map<String, Object> request) {
         try {
@@ -62,9 +61,7 @@ public class LugarController {
         }
     }
 
-    /**
-     * Endpoint para confirmar la venta después de que el pago sea aprobado.
-     */
+
     @PostMapping("/asiento/confirmar")
     public ResponseEntity<?> confirmarVenta(@RequestBody Map<String, Object> request) {
         try {
@@ -76,9 +73,7 @@ public class LugarController {
         }
     }
 
-    /**
-     * Endpoint para cancelar una reserva manualmente (o por timeout).
-     */
+
     @DeleteMapping("/reservas/{idAsiento}")
     public ResponseEntity<?> cancelarReserva(@PathVariable Long idAsiento) {
         try {
@@ -108,5 +103,12 @@ public class LugarController {
 
         List<Long> ids = lugarService.buscarIdsPorUbicacionExacta(lat, lon);
         return ResponseEntity.ok(ids);
+    }
+
+
+    @DeleteMapping("/admin/clear")
+    public ResponseEntity<String> clearDb() {
+        lugarCleaner.clear();
+        return ResponseEntity.ok("Base de datos de lugares vaciada");
     }
 }

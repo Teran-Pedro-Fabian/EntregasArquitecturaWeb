@@ -1,6 +1,7 @@
 package com.microServicioEvento.controller;
 
 
+import com.microServicioEvento.cleaner.EventoCleaner;
 import com.microServicioEvento.entity.EventoEntity;
 import com.microServicioEvento.service.EventoService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,6 +17,8 @@ public class EventoController {
 
     @Autowired
     private EventoService eventoService;
+    @Autowired
+    private EventoCleaner eventoCleaner;
 
     @PostMapping
     public ResponseEntity<EventoEntity> crear(@RequestBody EventoEntity evento) {
@@ -51,5 +54,12 @@ public class EventoController {
 
         List<EventoEntity> resultados = eventoService.buscarEventos(tipo, organizador, participante, lat, lon, ordenarPor);
         return ResponseEntity.ok(resultados);
+    }
+
+
+    @DeleteMapping("/admin/clear")
+    public ResponseEntity<String> clearDb() {
+        eventoCleaner.clear();
+        return ResponseEntity.ok("Base de datos de eventos vaciada");
     }
 }

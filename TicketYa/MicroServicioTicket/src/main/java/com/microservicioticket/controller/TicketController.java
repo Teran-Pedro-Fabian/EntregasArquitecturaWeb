@@ -1,5 +1,6 @@
 package com.microservicioticket.controller;
 
+import com.microservicioticket.cleaner.TicketCleaner;
 import com.microservicioticket.entity.TicketEntity;
 import com.microservicioticket.service.TicketService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,6 +14,8 @@ public class TicketController {
 
     @Autowired
     private TicketService ticketService;
+    @Autowired
+    private TicketCleaner ticketCleaner;
 
     @PostMapping("/emitir")
     public ResponseEntity<TicketEntity> emitir(@RequestBody TicketEntity ticket) {
@@ -35,5 +38,13 @@ public class TicketController {
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
+    }
+
+
+
+    @DeleteMapping("/admin/clear")
+    public ResponseEntity<String> clearDb() {
+        ticketCleaner.clear();
+        return ResponseEntity.ok("Base de datos de tickets vaciada");
     }
 }

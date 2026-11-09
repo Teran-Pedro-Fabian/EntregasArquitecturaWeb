@@ -1,6 +1,7 @@
 package com.microserviciocliente.controller;
 
 
+import com.microserviciocliente.cleaner.ClienteCleaner;
 import com.microserviciocliente.entity.ClienteEntity;
 import com.microserviciocliente.entity.PreferenciasEntity;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,12 +17,12 @@ public class ClienteController {
 
     @Autowired
     private ClienteService clienteService;
-
     @Autowired
     private PreferenciasService preferenciasService;
+    @Autowired
+    private ClienteCleaner clienteCleaner;
 
     // ENDPOINT: Crear un cliente
-    // POST http://localhost:8081/clientes
     @PostMapping
     public ResponseEntity<ClienteEntity> crearCliente(@RequestBody ClienteEntity cliente) {
         ClienteEntity nuevoCliente = clienteService.save(cliente);
@@ -30,7 +31,6 @@ public class ClienteController {
     }
 
     // ENDPOINT: Guardar preferencias de un cliente
-    // POST http://localhost:8081/clientes/preferencias
     @PostMapping("/preferencias")
     public ResponseEntity<PreferenciasEntity> guardarPreferencias(@RequestBody PreferenciasEntity preferencias) {
         PreferenciasEntity prefGuardada = preferenciasService.savePreferencia(preferencias);
@@ -38,7 +38,6 @@ public class ClienteController {
     }
 
     // ENDPOINT: Obtener un cliente por su ID
-    // GET http://localhost:8081/clientes/{id}
     @GetMapping("/{id}")
     public ResponseEntity<ClienteEntity> obtenerCliente(@PathVariable String id) {
         ClienteEntity cliente = clienteService.findById(id);
@@ -47,5 +46,12 @@ public class ClienteController {
         } else {
             return ResponseEntity.notFound().build(); // 404 Not Found
         }
+    }
+
+
+    @DeleteMapping("/admin/clear")
+    public ResponseEntity<String> VaciarDb() {
+        clienteCleaner.clear();
+        return ResponseEntity.ok("Base de datos de clientes vaciada");
     }
 }
