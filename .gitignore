@@ -1,5 +1,9 @@
-/.idea/
-**/target/
-# Carpeta personal de Alan - ignorar todo el contenido
-alan/*
 -Uri
+.idea/
+*.iml
+target/
+.env
+
+# Respaldo de datos (no subir a Git)
+migracion/backups/
+alan/*
