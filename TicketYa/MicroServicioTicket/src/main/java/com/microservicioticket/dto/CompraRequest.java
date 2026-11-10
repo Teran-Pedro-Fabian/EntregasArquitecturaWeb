@@ -14,4 +14,7 @@ public class CompraRequest {
     private Long idSector;
     private List<Long> idsAsientos;
     private String medioPago;
+    // Opcional para compatibilidad con los scripts previos
+    // Para reintentos del mismo pedido enviar siempre el mismo valor
+    private String claveIdempotencia;
 }

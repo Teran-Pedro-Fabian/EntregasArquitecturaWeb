@@ -173,6 +173,29 @@ public class TicketService {
     }
 
     /**
+     * Registrar la devolucion obligatoria por evento cancelado
+     * No hay limite de 72 horas ni aprobacion individual
+     */
+    @Transactional
+    public TicketEntity marcarDevolucionPorCancelacion(Long idTicket, String idAdministrador) {
+        if (idAdministrador == null || idAdministrador.isBlank()) {
+            throw new IllegalArgumentException("Administrador no valido");
+        }
+        TicketEntity ticket = ticketRepository.findByIdParaRevision(idTicket)
+                .orElseThrow(() -> new IllegalArgumentException("Ticket no encontrado"));
+        String estado = ticket.getEstadoDevolucion();
+        if ("DEVUELTA".equals(estado) || "REINTEGRADA_PENDIENTE_LIBERACION".equals(estado)
+                || "CANCELACION_PENDIENTE_REINTEGRO".equals(estado)) {
+            return ticket;
+        }
+        // La cancelacion del evento prevalece sobre una solicitud individual pendiente o rechazada
+        ticket.setEstadoDevolucion("CANCELACION_PENDIENTE_REINTEGRO");
+        ticket.setIdAdministradorRevision(idAdministrador);
+        ticket.setFechaRevision(Instant.now());
+        return ticketRepository.save(ticket);
+    }
+
+    /**
      * Procesar el reintegro de una solicitud aprobada
      * Simular la respuesta de la pasarela de pagos
      *
@@ -188,7 +211,8 @@ public class TicketService {
             return ticket;
         }
         // 3) Verificar que la devolucion haya sido aprobada
-        if (!"APROBADA_PENDIENTE_REINTEGRO".equals(ticket.getEstadoDevolucion())) {
+        if (!"APROBADA_PENDIENTE_REINTEGRO".equals(ticket.getEstadoDevolucion()) &&
+                !"CANCELACION_PENDIENTE_REINTEGRO".equals(ticket.getEstadoDevolucion())) {
             throw new RuntimeException("La devolucion no esta aprobada");
         }
         // 4) Solicitar el reintegro a la pasarela simulada

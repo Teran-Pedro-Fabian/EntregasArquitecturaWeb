@@ -11,6 +11,8 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
+import java.util.ArrayList;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.time.Instant;
@@ -135,7 +137,15 @@ public class LugarService {
         }
         // 2) Buscar el asiento y bloquearlo
         AsientoEntity asiento = asientoRepository.findByIdWithLugar(idAsiento).orElseThrow(() -> new RuntimeException("Asiento no encontrado"));
-        // 3) Verificar que este reservado
+        // 3) Si Lugar ya confirmo esta misma venta, el reintento es seguro
+        if ("VENDIDO".equals(asiento.getEstado()) &&
+                idTicket.equals(asiento.getIdTicketVendido())) {
+            return;
+        }
+        // Rechazar un segundo ticket para el mismo asiento
+        if ("VENDIDO".equals(asiento.getEstado())) {
+            throw new IllegalStateException("El asiento ya pertenece a otro ticket");
+        }
         if (!"RESERVADO".equals(asiento.getEstado())) {
             throw new RuntimeException("El asiento no tiene una reserva activa");
         }
@@ -209,7 +219,47 @@ public class LugarService {
     }
 
     public LugarEntity guardarLugar(LugarEntity lugar) {
-        return lugarRepository.save(lugar); // Necesitas crear LugarRepository
+        if (lugar == null) {
+            throw new IllegalArgumentException("Lugar no valido");
+        }
+        if (lugar.getCiudad() != null) {
+            lugar.setCiudad(lugar.getCiudad().trim());
+        }
+        return lugarRepository.save(lugar);
+    }
+
+    /** Completar la ciudad de recintos creados antes del punto 9. */
+    @Transactional
+    public LugarEntity actualizarCiudad(Long idLugar, String ciudad) {
+        if (idLugar == null || ciudad == null || ciudad.isBlank()) {
+            throw new IllegalArgumentException("El lugar y la ciudad son obligatorios");
+        }
+        LugarEntity lugar = lugarRepository.findById(idLugar)
+                .orElseThrow(() -> new IllegalArgumentException("Lugar no encontrado"));
+        lugar.setCiudad(ciudad.trim());
+        return lugarRepository.save(lugar);
+    }
+
+    @Transactional(readOnly = true)
+    public List<Long> buscarIdsPorCiudad(String ciudad) {
+        if (ciudad == null || ciudad.isBlank()) {
+            throw new IllegalArgumentException("Ciudad obligatoria");
+        }
+        return lugarRepository.findByCiudadIgnoreCase(ciudad.trim()).stream()
+                .map(LugarEntity::getId).collect(Collectors.toList());
+    }
+
+    /** Precios minimos reales de cada evento, sin solicitar un endpoint por cada uno. */
+    @Transactional(readOnly = true)
+    public Map<String, Double> preciosMinimosPorEvento(List<String> idsEventos) {
+        Map<String, Double> precios = new java.util.HashMap<>();
+        if (idsEventos == null || idsEventos.isEmpty()) {
+            return precios;
+        }
+        for (Object[] fila : sectorRepository.findPreciosMinimosPorEvento(idsEventos)) {
+            precios.put((String) fila[0], ((Number) fila[1]).doubleValue());
+        }
+        return precios;
     }
 
     public List<LugarEntity> listarTodosLosLugares() {
@@ -265,10 +315,14 @@ public class LugarService {
         if ("NO_NUMERADO".equals(sector.getTipo())) {
             throw new RuntimeException("Un sector no numerado no tiene asientos individuales");
         }
-        // 4) Crear el asiento
+        // 4) No permitir dos IDs para el mismo asiento fisico
+        String filaNormalizada = fila.trim().toUpperCase(java.util.Locale.ROOT);
+        if (asientoRepository.contarMismaUbicacion(idSector, filaNormalizada, columna) > 0) {
+            throw new IllegalStateException("Ya existe un asiento con esa fila y columna en el sector");
+        }
         AsientoEntity asiento = new AsientoEntity();
         asiento.setSector(sector);
-        asiento.setFila(fila);
+        asiento.setFila(filaNormalizada);
         asiento.setColumna(columna);
         asiento.setEstado("DISPONIBLE");
         // 4) Guardar el asiento en PostgreSQL
@@ -290,7 +344,10 @@ public class LugarService {
         }
         // 2) Buscar el asiento y bloquearlo
         AsientoEntity asiento = asientoRepository.findByIdWithLugar(idAsiento).orElseThrow(() -> new RuntimeException("Asiento no encontrado"));
-        // 3) Verificar que este reservado
+        // Rechazar un segundo ticket para el mismo asiento
+        if ("VENDIDO".equals(asiento.getEstado())) {
+            throw new IllegalStateException("El asiento ya pertenece a otro ticket");
+        }
         if (!"RESERVADO".equals(asiento.getEstado())) {
             throw new RuntimeException("El asiento no tiene una reserva activa");
         }
@@ -369,5 +426,48 @@ public class LugarService {
         return lugares.stream()
                 .map(LugarEntity::getId)
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * Comprobar la configuracion de sectores antes de publicar un evento
+     * Este metodo solo consulta PostgreSQL, no modifica reservas ni ventas
+     */
+    @Transactional(readOnly = true)
+    public Map<String, Object> verificarConfiguracionEvento(String idEvento, Long idLugar) {
+        List<String> errores = new ArrayList<>();
+        if (idEvento == null || idEvento.isBlank() || idLugar == null || idLugar <= 0) {
+            throw new IllegalArgumentException("Evento o lugar no validos");
+        }
+        if (!lugarRepository.existsById(idLugar)) {
+            errores.add("El lugar no existe");
+        }
+        List<SectorEntity> sectores = sectorRepository.findByIdEvento(idEvento);
+        if (sectores.isEmpty()) {
+            errores.add("El evento no tiene sectores configurados");
+        }
+        for (SectorEntity sector : sectores) {
+            if (sector.getLugar() == null || !idLugar.equals(sector.getLugar().getId())) {
+                errores.add("El sector " + sector.getId() + " no pertenece al lugar del evento");
+            }
+            if (sector.getPrecio() == null || !Double.isFinite(sector.getPrecio()) || sector.getPrecio() <= 0) {
+                errores.add("El sector " + sector.getId() + " no tiene un precio valido");
+            }
+            // Los sectores creados antes de agregar la columna tipo eran numerados
+            String tipo = sector.getTipo() == null || sector.getTipo().isBlank()
+                    ? "NUMERADO" : sector.getTipo();
+            if ("NUMERADO".equals(tipo)) {
+                if (asientoRepository.countBySector_Id(sector.getId()) == 0) {
+                    errores.add("El sector " + sector.getId() + " no tiene asientos configurados");
+                }
+            } else if ("NO_NUMERADO".equals(tipo)) {
+                if (sector.getCupos() == null || sector.getCupos() <= 0) {
+                    errores.add("El sector " + sector.getId() + " no tiene cupos validos");
+                }
+            } else {
+                errores.add("El sector " + sector.getId() + " tiene tipo no valido");
+            }
+        }
+        return Map.of("idEvento", idEvento, "idLugar", idLugar,
+                "sectores", sectores.size(), "listo", errores.isEmpty(), "errores", errores);
     }
 }

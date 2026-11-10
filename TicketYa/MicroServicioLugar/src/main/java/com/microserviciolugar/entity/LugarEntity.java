@@ -18,4 +18,6 @@ public class LugarEntity {
     private String direccion;
     private Double longitud;
     private Double latitud;
+    // Ciudad para el filtro del catalogo. Los lugares antiguos pueden tenerla vacia.
+    private String ciudad;
 }

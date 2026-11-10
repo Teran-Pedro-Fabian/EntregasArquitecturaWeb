@@ -10,4 +10,7 @@ public class CompraGeneralRequest {
     private Long idReserva;
     private Integer cantidad;
     private String medioPago;
+    // Opcional para compatibilidad con los scripts previos
+    // Para reintentos del mismo pedido enviar siempre el mismo valor
+    private String claveIdempotencia;
 }

@@ -7,15 +7,22 @@ import com.microservicioticket.dto.CompraResponse;
 import com.microservicioticket.dto.CompraGeneralRequest;
 import com.microservicioticket.entity.CompraEntity;
 import com.microservicioticket.entity.TicketEntity;
+import jakarta.persistence.EntityManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.time.Instant;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.HexFormat;
+import java.util.Collections;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -27,6 +34,8 @@ import java.util.UUID;
 public class CompraService {
 
     @Autowired
+    private EntityManager entityManager;
+    @Autowired
     private CompraRepository compraRepository;
     @Autowired
     private TicketRepository ticketRepository;
@@ -34,6 +43,8 @@ public class CompraService {
     private RestTemplate restTemplate;
     @Autowired
     private PagoMockService pagoMockService;
+    @Autowired
+    private BloqueoVentaEventoService bloqueoVentaEventoService;
 
     @Value("${ticketya.compra.max-entradas:4}")
     private int maxEntradas;
@@ -51,6 +62,27 @@ public class CompraService {
         String idCliente = request.getIdCliente();
         String idEvento = request.getIdEvento();
         Long idSector = request.getIdSector();
+
+        // Punto 5: serializar compras del mismo cliente y evento usando PostgreSQL
+        // Funciona aunque existan varias instancias del microservicio
+        // Misma cerradura que usa la cancelacion. Hasta que termine este COMMIT
+        // el administrador no puede cerrar el evento ni comenzar reintegros.
+        bloqueoVentaEventoService.bloquearOperacion(idEvento);
+        bloquearComprasClienteEvento(idCliente, idEvento);
+        String huella = huellaNumerada(request);
+        String clave = claveNumerada(request);
+        CompraEntity anterior = compraRepository.findByClaveIdempotencia(clave).orElse(null);
+        if (anterior != null) {
+            verificarReintento(anterior, huella);
+            if (bloqueoVentaEventoService.estaBloqueado(idEvento) &&
+                    "PENDIENTE_CONFIRMACION".equals(anterior.getEstado())) {
+                throw new IllegalStateException("Evento cancelado, compra pendiente de revision");
+            }
+            return reintentarCompra(anterior);
+        }
+        if (bloqueoVentaEventoService.estaBloqueado(idEvento)) {
+            throw new IllegalStateException("El evento no admite nuevas compras");
+        }
 
         // 2) Comprobar que el evento esta publicado
         String urlEvento = "http://localhost:8082/evento/" + idEvento;
@@ -103,6 +135,8 @@ public class CompraService {
 
         // 8) Registrar la compra y el medio de pago
         CompraEntity compra = new CompraEntity();
+        compra.setClaveIdempotencia(clave);
+        compra.setHuellaSolicitud(huella);
         compra.setIdCliente(idCliente);
         compra.setIdEvento(idEvento);
         compra.setIdSector(idSector);
@@ -129,43 +163,9 @@ public class CompraService {
             tickets.add(ticketRepository.saveAndFlush(ticket));
         }
 
-        // 10) Confirmar cada venta en Lugar
-        List<TicketEntity> confirmados = new ArrayList<>();
-        try {
-            for (TicketEntity ticket : tickets) {
-                Map<String, Object> datosVenta = Map.of(
-                        "idAsiento", ticket.getIdAsiento(),
-                        "idCliente", idCliente,
-                        "idTicket", ticket.getId());
-                restTemplate.postForEntity(
-                        "http://localhost:8083/lugares/asiento/confirmar",
-                        datosVenta, String.class);
-                confirmados.add(ticket);
-            }
-        } catch (RuntimeException error) {
-            // Intentar deshacer confirmaciones parciales
-            for (TicketEntity ticket : confirmados) {
-                try {
-                    String urlLiberar = UriComponentsBuilder.fromHttpUrl(
-                            "http://localhost:8083/lugares/interno/asientos/"
-                                    + ticket.getIdAsiento() + "/liberar-venta")
-                            .queryParam("idTicket", ticket.getId()).toUriString();
-                    restTemplate.postForEntity(urlLiberar, null, String.class);
-                } catch (RuntimeException compensacion) {
-                    // Si falla esta compensacion requiere recuperacion manual
-                    System.err.println("No se pudo liberar el asiento " + ticket.getIdAsiento()
-                            + " del ticket " + ticket.getId() + ": " + compensacion.getMessage());
-                }
-            }
-            cancelarReservas(ids, idCliente);
-            throw new IllegalStateException("No se pudo confirmar la compra en Lugar", error);
-        }
-
-        // 11) Marcar la compra como confirmada
-        compra.setEstado("CONFIRMADA");
-        compraRepository.save(compra);
-        return new CompraResponse(compra.getId(), compra.getEstado(),
-                compra.getMedioPago(), compra.getTotal(), tickets);
+        // 10) Confirmar los asientos. Un error de red deja PENDIENTE
+        // en lugar de borrar tickets que Lugar pudo haber vendido
+        return completarCompraNumerada(compra, tickets);
     }
 
     /**
@@ -181,6 +181,23 @@ public class CompraService {
         Long idSector = request.getIdSector();
         Long idReserva = request.getIdReserva();
         int cantidad = request.getCantidad();
+
+        bloqueoVentaEventoService.bloquearOperacion(idEvento);
+        bloquearComprasClienteEvento(idCliente, idEvento);
+        String huella = huellaGeneral(request);
+        String clave = claveGeneral(request);
+        CompraEntity anterior = compraRepository.findByClaveIdempotencia(clave).orElse(null);
+        if (anterior != null) {
+            verificarReintento(anterior, huella);
+            if (bloqueoVentaEventoService.estaBloqueado(idEvento) &&
+                    "PENDIENTE_CONFIRMACION".equals(anterior.getEstado())) {
+                throw new IllegalStateException("Evento cancelado, compra pendiente de revision");
+            }
+            return reintentarCompra(anterior);
+        }
+        if (bloqueoVentaEventoService.estaBloqueado(idEvento)) {
+            throw new IllegalStateException("El evento no admite nuevas compras");
+        }
 
         // 1) Comprobar que el evento esta publicado
         Map<String, Object> evento = restTemplate.getForObject(
@@ -227,6 +244,8 @@ public class CompraService {
 
         // 6) Guardar la compra y un QR por cada entrada general
         CompraEntity compra = new CompraEntity();
+        compra.setClaveIdempotencia(clave);
+        compra.setHuellaSolicitud(huella);
         compra.setIdCliente(idCliente);
         compra.setIdEvento(idEvento);
         compra.setIdSector(idSector);
@@ -239,7 +258,6 @@ public class CompraService {
         compra = compraRepository.saveAndFlush(compra);
 
         List<TicketEntity> tickets = new ArrayList<>();
-        List<Long> idsTickets = new ArrayList<>();
         for (int i = 0; i < cantidad; i++) {
             TicketEntity ticket = new TicketEntity();
             ticket.setIdCompra(compra.getId());
@@ -254,27 +272,173 @@ public class CompraService {
             ticket.setUsado(false);
             ticket = ticketRepository.saveAndFlush(ticket);
             tickets.add(ticket);
-            idsTickets.add(ticket.getId());
         }
 
-        // 7) Confirmar todos los cupos en una operacion de Lugar
+        // 7) Confirmar los cupos en Lugar con los mismos IDs en cada reintento
+        return completarCompraGeneral(compra, tickets);
+    }
+
+    /**
+     * Reintenta una compra pendiente sin cobrar nuevamente ni crear otro QR.
+     * Es util cuando la respuesta de Lugar se pierde despues de confirmar.
+     */
+    @Transactional
+    public CompraResponse reintentarConfirmacion(Long idCompra) {
+        CompraEntity compra = compraRepository.findById(idCompra)
+                .orElseThrow(() -> new IllegalArgumentException("Compra no encontrada"));
+        bloqueoVentaEventoService.bloquearOperacion(compra.getIdEvento());
+        bloquearComprasClienteEvento(compra.getIdCliente(), compra.getIdEvento());
+        entityManager.refresh(compra);
+        if (bloqueoVentaEventoService.estaBloqueado(compra.getIdEvento()) &&
+                "PENDIENTE_CONFIRMACION".equals(compra.getEstado())) {
+            throw new IllegalStateException("Evento cancelado: recuperacion solo por el proceso de reintegros");
+        }
+        return reintentarCompra(compra);
+    }
+
+    /** Recuperacion interna durante cancelacion: no procesa un segundo pago. */
+    @Transactional
+    public CompraResponse reintentarParaCancelacion(Long idCompra) {
+        CompraEntity compra = compraRepository.findById(idCompra)
+                .orElseThrow(() -> new IllegalArgumentException("Compra no encontrada"));
+        bloqueoVentaEventoService.bloquearOperacion(compra.getIdEvento());
+        bloquearComprasClienteEvento(compra.getIdCliente(), compra.getIdEvento());
+        entityManager.refresh(compra);
+        if (!bloqueoVentaEventoService.estaBloqueado(compra.getIdEvento())) {
+            throw new IllegalStateException("El evento aun admite ventas");
+        }
+        return reintentarCompra(compra);
+    }
+
+    private CompraResponse reintentarCompra(CompraEntity compra) {
+        List<TicketEntity> tickets = ticketRepository.findByIdCompra(compra.getId());
+        if ("CONFIRMADA".equals(compra.getEstado())) return respuesta(compra, tickets);
+        if (!"PENDIENTE_CONFIRMACION".equals(compra.getEstado())) {
+            throw new IllegalStateException("La compra no puede reintentarse en estado " + compra.getEstado());
+        }
+        if (tickets.isEmpty() || tickets.size() != compra.getCantidadEntradas()) {
+            throw new IllegalStateException("La compra pendiente tiene tickets incompletos");
+        }
+        if (compra.getIdReservaGeneral() != null) return completarCompraGeneral(compra, tickets);
+        return completarCompraNumerada(compra, tickets);
+    }
+
+    /**
+     * Cada asiento acepta solo su mismo ID de ticket en el reintento.
+     * Si Lugar no responde guardamos PENDIENTE_CONFIRMACION para recuperacion.
+     */
+    private CompraResponse completarCompraNumerada(CompraEntity compra, List<TicketEntity> tickets) {
         try {
+            for (TicketEntity ticket : tickets) {
+                restTemplate.postForEntity("http://localhost:8083/lugares/asiento/confirmar",
+                        Map.of("idAsiento", ticket.getIdAsiento(),
+                               "idCliente", compra.getIdCliente(),
+                               "idTicket", ticket.getId()), String.class);
+            }
+        } catch (RestClientException e) {
+            // No liberar asientos en un resultado ambiguo: Lugar pudo haberlos vendido
+            System.err.println("Compra " + compra.getId() + " pendiente de confirmacion numerada: "
+                    + e.getMessage());
+            return respuesta(compra, tickets);
+        }
+        compra.setEstado("CONFIRMADA");
+        compraRepository.saveAndFlush(compra);
+        return respuesta(compra, tickets);
+    }
+
+    /**
+     * Lugar ya es idempotente para una reserva general vendida
+     * Reusar idCompra y los mismos tickets evita gastar cupos dos veces
+     */
+    private CompraResponse completarCompraGeneral(CompraEntity compra, List<TicketEntity> tickets) {
+        try {
+            List<Long> idsTickets = tickets.stream().map(TicketEntity::getId).toList();
             restTemplate.postForEntity(
                     "http://localhost:8083/lugares/interno/sectores/generales/confirmar",
-                    Map.of("idSector", idSector, "idReserva", idReserva,
-                            "idCliente", idCliente, "idCompra", compra.getId(),
-                            "idsTickets", idsTickets), String.class);
-        } catch (RuntimeException e) {
-            // Si Lugar no confirmo, se intenta liberar la reserva.
-            // Si confirmo pero la respuesta se perdio, hace falta recuperacion (punto 5).
-            cancelarReservaGeneral(idReserva, idSector, idCliente);
-            throw new IllegalStateException("No se pudo confirmar la compra general", e);
+                    Map.of("idSector", compra.getIdSector(),
+                           "idReserva", compra.getIdReservaGeneral(),
+                           "idCliente", compra.getIdCliente(),
+                           "idCompra", compra.getId(),
+                           "idsTickets", idsTickets), String.class);
+        } catch (RestClientException e) {
+            System.err.println("Compra " + compra.getId() + " pendiente de confirmacion general: "
+                    + e.getMessage());
+            return respuesta(compra, tickets);
         }
-
         compra.setEstado("CONFIRMADA");
-        compraRepository.save(compra);
+        compraRepository.saveAndFlush(compra);
+        return respuesta(compra, tickets);
+    }
+
+    private CompraResponse respuesta(CompraEntity compra, List<TicketEntity> tickets) {
         return new CompraResponse(compra.getId(), compra.getEstado(),
                 compra.getMedioPago(), compra.getTotal(), tickets);
+    }
+
+    private void verificarReintento(CompraEntity anterior, String huella) {
+        if (!huella.equals(anterior.getHuellaSolicitud())) {
+            throw new IllegalStateException(
+                    "La clave de idempotencia ya se utilizo con otros datos");
+        }
+    }
+
+    private String huellaNumerada(CompraRequest request) {
+        List<Long> ids = new ArrayList<>(request.getIdsAsientos());
+        Collections.sort(ids);
+        return hash("NUM|" + request.getIdCliente() + "|" + request.getIdEvento() + "|"
+                + request.getIdSector() + "|" + ids + "|" + request.getMedioPago().toUpperCase());
+    }
+
+    private String huellaGeneral(CompraGeneralRequest request) {
+        return hash("GEN|" + request.getIdCliente() + "|" + request.getIdEvento() + "|"
+                + request.getIdSector() + "|" + request.getIdReserva() + "|"
+                + request.getCantidad() + "|" + request.getMedioPago().toUpperCase());
+    }
+
+    private String claveNumerada(CompraRequest request) {
+        List<Long> ids = new ArrayList<>(request.getIdsAsientos());
+        Collections.sort(ids);
+        String natural = "NUM|" + request.getIdSector() + "|" + ids;
+        return claveCompra(request.getIdCliente(), request.getIdEvento(),
+                request.getClaveIdempotencia(), natural);
+    }
+
+    private String claveGeneral(CompraGeneralRequest request) {
+        return claveCompra(request.getIdCliente(), request.getIdEvento(),
+                request.getClaveIdempotencia(), "GEN|" + request.getIdReserva());
+    }
+
+    private String claveCompra(String idCliente, String idEvento, String explicita, String natural) {
+        if (explicita != null && !explicita.isBlank()) {
+            String limpia = explicita.trim();
+            if (limpia.length() < 8 || limpia.length() > 100 ||
+                    !limpia.matches("[A-Za-z0-9._:-]+")) {
+                throw new IllegalArgumentException("Clave de idempotencia no valida");
+            }
+            return hash("CLIENTE|" + idCliente + "|" + idEvento + "|" + limpia);
+        }
+        // Compatibilidad: sin clave explicita se deduce de la misma reserva
+        return hash("AUTO|" + idCliente + "|" + idEvento + "|" + natural);
+    }
+
+    /**
+     * Bloqueo transaccional de PostgreSQL compartido entre todas las instancias de Ticket.
+     * Dos compras del mismo cliente/evento no superan el limite por carrera.
+     */
+    private void bloquearComprasClienteEvento(String idCliente, String idEvento) {
+        entityManager.createNativeQuery(
+                "SELECT 1 FROM pg_advisory_xact_lock(CAST(hashtext(:clave) AS BIGINT))")
+                .setParameter("clave", "ticketya|" + idCliente + "|" + idEvento)
+                .getSingleResult();
+    }
+
+    private String hash(String valor) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            return HexFormat.of().formatHex(digest.digest(valor.getBytes(StandardCharsets.UTF_8)));
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("No se pudo calcular la clave de compra", e);
+        }
     }
 
     private void validarDatosGeneral(CompraGeneralRequest request) {

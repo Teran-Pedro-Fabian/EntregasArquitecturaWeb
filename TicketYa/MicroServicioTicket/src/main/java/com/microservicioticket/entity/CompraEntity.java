@@ -16,6 +16,14 @@ public class CompraEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    // Identifica un pedido aunque se reintente por error de conexion
+    // Las compras anteriores quedan con null
+    @Column(name = "clave_idempotencia", length = 64, unique = true)
+    private String claveIdempotencia;
+
+    @Column(name = "huella_solicitud", length = 64)
+    private String huellaSolicitud;
+
     private String idCliente;
     private String idEvento;
     private Long idSector;

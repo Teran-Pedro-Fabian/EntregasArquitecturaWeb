@@ -14,6 +14,9 @@ public interface TicketRepository extends JpaRepository<TicketEntity, Long> {
 
     List<TicketEntity> findByIdCompra(Long idCompra);
 
+    // Recuperar todos los tickets de un evento para cancelacion masiva
+    List<TicketEntity> findByIdEventoOrderByIdAsc(String idEvento);
+
     /**
      * Contar tickets activos de un cliente en un evento
      * Las devoluciones completadas no ocupan el limite

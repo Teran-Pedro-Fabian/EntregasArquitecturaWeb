@@ -38,6 +38,31 @@ public class LugarController {
     }
 
 
+    /** Los lugares antiguos pueden actualizar su ciudad sin perder los sectores. */
+    @PatchMapping("/{idLugar}/ciudad")
+    public ResponseEntity<?> actualizarCiudad(@PathVariable Long idLugar, @RequestParam String ciudad) {
+        try {
+            return ResponseEntity.ok(lugarService.actualizarCiudad(idLugar, ciudad));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @GetMapping("/buscarPorCiudad")
+    public ResponseEntity<?> buscarPorCiudad(@RequestParam String ciudad) {
+        try {
+            return ResponseEntity.ok(lugarService.buscarIdsPorCiudad(ciudad));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    /** Precio mas bajo por evento para ordenar resultados de busqueda. */
+    @PostMapping("/interno/eventos/precios-minimos")
+    public ResponseEntity<Map<String, Double>> preciosMinimosPorEvento(@RequestBody List<String> idsEventos) {
+        return ResponseEntity.ok(lugarService.preciosMinimosPorEvento(idsEventos));
+    }
+
     // --- GESTIÓN DE SECTORES ---
 
     @PostMapping("/sectores")
@@ -190,6 +215,8 @@ public class LugarController {
             return ResponseEntity.status(HttpStatus.CREATED).body(asiento);
         } catch (NumberFormatException e) {
             return ResponseEntity.badRequest().body("ID o columna no validos");
+        } catch (org.springframework.dao.DataIntegrityViolationException | IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body("El asiento ya existe o esta duplicado");
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
@@ -213,6 +240,20 @@ public class LugarController {
         } catch (RuntimeException e) {
             // 4) Informar el error
             return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
+        }
+    }
+
+    /**
+     * Consultar si un evento tiene lugar, sectores y precios configurados
+     * Lo utiliza el MicroservicioEvento antes de publicar
+     */
+    @GetMapping("/interno/eventos/{idEvento}/configuracion")
+    public ResponseEntity<?> verificarConfiguracionEvento(@PathVariable String idEvento,
+            @RequestParam Long idLugar) {
+        try {
+            return ResponseEntity.ok(lugarService.verificarConfiguracionEvento(idEvento, idLugar));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 }

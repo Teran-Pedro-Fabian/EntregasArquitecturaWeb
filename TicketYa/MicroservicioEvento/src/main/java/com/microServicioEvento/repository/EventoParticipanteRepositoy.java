@@ -1,8 +1,15 @@
 package com.microServicioEvento.repository;
 
-import com.microServicioEvento.entity.EventoEntity;
 import com.microServicioEvento.entity.EventoParticipanteEntity;
 import org.springframework.data.mongodb.repository.MongoRepository;
 
+import java.util.List;
+import java.util.Optional;
+
+// Se conserva el nombre Repositoy para no romper las referencias existentes
 public interface EventoParticipanteRepositoy extends MongoRepository<EventoParticipanteEntity, String> {
+    List<EventoParticipanteEntity> findByIdEvento(String idEvento);
+    List<EventoParticipanteEntity> findByIdParticipanteIn(List<String> idsParticipantes);
+    List<EventoParticipanteEntity> findByIdEventoIn(List<String> idsEventos);
+    Optional<EventoParticipanteEntity> findByIdEventoAndIdParticipante(String idEvento, String idParticipante);
 }
