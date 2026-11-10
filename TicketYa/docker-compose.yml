@@ -26,14 +26,30 @@ services:
     volumes:
       - postgres_ticket_data:/var/lib/postgresql/data
 
-  # Base de datos para Cliente y Evento
-  mongodb:
-    image: mongo:7
-    container_name: ticketya-mongodb
+  # Cliente y Evento pasan a PostgreSQL sin afectar las bases existentes.
+  postgres-cliente:
+    image: postgres:16-alpine
+    container_name: ticketya-postgres-cliente
+    environment:
+      POSTGRES_DB: ticketya_clientes
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: admin
     ports:
-      - "27017:27017"
+      - "5434:5432"
     volumes:
-      - mongo_data:/data/db
+      - postgres_cliente_data:/var/lib/postgresql/data
+
+  postgres-evento:
+    image: postgres:16-alpine
+    container_name: ticketya-postgres-evento
+    environment:
+      POSTGRES_DB: ticketya_eventos
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: admin
+    ports:
+      - "5435:5432"
+    volumes:
+      - postgres_evento_data:/var/lib/postgresql/data
 
   # Reservas temporales
   redis:
@@ -45,4 +61,5 @@ services:
 volumes:
   postgres_lugar_data:
   postgres_ticket_data:
-  mongo_data:
+  postgres_cliente_data:
+  postgres_evento_data:

@@ -9,9 +9,8 @@ import com.microServicioEvento.repository.EventoRepository;
 import com.microServicioEvento.repository.EventoParticipanteRepositoy;
 import com.microServicioEvento.repository.ParticipanteRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.query.Criteria;
-import org.springframework.data.mongodb.core.query.Query;
+import jakarta.persistence.criteria.Predicate;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -27,7 +26,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
-import java.util.regex.Pattern;
 import java.util.Map;
 import java.util.NoSuchElementException;
 
@@ -40,8 +38,6 @@ public class EventoService {
     private EventoParticipanteRepositoy eventoParticipanteRepository;
     @Autowired
     private ParticipanteRepository participanteRepository;
-    @Autowired
-    private MongoTemplate mongoTemplate;
     @Autowired
     private RestTemplate restTemplate;
 
@@ -124,14 +120,14 @@ public class EventoService {
         if ("FINALIZADO".equals(evento.getEstado())) {
             throw new IllegalStateException("No se puede cancelar un evento finalizado");
         }
-        // 1) Ticket espera que terminen las compras en curso y bloquea otras nuevas.
-        // Si Ticket no esta disponible NO se cambia el estado de Evento.
+        // 1) Ticket espera que terminen las compras en curso y bloquea otras nuevas
+        // Si Ticket no esta disponible NO se cambia el estado de Evento
         bloquearVentasAntesDeCancelar(id);
         if (!"CANCELADO".equals(evento.getEstado())) {
             evento.setEstado("CANCELADO");
             evento = eventoRepository.save(evento);
         }
-        // 2) Procesar pendientes. Repetir esta llamada no duplica reintegros.
+        // 2) Procesar pendientes & Repetir esta llamada no duplica reintegros
         procesarReintegrosCancelacion(id, idAdministrador);
         return evento;
     }
@@ -302,7 +298,6 @@ public class EventoService {
     }
 
     private void verificarAdministrador(String idAdministrador) {
-        // En Entrega 1 se identifica por parametro. La autenticacion JWT es de Entrega 2.
         if (vacio(idAdministrador)) {
             throw new IllegalArgumentException("Administrador no valido");
         }
@@ -343,22 +338,19 @@ public class EventoService {
     }
 
     /**
-     * Punto 9. Buscar solo eventos publicos y combinar todos los criterios.
-     * Los participantes se filtran por sus relaciones reales, no por descripcion.
+     * 9) Buscar solo eventos publicos y combinar todos los criterios
+     * Los participantes se filtran por sus relaciones reales, no por descripcion
      */
     public List<EventoBusquedaDTO> buscarEventos(BusquedaEventoFiltro filtro) {
         if (filtro == null) {
             filtro = new BusquedaEventoFiltro();
         }
         String orden = limpiar(filtro.getOrdenarPor());
-        if (orden == null) {
-            orden = "fecha";
-        }
+        if (orden == null) orden = "fecha";
         orden = orden.toLowerCase(Locale.ROOT);
         if (!Set.of("fecha", "precio", "relevancia").contains(orden)) {
             throw new IllegalArgumentException("ordenarPor debe ser fecha, precio o relevancia");
         }
-
         if ((filtro.getLat() == null) != (filtro.getLon() == null)) {
             throw new IllegalArgumentException("Se deben indicar lat y lon juntos");
         }
@@ -368,41 +360,19 @@ public class EventoService {
         if (desde != null && hasta != null && hasta.isBefore(desde)) {
             throw new IllegalArgumentException("fechaHasta no puede ser anterior a fechaDesde");
         }
-
         String texto = limpiar(filtro.getTexto());
-        if (texto == null) {
-            texto = limpiar(filtro.getQ());
-        }
-        List<Criteria> condiciones = new ArrayList<>();
-        condiciones.add(Criteria.where("estado").in("PUBLICADO", "AGOTADO"));
+        if (texto == null) texto = limpiar(filtro.getQ());
         String tipo = limpiar(filtro.getTipo());
-        if (tipo != null) {
-            condiciones.add(Criteria.where("tipo").regex("^" + Pattern.quote(tipo) + "$", "i"));
-        }
         String organizador = limpiar(filtro.getOrganizador());
-        if (organizador != null) {
-            condiciones.add(Criteria.where("organizador").regex(Pattern.quote(organizador), "i"));
-        }
         String participante = limpiar(filtro.getParticipante());
+
+        List<String> idsPorParticipante = null;
         if (participante != null) {
-            List<String> ids = idsEventosPorParticipante(participante);
-            if (ids.isEmpty()) {
-                return List.of();
-            }
-            condiciones.add(Criteria.where("_id").in(ids));
-        }
-        if (desde != null || hasta != null) {
-            Criteria fechas = Criteria.where("fechaHora");
-            if (desde != null) {
-                fechas.gte(desde.atStartOfDay().toString());
-            }
-            if (hasta != null) {
-                fechas.lt(hasta.plusDays(1).atStartOfDay().toString());
-            }
-            condiciones.add(fechas);
+            idsPorParticipante = idsEventosPorParticipante(participante);
+            if (idsPorParticipante.isEmpty()) return List.of();
         }
 
-        // Lugar es quien conoce las ciudades y las coordenadas.
+        // Lugar conoce las ciudades y coordenadas, se mantiene la consulta REST
         Set<Long> idsLugares = null;
         String ciudad = limpiar(filtro.getCiudad());
         if (ciudad != null) {
@@ -410,53 +380,53 @@ public class EventoService {
                     .queryParam("ciudad", ciudad).build().encode().toUri();
             Long[] ids = restTemplate.getForObject(url, Long[].class);
             idsLugares = new HashSet<>();
-            if (ids != null) {
-                idsLugares.addAll(List.of(ids));
-            }
+            if (ids != null) idsLugares.addAll(List.of(ids));
         }
         if (filtro.getLat() != null) {
             String url = UriComponentsBuilder.fromHttpUrl("http://localhost:8083/lugares/buscarPorUbicacion")
                     .queryParam("lat", filtro.getLat())
                     .queryParam("lon", filtro.getLon()).toUriString();
             Long[] ids = restTemplate.getForObject(url, Long[].class);
-            Set<Long> idsCoordenadas = new HashSet<>();
-            if (ids != null) {
-                idsCoordenadas.addAll(List.of(ids));
-            }
-            if (idsLugares == null) {
-                idsLugares = idsCoordenadas;
-            } else {
-                idsLugares.retainAll(idsCoordenadas);
-            }
+            Set<Long> encontrados = new HashSet<>();
+            if (ids != null) encontrados.addAll(List.of(ids));
+            if (idsLugares == null) idsLugares = encontrados;
+            else idsLugares.retainAll(encontrados);
         }
-        if (idsLugares != null) {
-            if (idsLugares.isEmpty()) {
-                return List.of();
-            }
-            condiciones.add(Criteria.where("idLugar").in(idsLugares));
-        }
+        if (idsLugares != null && idsLugares.isEmpty()) return List.of();
 
-        if (texto != null) {
-            String patron = Pattern.quote(texto);
-            List<Criteria> coincidencias = new ArrayList<>();
-            coincidencias.add(Criteria.where("nombre").regex(patron, "i"));
-            coincidencias.add(Criteria.where("descripcion").regex(patron, "i"));
-            coincidencias.add(Criteria.where("tipo").regex(patron, "i"));
-            coincidencias.add(Criteria.where("organizador").regex(patron, "i"));
-            List<String> idsTexto = idsEventosPorParticipante(texto);
-            if (!idsTexto.isEmpty()) {
-                coincidencias.add(Criteria.where("_id").in(idsTexto));
+        List<String> idsPorTextoParticipante = texto == null ? List.of() : idsEventosPorParticipante(texto);
+        final String textoFinal = texto;
+        final Set<Long> lugaresFinal = idsLugares;
+        final List<String> participantesFinal = idsPorParticipante;
+
+        // Migracion de MongoTemplate/Criteria a JPA Specification (solo dios y el creado de java entendio esto 👌)
+        Specification<EventoEntity> spec = (root, query, cb) -> {
+            List<Predicate> condiciones = new ArrayList<>();
+            condiciones.add(root.get("estado").in("PUBLICADO", "AGOTADO"));
+            if (tipo != null) condiciones.add(cb.equal(cb.lower(root.get("tipo")), tipo.toLowerCase(Locale.ROOT)));
+            if (organizador != null) condiciones.add(cb.like(cb.lower(root.get("organizador")),
+                    "%" + escaparLike(organizador.toLowerCase(Locale.ROOT)) + "%", '\\'));
+            if (participantesFinal != null) condiciones.add(root.get("id").in(participantesFinal));
+            if (desde != null) condiciones.add(cb.greaterThanOrEqualTo(root.<String>get("fechaHora"),
+                    desde.atStartOfDay().toString()));
+            if (hasta != null) condiciones.add(cb.lessThan(root.<String>get("fechaHora"),
+                    hasta.plusDays(1).atStartOfDay().toString()));
+            if (lugaresFinal != null) condiciones.add(root.get("idLugar").in(lugaresFinal));
+            if (textoFinal != null) {
+                String patron = "%" + escaparLike(textoFinal.toLowerCase(Locale.ROOT)) + "%";
+                List<Predicate> alternativas = new ArrayList<>();
+                alternativas.add(cb.like(cb.lower(root.get("nombre")), patron, '\\'));
+                alternativas.add(cb.like(cb.lower(root.get("descripcion")), patron, '\\'));
+                alternativas.add(cb.like(cb.lower(root.get("tipo")), patron, '\\'));
+                alternativas.add(cb.like(cb.lower(root.get("organizador")), patron, '\\'));
+                if (!idsPorTextoParticipante.isEmpty()) alternativas.add(root.get("id").in(idsPorTextoParticipante));
+                condiciones.add(cb.or(alternativas.toArray(new Predicate[0])));
             }
-            condiciones.add(new Criteria().orOperator(coincidencias.toArray(new Criteria[0])));
-        }
+            return cb.and(condiciones.toArray(new Predicate[0]));
+        };
+        List<EventoEntity> eventos = new ArrayList<>(eventoRepository.findAll(spec));
+        if (eventos.isEmpty()) return List.of();
 
-        Query consulta = new Query(new Criteria().andOperator(condiciones.toArray(new Criteria[0])));
-        List<EventoEntity> eventos = mongoTemplate.find(consulta, EventoEntity.class);
-        if (eventos.isEmpty()) {
-            return List.of();
-        }
-
-        // Una sola llamada REST y una sola consulta SQL para todos los precios.
         List<String> idsEventos = eventos.stream().map(EventoEntity::getId).toList();
         Map<String, Double> precios = obtenerPreciosMinimos(idsEventos);
         Comparator<EventoEntity> porFecha = Comparator
@@ -464,10 +434,8 @@ public class EventoService {
                 .thenComparing(EventoEntity::getId);
 
         if ("precio".equals(orden)) {
-            eventos.sort(Comparator
-                    .comparing((EventoEntity e) -> precios.get(e.getId()),
-                            Comparator.nullsLast(Double::compareTo))
-                    .thenComparing(porFecha));
+            eventos.sort(Comparator.comparing((EventoEntity e) -> precios.get(e.getId()),
+                    Comparator.nullsLast(Double::compareTo)).thenComparing(porFecha));
         } else if ("relevancia".equals(orden) && texto != null) {
             final String busqueda = texto;
             Map<String, List<String>> nombres = nombresParticipantesPorEvento(idsEventos);
@@ -475,15 +443,17 @@ public class EventoService {
                     (EventoEntity e) -> -puntajeRelevancia(e, busqueda, nombres.get(e.getId())))
                     .thenComparing(porFecha));
         } else {
-            // Sin texto libre, todos los filtros obligatorios pesan lo mismo.
             eventos.sort(porFecha);
         }
-
         List<EventoBusquedaDTO> resultado = new ArrayList<>();
         for (EventoEntity evento : eventos) {
             resultado.add(new EventoBusquedaDTO(evento, precios.get(evento.getId())));
         }
         return resultado;
+    }
+
+    private String escaparLike(String valor) {
+        return valor.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
     }
 
     private String limpiar(String valor) {
@@ -545,7 +515,7 @@ public class EventoService {
         return nombresPorEvento;
     }
 
-    // Relevancia sencilla y determinista. Pesa mas el titulo que la descripcion.
+    // Relevancia sencilla y determinista, pesa mas el titulo que la descripcion
     private int puntajeRelevancia(EventoEntity evento, String texto, List<String> participantes) {
         String buscado = texto.toLowerCase(Locale.ROOT);
         int puntos = 0;
