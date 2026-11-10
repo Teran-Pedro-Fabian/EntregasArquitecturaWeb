@@ -29,7 +29,7 @@ public class CancelacionEventoController {
         }
     }
 
-    /** Llamado por Evento luego de registrar CANCELADO en MongoDB. */
+    /** Llamado por Evento luego de registrar CANCELADO en PostgreSQL */
     @PostMapping("/interno/eventos/{idEvento}/procesar-cancelacion")
     public ResponseEntity<?> procesar(@PathVariable String idEvento,
                                       @RequestParam String idAdministrador) {
@@ -42,13 +42,13 @@ public class CancelacionEventoController {
         }
     }
 
-    /** Consultar cuantas entradas siguen pendientes de reintegro. */
+    /** Consultar cuantas entradas siguen pendientes de reintegro */
     @GetMapping("/eventos/{idEvento}/estado-cancelacion")
     public ResponseEntity<Map<String, Object>> estado(@PathVariable String idEvento) {
         return ResponseEntity.ok(cancelacionService.consultar(idEvento));
     }
 
-    /** Avisos persistidos para que cada comprador consulte cancelaciones. */
+    /** Avisos persistidos en Ticket, la bandeja activa esta en Cliente */
     @GetMapping("/avisos-cancelacion")
     public ResponseEntity<List<AvisoCancelacionEntity>> avisos(@RequestParam String idCliente) {
         return ResponseEntity.ok(avisoService.listarPorCliente(idCliente));

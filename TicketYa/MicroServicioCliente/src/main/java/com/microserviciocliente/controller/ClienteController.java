@@ -3,6 +3,10 @@ package com.microserviciocliente.controller;
 
 import com.microserviciocliente.entity.ClienteEntity;
 import com.microserviciocliente.entity.PreferenciasEntity;
+import com.microserviciocliente.entity.NotificacionEntity;
+import com.microserviciocliente.dto.NotificacionCancelacionRequest;
+import com.microserviciocliente.servise.NotificacionService;
+import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,6 +23,9 @@ public class ClienteController {
 
     @Autowired
     private PreferenciasService preferenciasService;
+
+    @Autowired
+    private NotificacionService notificacionService;
 
     // ENDPOINT: Crear un cliente
     // POST http://localhost:8081/clientes
@@ -47,5 +54,21 @@ public class ClienteController {
         } else {
             return ResponseEntity.notFound().build(); // 404 Not Found
         }
+    }
+    // Ticket envia este aviso cuando cancela un evento
+    // No se utiliza email ni push aun
+    @PostMapping("/interno/notificaciones/cancelacion")
+    public ResponseEntity<?> recibirCancelacion(@RequestBody NotificacionCancelacionRequest datos) {
+        try {
+            return ResponseEntity.ok(notificacionService.recibirCancelacion(datos));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    // Bandeja de notificaciones que consulta el comprador desde el Gateway.
+    @GetMapping("/{id}/notificaciones")
+    public ResponseEntity<List<NotificacionEntity>> consultarNotificaciones(@PathVariable String id) {
+        return ResponseEntity.ok(notificacionService.listarPorCliente(id));
     }
 }

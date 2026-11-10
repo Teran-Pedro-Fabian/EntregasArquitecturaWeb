@@ -2,6 +2,7 @@ import com.microservicioticket.Repository.CompraRepository;
 import com.microservicioticket.Repository.TicketRepository;
 import com.microservicioticket.entity.TicketEntity;
 import com.microservicioticket.service.AvisoCancelacionService;
+import com.microservicioticket.service.EntregaAvisoService;
 import com.microservicioticket.service.CancelacionEventoService;
 import com.microservicioticket.service.TicketService;
 import org.junit.jupiter.api.Test;
@@ -22,6 +23,7 @@ class CancelacionEventoServiceTest {
     @Mock private CompraRepository compraRepository;
     @Mock private TicketService ticketService;
     @Mock private AvisoCancelacionService avisoCancelacionService;
+    @Mock private EntregaAvisoService entregaAvisoService;
     @Mock private RestTemplate restTemplate;
     @InjectMocks private CancelacionEventoService service;
 
@@ -59,6 +61,7 @@ class CancelacionEventoServiceTest {
         when(ticketRepository.findByIdEventoOrderByIdAsc("evento-1")).thenReturn(tickets);
         service.procesar("evento-1","admin");
         verify(avisoCancelacionService,times(1)).registrar("evento-1","cliente-1");
+        verify(entregaAvisoService,times(1)).entregar("evento-1","cliente-1");
         verifyNoInteractions(ticketService);
     }
 
@@ -73,5 +76,6 @@ class CancelacionEventoServiceTest {
         verify(ticketService).procesarReintegro(10L);
         verify(ticketService).finalizarDevolucion(10L);
         verify(avisoCancelacionService).registrar("evento-1","cliente-1");
+        verify(entregaAvisoService).entregar("evento-1","cliente-1");
     }
 }
