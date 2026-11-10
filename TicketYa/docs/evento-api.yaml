@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: TicketYa - MicroServicioEvento
   version: 1.0.0
-  description: 'Creacion, publicacion, administracion y busqueda de eventos
+  description: 'Creacion, publicacion, administracion y busqueda de eventos'
 
 servers:
 - url: http://localhost:8080
