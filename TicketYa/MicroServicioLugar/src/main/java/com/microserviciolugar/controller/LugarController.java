@@ -41,9 +41,32 @@ public class LugarController {
     // --- GESTIÓN DE SECTORES ---
 
     @PostMapping("/sectores")
-    public ResponseEntity<SectorEntity> crearSector(@RequestBody SectorEntity sector) {
-        SectorEntity nuevoSector = lugarService.guardarSector(sector);
-        return new ResponseEntity<>(nuevoSector, HttpStatus.CREATED);
+    public ResponseEntity<?> crearSector(@RequestBody SectorEntity sector) {
+        try {
+            SectorEntity nuevoSector = lugarService.guardarSector(sector);
+            return ResponseEntity.status(HttpStatus.CREATED).body(nuevoSector);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    /**
+     * Devolver el precio oficial del sector para una compra
+     */
+    @GetMapping("/interno/sectores/{idSector}/precio")
+    public ResponseEntity<?> obtenerPrecioSector(
+            @PathVariable Long idSector, @RequestParam String idEvento) {
+        try {
+            Double precio = lugarService.obtenerPrecioSector(idSector, idEvento);
+            return ResponseEntity.ok(Map.of(
+                    "idSector", idSector,
+                    "idEvento", idEvento,
+                    "precio", precio));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
+        }
     }
 
     // --- EL CORAZÓN DEL SISTEMA: RESERVAS Y ASIENTOS ---

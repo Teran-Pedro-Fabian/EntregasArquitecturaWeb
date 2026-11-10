@@ -30,6 +30,7 @@ public class TicketService {
      * @param ticket datos del ticket
      * @return ticket emitido
      */
+    @Transactional
     public TicketEntity emitirTicket(TicketEntity ticket) {
         // 1) Verificar los datos obligatorios
         if (ticket.getIdAsiento() == null ||
@@ -56,12 +57,39 @@ public class TicketService {
                 datosReserva,
                 String.class
         );
-        // 4) Generar el codigo QR
+        // Procesar el pago simulado
+        boolean pagoAprobado = pagoMockService.procesarPago(ticket.getIdCliente(), ticket.getPrecio());
+        // Verificar que el pago fue aprobado
+        if (!pagoAprobado) {
+            throw new IllegalStateException("El pago fue rechazado");
+        }
+        // 6) Generar el codigo QR
         String codigoQR = "TICKETYA-" + UUID.randomUUID().toString().toUpperCase();
+        // 7) Preparar el ticket
         ticket.setId(null);
         ticket.setQrCode(codigoQR);
-        // 5) Guardar el ticket en PostgreSQL
-        return ticketRepository.save(ticket);
+        ticket.setEstadoDevolucion("SIN_SOLICITUD");
+        ticket.setUsado(false);
+        ticket.setIdAdministradorRevision(null);
+        ticket.setFechaRevision(null);
+        // 8) Guardar el ticket en PostgreSQL
+        TicketEntity ticketGuardado = ticketRepository.saveAndFlush(ticket);
+        // 9) Preparar los datos para confirmar la venta
+        Map<String, Object> datosVenta = Map.of(
+                "idAsiento", ticketGuardado.getIdAsiento(),
+                "idCliente", ticketGuardado.getIdCliente(),
+                "idTicket", ticketGuardado.getId()
+        );
+        // 10) Confirmar la venta en MicroServicioLugar
+        String urlConfirmacion = "http://localhost:8083/lugares/asiento/confirmar";
+
+        restTemplate.postForEntity(
+                urlConfirmacion,
+                datosVenta,
+                String.class
+        );
+        // 11) Devolver el ticket emitido
+        return ticketGuardado;
     }
 
     public TicketEntity obtenerTicket(Long id) {
@@ -194,16 +222,18 @@ public class TicketService {
         if (!"REINTEGRADA_PENDIENTE_LIBERACION".equals(ticket.getEstadoDevolucion())) {
             throw new RuntimeException("El ticket no tiene un reintegro procesado");
         }
-        // 4) Verificar que tenga un asiento numerado
-        if (ticket.getIdAsiento() == null) {
-            throw new RuntimeException("La devolucion de sectores no numerados esta pendiente");
+        // 4) Liberar el asiento numerado o un cupo de Campo General
+        String urlLugar;
+        if (ticket.getIdAsiento() != null) {
+            urlLugar = "http://localhost:8083/lugares/interno/asientos/"
+                    + ticket.getIdAsiento() + "/liberar-venta?idTicket=" + ticket.getId();
+        } else if (ticket.getIdReservaGeneral() != null && ticket.getIdSector() != null) {
+            urlLugar = "http://localhost:8083/lugares/interno/sectores/generales/"
+                    + ticket.getIdSector() + "/liberar-venta?idTicket=" + ticket.getId();
+        } else {
+            throw new RuntimeException("El ticket no tiene un asiento ni una reserva general");
         }
-        // 5) Preparar la comunicacion con MicroServicioLugar
-        String urlLugar = "http://localhost:8083/lugares/interno/asientos/"
-                + ticket.getIdAsiento()
-                + "/liberar-venta?idTicket="
-                + ticket.getId();
-        // 6) Solicitar la liberacion del asiento vendido
+        // 5) Solicitar la liberacion en Lugar
         restTemplate.postForEntity(urlLugar, null, String.class);
         // 7) Registrar la devolucion finalizada
         ticket.setEstadoDevolucion("DEVUELTA");

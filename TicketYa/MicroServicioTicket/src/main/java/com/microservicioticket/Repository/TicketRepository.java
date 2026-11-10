@@ -8,8 +8,21 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.Optional;
+import java.util.List;
 
 public interface TicketRepository extends JpaRepository<TicketEntity, Long> {
+
+    List<TicketEntity> findByIdCompra(Long idCompra);
+
+    /**
+     * Contar tickets activos de un cliente en un evento
+     * Las devoluciones completadas no ocupan el limite
+     */
+    @Query("SELECT COUNT(t) FROM TicketEntity t " +
+            "WHERE t.idCliente = :idCliente AND t.idEvento = :idEvento " +
+            "AND (t.estadoDevolucion IS NULL OR t.estadoDevolucion <> 'DEVUELTA')")
+    long contarActivos(@Param("idCliente") String idCliente,
+                       @Param("idEvento") String idEvento);
 
     /**
      * Buscar un ticket y bloquearlo mientras se revisa

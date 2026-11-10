@@ -9,9 +9,14 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
+import java.util.List;
+import java.time.Instant;
 
 @Repository
 public interface AsientoRepository extends JpaRepository<AsientoEntity, Long> {
+
+    List<AsientoEntity> findTop100ByEstadoAndReservaHastaBeforeOrderByReservaHastaAsc(
+            String estado, Instant fecha);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT a FROM AsientoEntity a WHERE a.id = :id")

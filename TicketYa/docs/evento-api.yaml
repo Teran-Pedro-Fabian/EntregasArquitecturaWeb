@@ -1,0 +1,172 @@
+openapi: 3.0.0
+info:
+  title: TicketYa - MicroServicioEvento
+  description: API para la gestión del catálogo de eventos y sus estados.
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8082
+    description: Servidor de Desarrollo Local
+
+paths:
+  /evento:
+    post:
+      summary: Crea Evento en estado BORRADOR
+      description: Registra un nuevo evento en la base de datos con estado inicial BORRADOR.
+      operationId: crearEvento
+      tags:
+        - Eventos
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EventoRequest'
+      responses:
+        '201':
+          description: Evento creado exitosamente.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventoEstadoResponse'
+        '400':
+          description: Error en la solicitud.
+
+    get:
+      summary: busca Eventos
+      description: Retorna la lista de eventos registrados.
+      operationId: buscarEventos
+      tags:
+        - Eventos
+      responses:
+        '200':
+          description: Lista de eventos obtenida exitosamente.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EventoFull'
+
+  /evento/{id}/estado:
+    put:
+      summary: cambia estado
+      description: Modifica el estado actual del evento (de BORRADOR a PUBLICADO).
+      operationId: cambiarEstado
+      tags:
+        - Eventos
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID del evento.
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EstadoRequest'
+      responses:
+        '200':
+          description: Estado actualizado correctamente.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventoEstadoResponse'
+        '400':
+          description: Error en la solicitud.
+        '404':
+          description: Evento no encontrado.
+
+  /evento/{id}:
+    get:
+      summary: datalle completo del evento del evento
+      description: Retorna toda la información detallada de un evento específico.
+      operationId: obtenerEvento
+      tags:
+        - Eventos
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID del evento.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Detalle del evento obtenido exitosamente.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventoFull'
+        '404':
+          description: Evento no encontrado.
+
+  /eveto/buscar:
+    get:
+      summary: Busqueda por parametros
+      description: Busca eventos filtrando por diversos criterios.
+      operationId: buscarPorParametros
+      tags:
+        - Eventos
+      responses:
+        '202':
+          description: Solicitud aceptada. Retorna lista de eventos o lista vacía.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EventoFull'
+
+components:
+  schemas:
+    EventoRequest:
+      type: object
+      properties:
+        Nombre:
+          type: string
+        Recital:
+          type: string
+        Tipo:
+          type: string
+        idLugar:
+          type: integer
+        FechaHora:
+          type: string
+
+    EventoEstadoResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        estado:
+          type: string
+
+    EstadoRequest:
+      type: object
+      properties:
+        Estado:
+          type: string
+
+    EventoFull:
+      type: object
+      properties:
+        id:
+          type: string
+        nombre:
+          type: string
+        descripcion:
+          type: string
+        tipo:
+          type: string
+        organizador:
+          type: string
+        fechaHora:
+          type: string
+        idLugar:
+          type: integer
+        estado:
+          type: string

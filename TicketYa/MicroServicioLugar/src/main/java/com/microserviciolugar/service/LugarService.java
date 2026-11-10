@@ -158,6 +158,56 @@ public class LugarService {
         redisTemplate.delete("reserva:asiento:" + idAsiento);
     }
 
+    /**
+     * Obtener el precio oficial para un sector de un evento
+     * No confiar en el precio que informa el cliente
+     */
+    public Double obtenerPrecioSector(Long idSector, String idEvento) {
+        if (idSector == null || idEvento == null || idEvento.isBlank()) {
+            throw new IllegalArgumentException("Sector o evento no valido");
+        }
+        SectorEntity sector = sectorRepository.findById(idSector)
+                .orElseThrow(() -> new IllegalArgumentException("Sector no encontrado"));
+        if (!idEvento.equals(sector.getIdEvento())) {
+            throw new IllegalArgumentException("El sector no corresponde al evento");
+        }
+        if (sector.getPrecio() == null || sector.getPrecio() <= 0) {
+            throw new IllegalStateException("El sector no tiene un precio valido");
+        }
+        return sector.getPrecio();
+    }
+
+    /**
+     * Liberar reservas que vencieron
+     * Se ejecuta periodicamente y vuelve a comprobar el estado con bloqueo
+     */
+    @org.springframework.scheduling.annotation.Scheduled(
+            fixedDelayString = "${ticketya.reservas.limpieza-ms:30000}",
+            initialDelayString = "${ticketya.reservas.limpieza-ms:30000}")
+    @Transactional
+    public void liberarReservasVencidas() {
+        List<AsientoEntity> vencidos = asientoRepository
+                .findTop100ByEstadoAndReservaHastaBeforeOrderByReservaHastaAsc(
+                        "RESERVADO", Instant.now());
+
+        for (AsientoEntity anterior : vencidos) {
+            AsientoEntity asiento = asientoRepository.findByIdWithLugar(anterior.getId())
+                    .orElse(null);
+            if (asiento == null) {
+                continue;
+            }
+            if ("RESERVADO".equals(asiento.getEstado()) &&
+                    asiento.getReservaHasta() != null &&
+                    !asiento.getReservaHasta().isAfter(Instant.now())) {
+                asiento.setEstado("DISPONIBLE");
+                asiento.setIdClienteReserva(null);
+                asiento.setReservaHasta(null);
+                asientoRepository.save(asiento);
+                redisTemplate.delete("reserva:asiento:" + asiento.getId());
+            }
+        }
+    }
+
     public LugarEntity guardarLugar(LugarEntity lugar) {
         return lugarRepository.save(lugar); // Necesitas crear LugarRepository
     }
@@ -167,7 +217,30 @@ public class LugarService {
     }
 
     public SectorEntity guardarSector(SectorEntity sector) {
-        return sectorRepository.save(sector); // Necesitas crear SectorRepository
+        if (sector == null) {
+            throw new IllegalArgumentException("Sector no valido");
+        }
+        if (sector.getTipo() == null || sector.getTipo().isBlank()) {
+            sector.setTipo("NUMERADO");
+        }
+        sector.setTipo(sector.getTipo().toUpperCase());
+        if (!"NUMERADO".equals(sector.getTipo()) && !"NO_NUMERADO".equals(sector.getTipo())) {
+            throw new IllegalArgumentException("Tipo de sector no valido");
+        }
+        // Este endpoint crea sectores nuevos, no modifica cupos de sectores existentes
+        if (sector.getId() != null) {
+            throw new IllegalArgumentException("No se permiten modificaciones de sectores desde POST");
+        }
+        if ("NO_NUMERADO".equals(sector.getTipo())) {
+            if (sector.getCupos() == null || sector.getCupos() <= 0 ||
+                    sector.getPrecio() == null || sector.getPrecio() <= 0 ||
+                    sector.getIdEvento() == null || sector.getIdEvento().isBlank()) {
+                throw new IllegalArgumentException("El sector general requiere cupos, precio y evento");
+            }
+            sector.setCuposReservados(0);
+            sector.setCuposVendidos(0);
+        }
+        return sectorRepository.save(sector);
     }
 
     /**
@@ -188,7 +261,11 @@ public class LugarService {
         }
         // 2) Buscar el sector
         SectorEntity sector = sectorRepository.findById(idSector).orElseThrow(() -> new RuntimeException("Sector no encontrado"));
-        // 3) Crear el asiento
+        // 3) No se crean asientos en sectores generales
+        if ("NO_NUMERADO".equals(sector.getTipo())) {
+            throw new RuntimeException("Un sector no numerado no tiene asientos individuales");
+        }
+        // 4) Crear el asiento
         AsientoEntity asiento = new AsientoEntity();
         asiento.setSector(sector);
         asiento.setFila(fila);

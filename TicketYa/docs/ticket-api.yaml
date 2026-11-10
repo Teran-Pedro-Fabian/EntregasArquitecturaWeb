@@ -1,0 +1,134 @@
+openapi: 3.0.0
+info:
+  title: TicketYa - MicroServicioTicket
+  description: API para la emisión de tickets, generación de códigos QR y gestión de devoluciones.
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8084
+    description: Servidor de Desarrollo Local
+
+paths:
+  /ticket/Emitir:
+    post:
+      summary: crea el ticket y genera qr
+      description: Procesa la compra final, genera un código QR único y guarda el ticket en la base de datos.
+      operationId: emitirTicket
+      tags:
+        - Tickets
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TicketRequest'
+      responses:
+        '201':
+          description: Ticket emitido exitosamente.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TicketEmitidoResponse'
+        '400':
+          description: Error en la solicitud o datos inválidos.
+
+  /ticket/{id}:
+    get:
+      summary: cosulta datos del ticket
+      description: Retorna la información completa de un ticket mediante su ID.
+      operationId: obtenerTicket
+      tags:
+        - Tickets
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID del ticket.
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Datos del ticket obtenidos exitosamente.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TicketFull'
+        '404':
+          description: El ticket no existe.
+
+  /Ticket/{id}/devolver:
+    delete:
+      summary: devuelve y elimina el ticket
+      description: Valida que falten más de 72hs para el evento, libera el asiento y elimina el ticket.
+      operationId: devolverTicket
+      tags:
+        - Tickets
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID del ticket a devolver.
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Ticket eliminado exitosamente.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  mensaje:
+                    type: string
+                    example: "ticket eliminado"
+        '400':
+          description: No se puede devolver el ticket (Faltan < 72h para el evento).
+        '404':
+          description: El ticket no existe.
+
+components:
+  schemas:
+    TicketRequest:
+      type: object
+      properties:
+        idCliente:
+          type: string
+          example: "65f1a2b3c4d5e6f7g8h9i0"
+        idEvento:
+          type: integer
+          example: 1
+        idSector:
+          type: integer
+          example: 5
+        idAsiento:
+          type: integer
+          example: 12
+        precio:
+          type: number
+          example: 5000.0
+
+    TicketEmitidoResponse:
+      type: object
+      properties:
+        idTicket:
+          type: integer
+          example: 100
+        CodigoQR:
+          type: string
+          example: "TICKETYA-A1B2C3D4E5"
+
+    TicketFull:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 100
+        idCliente:
+          type: string
+        idEvento:
+          type: integer
+        idSector:
+          type: integer
+        idAsiento:
+          type: integer
+        precio:
