@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: TicketYa - MicroServicioCliente
   version: 1.0.0
-  description: 'Registro de clientes, preferencias y avisos internos por cancelacion
+  description: 'Registro de clientes, preferencias y avisos internos por cancelacion'
 
 servers:
 - url: http://localhost:8080
