@@ -1,9 +1,11 @@
+
 package com.segundaentrega.Entitys;
 
+import jakarta.persistence.EmbeddedId;
 import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.MapsId;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -18,20 +20,20 @@ import lombok.Setter;
 @NoArgsConstructor
 public class EstudianteCarrera {
 
-    @Id
-    private int id;
+    @EmbeddedId
+    private EstudianteCarreraId id;
 
     @ManyToOne
+    @MapsId("idEstudiante")
     @JoinColumn(name = "id_estudiante")
     private EstudianteEntity estudiante;
 
     @ManyToOne
+    @MapsId("idCarrera")
     @JoinColumn(name = "id_carrera")
     private CarreraEntity carrera;
 
     private int inscripcion;
-
     private int graduacion;
-
     private int antiguedad;
 }

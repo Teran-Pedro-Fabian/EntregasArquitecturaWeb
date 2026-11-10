@@ -1,0 +1,1405 @@
+{
+  "info": {
+    "name": "TP3 ArqWeb - Integrador - PK Compuesta",
+    "description": "Coleccion adaptada al modelo EstudianteCarrera con PK compuesta (DNI, idCarrera). Ejecutar secuencialmente en base inicial cargada desde los CSV: 104 estudiantes, 15 carreras y 108 matriculas. Las pruebas de alta utilizan DNI 40123456, ausente de los CSV. Los tests de matriculas por ID numerico fueron sustituidos por DNI e ID de carrera.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    }
+  ],
+  "item": [
+    {
+      "name": "2a - Alta de estudiante",
+      "description": "",
+      "item": [
+        {
+          "name": "Alta estudiante",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 201\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/Estudiante",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "Estudiante"
+              ]
+            },
+            "description": "Resultado esperado: 201",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"dni\": 40123456,\n  \"nombre\": \"Prueba\",\n  \"apellido\": \"Integrador\",\n  \"edad\": 22,\n  \"genero\": \"Masculino\",\n  \"ciudad\": \"Tandil\",\n  \"lu\": 999999\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "DNI duplicado",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 409\", function () {",
+                  "    pm.response.to.have.status(409);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/Estudiante",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "Estudiante"
+              ]
+            },
+            "description": "Resultado esperado: 409",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"dni\": 40123456,\n  \"nombre\": \"Prueba\",\n  \"apellido\": \"Integrador\",\n  \"edad\": 22,\n  \"genero\": \"Masculino\",\n  \"ciudad\": \"Tandil\",\n  \"lu\": 999997\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "LU duplicada",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 409\", function () {",
+                  "    pm.response.to.have.status(409);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/Estudiante",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "Estudiante"
+              ]
+            },
+            "description": "Resultado esperado: 409",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"dni\": 40123458,\n  \"nombre\": \"Prueba\",\n  \"apellido\": \"Integrador\",\n  \"edad\": 22,\n  \"genero\": \"Masculino\",\n  \"ciudad\": \"Tandil\",\n  \"lu\": 999999\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2b - Matricular estudiante en carrera",
+      "description": "",
+      "item": [
+        {
+          "name": "Matricular",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 201\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/EstudianteCarrera",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "EstudianteCarrera"
+              ]
+            },
+            "description": "Resultado esperado: 201",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": {\n    \"idEstudiante\": 40123456,\n    \"idCarrera\": 1\n  },\n  \"estudiante\": {\n    \"dni\": 40123456\n  },\n  \"carrera\": {\n    \"id\": 1\n  },\n  \"inscripcion\": 2026,\n  \"graduacion\": 0,\n  \"antiguedad\": 0\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Inscripcion duplicada (misma carrera)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 409\", function () {",
+                  "    pm.response.to.have.status(409);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/EstudianteCarrera",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "EstudianteCarrera"
+              ]
+            },
+            "description": "Resultado esperado: 409",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": {\n    \"idEstudiante\": 40123456,\n    \"idCarrera\": 1\n  },\n  \"estudiante\": {\n    \"dni\": 40123456\n  },\n  \"carrera\": {\n    \"id\": 1\n  },\n  \"inscripcion\": 2026,\n  \"graduacion\": 0,\n  \"antiguedad\": 0\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Mismo estudiante en otra carrera (permitido)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 201\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/EstudianteCarrera",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "EstudianteCarrera"
+              ]
+            },
+            "description": "Resultado esperado: 201. La clave es (DNI, carrera); no existe ID individual de matricula.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": {\n    \"idEstudiante\": 40123456,\n    \"idCarrera\": 15\n  },\n  \"estudiante\": {\n    \"dni\": 40123456\n  },\n  \"carrera\": {\n    \"id\": 15\n  },\n  \"inscripcion\": 2026,\n  \"graduacion\": 0,\n  \"antiguedad\": 0\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Estudiante inexistente",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 404\", function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/EstudianteCarrera",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "EstudianteCarrera"
+              ]
+            },
+            "description": "Resultado esperado: 404",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": {\n    \"idEstudiante\": 99999999,\n    \"idCarrera\": 15\n  },\n  \"estudiante\": {\n    \"dni\": 99999999\n  },\n  \"carrera\": {\n    \"id\": 15\n  },\n  \"inscripcion\": 2026,\n  \"graduacion\": 0,\n  \"antiguedad\": 0\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Carrera inexistente",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 404\", function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/EstudianteCarrera",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "EstudianteCarrera"
+              ]
+            },
+            "description": "Resultado esperado: 404",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": {\n    \"idEstudiante\": 40123456,\n    \"idCarrera\": 999999\n  },\n  \"estudiante\": {\n    \"dni\": 40123456\n  },\n  \"carrera\": {\n    \"id\": 999999\n  },\n  \"inscripcion\": 2026,\n  \"graduacion\": 0,\n  \"antiguedad\": 0\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Sin carrera",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 400\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/EstudianteCarrera",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "EstudianteCarrera"
+              ]
+            },
+            "description": "Resultado esperado: 400",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": {\n    \"idEstudiante\": 40123456,\n    \"idCarrera\": 1\n  },\n  \"estudiante\": {\n    \"dni\": 40123456\n  },\n  \"inscripcion\": 2026,\n  \"graduacion\": 0,\n  \"antiguedad\": 0\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Sin estudiante",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 400\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/EstudianteCarrera",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "EstudianteCarrera"
+              ]
+            },
+            "description": "Resultado esperado: 400",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": {\n    \"idEstudiante\": 40123456,\n    \"idCarrera\": 1\n  },\n  \"carrera\": {\n    \"id\": 1\n  },\n  \"inscripcion\": 2026,\n  \"graduacion\": 0,\n  \"antiguedad\": 0\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Inscripcion 0",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 400\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/EstudianteCarrera",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "EstudianteCarrera"
+              ]
+            },
+            "description": "Resultado esperado: 400",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": {\n    \"idEstudiante\": 40123456,\n    \"idCarrera\": 2\n  },\n  \"estudiante\": {\n    \"dni\": 40123456\n  },\n  \"carrera\": {\n    \"id\": 2\n  },\n  \"inscripcion\": 0,\n  \"graduacion\": 0,\n  \"antiguedad\": 0\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2c - Estudiantes ordenados",
+      "description": "",
+      "item": [
+        {
+          "name": "Todos los estudiantes ordenados por DNI",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/Estudiante",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "Estudiante"
+              ]
+            },
+            "description": "Resultado esperado: 200"
+          }
+        }
+      ]
+    },
+    {
+      "name": "2d - Estudiante por LU",
+      "description": "",
+      "item": [
+        {
+          "name": "LU existente",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/Estudiante/libreta/72976",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "Estudiante",
+                "libreta",
+                "72976"
+              ]
+            },
+            "description": "Resultado esperado: 200"
+          }
+        },
+        {
+          "name": "LU inexistente",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 404\", function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/Estudiante/libreta/99999999",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "Estudiante",
+                "libreta",
+                "99999999"
+              ]
+            },
+            "description": "Resultado esperado: 404"
+          }
+        }
+      ]
+    },
+    {
+      "name": "2e - Estudiantes por genero",
+      "description": "",
+      "item": [
+        {
+          "name": "Genero Male",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/Estudiante/genero/Male",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "Estudiante",
+                "genero",
+                "Male"
+              ]
+            },
+            "description": "Resultado esperado: 200"
+          }
+        },
+        {
+          "name": "Genero Female",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/Estudiante/genero/Female",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "Estudiante",
+                "genero",
+                "Female"
+              ]
+            },
+            "description": "Resultado esperado: 200"
+          }
+        }
+      ]
+    },
+    {
+      "name": "2f - Carreras ordenadas por inscriptos",
+      "description": "",
+      "item": [
+        {
+          "name": "Carreras con inscriptos",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/Carrera/inscriptos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "Carrera",
+                "inscriptos"
+              ]
+            },
+            "description": "Carreras con estudiantes inscriptos y su cantidad, de mayor a menor."
+          }
+        },
+        {
+          "name": "Todas las carreras",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/Carrera",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "Carrera"
+              ]
+            },
+            "description": "Resultado esperado: 200"
+          }
+        },
+        {
+          "name": "Carrera por ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/Carrera/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "Carrera",
+                "1"
+              ]
+            },
+            "description": "Resultado esperado: 200"
+          }
+        },
+        {
+          "name": "Carrera inexistente",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 404\", function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/Carrera/999999",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "Carrera",
+                "999999"
+              ]
+            },
+            "description": "Resultado esperado: 404"
+          }
+        }
+      ]
+    },
+    {
+      "name": "2g - Estudiantes de una carrera por ciudad",
+      "description": "",
+      "item": [
+        {
+          "name": "TUDAI en Rauch",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/EstudianteCarrera/FiltradoPorCarreraYCiudad/1/Rauch",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "EstudianteCarrera",
+                "FiltradoPorCarreraYCiudad",
+                "1",
+                "Rauch"
+              ]
+            },
+            "description": "Devuelve 4 estudiantes."
+          }
+        },
+        {
+          "name": "Ciudad sin estudiantes",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/EstudianteCarrera/FiltradoPorCarreraYCiudad/1/CiudadInexistente",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "EstudianteCarrera",
+                "FiltradoPorCarreraYCiudad",
+                "1",
+                "CiudadInexistente"
+              ]
+            },
+            "description": "Devuelve una lista vacia."
+          }
+        }
+      ]
+    },
+    {
+      "name": "2h - Reporte anual de carreras",
+      "description": "",
+      "item": [
+        {
+          "name": "Reporte anual",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/EstudianteCarrera/ReporteAnual",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "EstudianteCarrera",
+                "ReporteAnual"
+              ]
+            },
+            "description": "Inscriptos y egresados por carrera y anio. Carreras en orden alfabetico, anios en orden cronologico."
+          }
+        }
+      ]
+    },
+    {
+      "name": "CRUD EstudianteCarrera",
+      "description": "",
+      "item": [
+        {
+          "name": "Listar matriculas",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/EstudianteCarrera",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "EstudianteCarrera"
+              ]
+            },
+            "description": "Resultado esperado: 200"
+          }
+        },
+        {
+          "name": "Buscar matricula",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/EstudianteCarrera/40123456/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "EstudianteCarrera",
+                "40123456",
+                "1"
+              ]
+            },
+            "description": "Resultado esperado: 200"
+          }
+        },
+        {
+          "name": "Buscar matricula inexistente",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 404\", function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/EstudianteCarrera/99999999/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "EstudianteCarrera",
+                "99999999",
+                "1"
+              ]
+            },
+            "description": "Resultado esperado: 404"
+          }
+        },
+        {
+          "name": "Actualizar matricula",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/EstudianteCarrera/40123456/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "EstudianteCarrera",
+                "40123456",
+                "1"
+              ]
+            },
+            "description": "Resultado esperado: 200",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"inscripcion\": 2026,\n  \"graduacion\": 0,\n  \"antiguedad\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Actualizar con graduacion < inscripcion",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 400\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/EstudianteCarrera/40123456/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "EstudianteCarrera",
+                "40123456",
+                "1"
+              ]
+            },
+            "description": "Resultado esperado: 400",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"inscripcion\": 2026,\n  \"graduacion\": 2020,\n  \"antiguedad\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Actualizar matricula inexistente",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 404\", function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/EstudianteCarrera/99999999/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "EstudianteCarrera",
+                "99999999",
+                "1"
+              ]
+            },
+            "description": "Resultado esperado: 404",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"inscripcion\": 2017,\n  \"graduacion\": 2022,\n  \"antiguedad\": 5\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Eliminar matricula",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 204\", function () {",
+                  "    pm.response.to.have.status(204);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/EstudianteCarrera/40123456/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "EstudianteCarrera",
+                "40123456",
+                "1"
+              ]
+            },
+            "description": "Resultado esperado: 204"
+          }
+        },
+        {
+          "name": "Eliminar matricula inexistente",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 404\", function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/EstudianteCarrera/40123456/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "EstudianteCarrera",
+                "40123456",
+                "1"
+              ]
+            },
+            "description": "Resultado esperado: 404"
+          }
+        },
+        {
+          "name": "Eliminar matricula de segunda carrera (limpieza)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 204\", function () {",
+                  "    pm.response.to.have.status(204);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/EstudianteCarrera/40123456/15",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "EstudianteCarrera",
+                "40123456",
+                "15"
+              ]
+            },
+            "description": "Resultado esperado: 204. Limpia la matricula adicional creada por la prueba N-N."
+          }
+        }
+      ]
+    }
+  ]
+}

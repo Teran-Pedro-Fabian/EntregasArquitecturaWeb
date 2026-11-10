@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<persistence xmlns="https://jakarta.ee/xml/ns/persistence"
+             version="3.0">
+
+    <persistence-unit name="SegundaEntrega"
+                      transaction-type="RESOURCE_LOCAL">
+
+        <provider>org.hibernate.jpa.HibernatePersistenceProvider</provider>
+
+        <class>com.segundaentrega.Entitys.CarreraEntity</class>
+        <class>com.segundaentrega.Entitys.EstudianteEntity</class>
+        <class>com.segundaentrega.Entitys.EstudianteCarrera</class>
+
+        <properties>
+            <property name="jakarta.persistence.jdbc.driver" value="com.mysql.cj.jdbc.Driver"/>
+            <property name="jakarta.persistence.jdbc.url" value="jdbc:mysql://localhost:3306/segundaentrega"/>
+            <property name="jakarta.persistence.jdbc.user" value="usuario"/>
+            <property name="jakarta.persistence.jdbc.password" value="usuario123"/>
+            <property name="hibernate.hbm2ddl.auto" value="update"/>
+            <property name="hibernate.show_sql" value="false"/>
+            <property name="hibernate.format_sql" value="false"/>
+        </properties>
+    </persistence-unit>
+</persistence>
