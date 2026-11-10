@@ -1,284 +1,859 @@
-openapi: 3.0.0
+openapi: 3.0.3
 info:
   title: TicketYa - MicroServicioLugar
-  description: API para la gestión de recintos, sectores, asientos y control de reservas temporales.
   version: 1.0.0
+  description: 'Recintos, sectores, asientos y reservas numeradas y generales
 
 servers:
-  - url: http://localhost:8083
-    description: Servidor de Desarrollo Local
-
+- url: http://localhost:8080
+  description: API Gateway - entrada externa recomendada
+- url: http://localhost:8083
+  description: Microservicio directo - desarrollo local
+tags:
+- name: Lugar
+  description: Operaciones del microservicio Lugar
+- name: Interno
+  description: Comunicacion HTTP entre microservicios; no destinada al usuario final
 paths:
   /lugares:
     post:
-      summary: Registrar un lugar
-      description: Registra la información física de un recinto (estadio, teatro, etc).
-      operationId: registrarLugar
       tags:
-        - Lugares
+      - Lugar
+      summary: Registrar lugar
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/LugarRequest'
+              $ref: '#/components/schemas/Lugar'
+            example:
+              nombre: Estadio Municipal
+              direccion: Av. Principal 1200
+              ciudad: Tandil
+              latitud: -37.32
+              longitud: -59.13
       responses:
         '201':
-          description: Lugar registrado exitosamente.
+          description: Recurso creado
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/LugarResponse'
+                $ref: '#/components/schemas/Lugar'
         '400':
-          description: Error en la solicitud.
-
+          description: Datos invalidos o solicitud incorrecta
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Operacion no permitida
+    get:
+      tags:
+      - Lugar
+      summary: Listar lugares
+      responses:
+        '200':
+          description: Operacion correcta
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Lugar'
+  /lugares/{idLugar}/ciudad:
+    patch:
+      tags:
+      - Lugar
+      summary: Modificar ciudad del lugar
+      parameters:
+      - name: idLugar
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+        example: 1
+      - name: ciudad
+        in: query
+        required: true
+        schema:
+          type: string
+        example: Tandil
+      responses:
+        '200':
+          description: Operacion correcta
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Lugar'
+        '400':
+          description: Datos invalidos o solicitud incorrecta
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Operacion no permitida
+  /lugares/buscarPorCiudad:
+    get:
+      tags:
+      - Lugar
+      summary: Buscar lugar por ciudad
+      parameters:
+      - name: ciudad
+        in: query
+        required: true
+        schema:
+          type: string
+        example: Tandil
+      responses:
+        '200':
+          description: Operacion correcta
+          content:
+            application/json:
+              schema:
+                type: array
+                items: &id001
+                  type: integer
+                  format: int64
+        '400':
+          description: Datos invalidos o solicitud incorrecta
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Operacion no permitida
+  /lugares/buscarPorUbicacion:
+    get:
+      tags:
+      - Lugar
+      summary: Buscar lugar por coordenadas exactas
+      parameters:
+      - name: lat
+        in: query
+        required: true
+        schema:
+          type: number
+          format: double
+        example: -37.32
+      - name: lon
+        in: query
+        required: true
+        schema:
+          type: number
+          format: double
+        example: -59.13
+      responses:
+        '200':
+          description: Operacion correcta
+          content:
+            application/json:
+              schema:
+                type: array
+                items: *id001
   /lugares/sectores:
     post:
-      summary: Crear un sector
-      description: Crea un sector dentro de un lugar asociado a un evento específico.
-      operationId: crearSector
       tags:
-        - Sectores
+      - Lugar
+      summary: Crear sector de evento
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/SectorRequest'
+              $ref: '#/components/schemas/Sector'
+            example:
+              lugar:
+                id: 1
+              idEvento: evento-01
+              nombre: Campo
+              tipo: NO_NUMERADO
+              cupos: 100
+              precio: 9000.0
       responses:
         '201':
-          description: Sector creado exitosamente.
+          description: Recurso creado
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SectorResponse'
+                $ref: '#/components/schemas/Sector'
         '400':
-          description: Error en la solicitud.
-        '404':
-          description: El lugar o evento no existe.
-
-  /sectores/{id}/asientos:
-    get:
-      summary: listar asientos y sus estados
-      description: Retorna la lista de asientos de un sector y su estado actual (Disponible, Reservado, Vendido).
-      operationId: listarAsientos
-      tags:
-        - Asientos
-      parameters:
-        - name: id
-          in: path
-          required: true
-          description: ID del sector.
-          schema:
-            type: integer
-      responses:
-        '200':
-          description: Lista de asientos obtenida.
+          description: Datos invalidos o solicitud incorrecta
           content:
-            application/json:
+            text/plain:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/AsientoResponse'
-        '404':
-          description: Sector no encontrado.
-
-  /reservar:
+                type: string
+              example: Operacion no permitida
+  /lugares/asientos:
     post:
-      summary: reserva temporal
-      description: Bloquea un asiento temporalmente por 10 minutos.
-      operationId: reservarAsiento
       tags:
-        - Reservas
+      - Lugar
+      summary: Crear asiento numerado
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ReservaRequest'
+              $ref: '#/components/schemas/CrearAsiento'
       responses:
-        '200':
-          description: Asiento reservado temporalmente.
+        '201':
+          description: Recurso creado
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  idasiento:
-                    type: integer
-                  expira:
-                    type: string
-                    example: "2026-11-06T12:00:00"
+                $ref: '#/components/schemas/Asiento'
+        '400':
+          description: Datos invalidos o solicitud incorrecta
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Operacion no permitida
         '409':
-          description: El asiento ya se encuentra ocupado o reservado.
-
-  /asiento/confirmar:
+          description: Operacion rechazada por el estado o por conflicto
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Operacion no permitida
+  /lugares/reservar:
     post:
-      summary: confirmar venta
-      description: Cambia el estado del asiento de RESERVADO a VENDIDO.
-      operationId: confirmarVenta
       tags:
-        - Reservas
+      - Lugar
+      summary: Reservar asiento por 10 minutos
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ConfirmarRequest'
+              $ref: '#/components/schemas/ReservaAsiento'
       responses:
         '200':
-          description: Venta confirmada.
+          description: Operacion correcta
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  mensaje:
-                    type: string
-                    example: "asiento vendido"
+                $ref: '#/components/schemas/Asiento'
+        '409':
+          description: Operacion rechazada por el estado o por conflicto
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Operacion no permitida
+  /lugares/asiento/confirmar:
+    post:
+      tags:
+      - Lugar
+      summary: Confirmar venta de asiento
+      description: Invocado desde Ticket para completar la venta de un asiento reservado
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConfirmarAsiento'
+      responses:
+        '200':
+          description: Operacion correcta
+          content:
+            text/plain:
+              schema: &id002
+                type: string
+              example: Venta confirmada correctamente
         '400':
-          description: Error en la solicitud.
-        '404':
-          description: El asiento no existe o no está reservado.
-
-  /reservas/{idAsiento}:
+          description: Datos invalidos o solicitud incorrecta
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Operacion no permitida
+  /lugares/reservas/{idAsiento}:
     delete:
-      summary: librerar asiento
-      description: Libera la reserva temporal del asiento.
-      operationId: liberarReserva
       tags:
-        - Reservas
+      - Lugar
+      summary: Cancelar reserva numerada
       parameters:
-        - name: id
-          in: path
-          required: true
-          description: ID de la reserva.
-          schema:
-            type: string
+      - name: idAsiento
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+        example: 20
+      - name: idCliente
+        in: query
+        required: true
+        schema:
+          type: string
+        example: cliente-01
       responses:
         '200':
-          description: Asiento liberado exitosamente.
+          description: Operacion correcta
+          content:
+            text/plain:
+              schema: *id002
+              example: Reserva cancelada correctamente
+        '409':
+          description: Operacion rechazada por el estado o por conflicto
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Operacion no permitida
+  /lugares/sectores/{idSector}/disponibilidad:
+    get:
+      tags:
+      - Lugar
+      summary: Consultar cupos generales
+      parameters:
+      - name: idSector
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+        example: 3
+      responses:
+        '200':
+          description: Operacion correcta
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Disponibilidad'
+        '409':
+          description: Operacion rechazada por el estado o por conflicto
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Operacion no permitida
+  /lugares/sectores/generales/reservar:
+    post:
+      tags:
+      - Lugar
+      summary: Reservar N cupos generales por 10 minutos
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReservaGeneral'
+      responses:
+        '201':
+          description: Recurso creado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReservaGeneralResponse'
+        '409':
+          description: Operacion rechazada por el estado o por conflicto
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Operacion no permitida
+  /lugares/sectores/generales/reservas/{idReserva}:
+    delete:
+      tags:
+      - Lugar
+      summary: Cancelar reserva general
+      parameters:
+      - name: idReserva
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+        example: 10
+      - name: idSector
+        in: query
+        required: true
+        schema:
+          type: integer
+          format: int64
+        example: 3
+      - name: idCliente
+        in: query
+        required: true
+        schema:
+          type: string
+        example: cliente-01
+      responses:
+        '200':
+          description: Operacion correcta
+          content:
+            text/plain:
+              schema: *id002
+              example: Reserva general cancelada
+        '409':
+          description: Operacion rechazada por el estado o por conflicto
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Operacion no permitida
+  /lugares/interno/eventos/precios-minimos:
+    post:
+      tags:
+      - Interno
+      summary: Consultar precios minimos por evento
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items: *id002
+            example:
+            - evento-01
+            - evento-02
+      responses:
+        '200':
+          description: Operacion correcta
           content:
             application/json:
               schema:
                 type: object
-                properties:
-                  mensaje:
-                    type: string
-                    example: "asiento libreado"
-        '404':
-          description: La reserva no existe.
-
-  /lugar/asientos/liberar/{idAsiento}:
-    delete:
-      summary: elimina reseravas
-      description: Elimina la reserva del asiento indicado.
-      operationId: eliminarReserva
-      tags:
-        - Reservas
-      parameters:
-        - name: idAsiento
-          in: path
-          required: true
-          description: ID del asiento.
-          schema:
-            type: integer
-      responses:
-        '200':
-          description: Reserva eliminada correctamente.
-
-  /lugar/buscarPorUbicacion:
+                additionalProperties: &id003
+                  type: number
+                  format: double
+              example:
+                evento-01: 9000.0
+                evento-02: 12000.0
+  /lugares/interno/sectores/{idSector}/precio:
     get:
-      summary: busca lugares por distintos parametros
-      description: Retorna los IDs de los lugares que coinciden con la ubicación proporcionada.
-      operationId: buscarPorUbicacion
       tags:
-        - Lugares
+      - Interno
+      summary: Consultar precio oficial de sector
       parameters:
-        - name: lat
-          in: query
-          required: true
-          schema:
-            type: number
-        - name: lon
-          in: query
-          required: true
-          schema:
-            type: number
+      - name: idSector
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+        example: 3
+      - name: idEvento
+        in: query
+        required: true
+        schema:
+          type: string
+        example: evento-01
       responses:
         '200':
-          description: Lista de IDs de lugares obtenida.
+          description: Operacion correcta
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  type: integer
-                  example: 1
-
+                $ref: '#/components/schemas/PrecioSector'
+        '400':
+          description: Datos invalidos o solicitud incorrecta
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Operacion no permitida
+        '409':
+          description: Operacion rechazada por el estado o por conflicto
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Operacion no permitida
+  /lugares/interno/asientos/{idAsiento}/liberar-venta:
+    post:
+      tags:
+      - Interno
+      summary: Liberar asiento vendido tras reintegro
+      parameters:
+      - name: idAsiento
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+        example: 20
+      - name: idTicket
+        in: query
+        required: true
+        schema:
+          type: integer
+          format: int64
+        example: 100
+      responses:
+        '200':
+          description: Operacion correcta
+          content:
+            text/plain:
+              schema: *id002
+        '409':
+          description: Operacion rechazada por el estado o por conflicto
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Operacion no permitida
+  /lugares/interno/reservas/validar:
+    post:
+      tags:
+      - Interno
+      summary: Validar reserva numerada antes del cobro
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ValidarAsiento'
+      responses:
+        '200':
+          description: Operacion correcta
+          content:
+            text/plain:
+              schema: *id002
+              example: Reserva valida
+        '409':
+          description: Operacion rechazada por el estado o por conflicto
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Operacion no permitida
+  /lugares/interno/eventos/{idEvento}/configuracion:
+    get:
+      tags:
+      - Interno
+      summary: Comprobar lugar sectores y precios antes de publicar
+      parameters:
+      - name: idEvento
+        in: path
+        required: true
+        schema:
+          type: string
+        example: evento-01
+      - name: idLugar
+        in: query
+        required: true
+        schema:
+          type: integer
+          format: int64
+        example: 1
+      responses:
+        '200':
+          description: Operacion correcta
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        '400':
+          description: Datos invalidos o solicitud incorrecta
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Operacion no permitida
+  /lugares/interno/sectores/generales/reservas/validar:
+    post:
+      tags:
+      - Interno
+      summary: Validar reserva general antes del cobro
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ValidarGeneral'
+      responses:
+        '200':
+          description: Operacion correcta
+          content:
+            text/plain:
+              schema: *id002
+              example: Reserva general valida
+        '409':
+          description: Operacion rechazada por el estado o por conflicto
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Operacion no permitida
+  /lugares/interno/sectores/generales/confirmar:
+    post:
+      tags:
+      - Interno
+      summary: Confirmar venta de cupos generales
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConfirmarGeneral'
+      responses:
+        '200':
+          description: Operacion correcta
+          content:
+            text/plain:
+              schema: *id002
+              example: Venta general confirmada
+        '400':
+          description: Datos invalidos o solicitud incorrecta
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Operacion no permitida
+        '409':
+          description: Operacion rechazada por el estado o por conflicto
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Operacion no permitida
+  /lugares/interno/sectores/generales/{idSector}/liberar-venta:
+    post:
+      tags:
+      - Interno
+      summary: Liberar cupo general vendido tras reintegro
+      parameters:
+      - name: idSector
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+        example: 3
+      - name: idTicket
+        in: query
+        required: true
+        schema:
+          type: integer
+          format: int64
+        example: 100
+      responses:
+        '200':
+          description: Operacion correcta
+          content:
+            text/plain:
+              schema: *id002
+        '409':
+          description: Operacion rechazada por el estado o por conflicto
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Operacion no permitida
 components:
   schemas:
-    LugarRequest:
+    Lugar:
       type: object
       properties:
-        nombre:
-          type: string
-        descripcion:
-          type: string
-        longitud:
-          type: number
-        latitud:
-          type: number
-
-    LugarResponse:
+        id: *id001
+        nombre: *id002
+        direccion: *id002
+        ciudad: *id002
+        latitud: *id003
+        longitud: *id003
+      example:
+        id: 1
+        nombre: Estadio Municipal
+        direccion: Av. Principal 1200
+        ciudad: Tandil
+        latitud: -37.32
+        longitud: -59.13
+    Sector:
       type: object
       properties:
-        id:
-          type: integer
-        nombre:
+        id: *id001
+        lugar:
+          type: object
+          properties:
+            id: *id001
+        idEvento: *id002
+        nombre: *id002
+        tipo:
           type: string
-
-    SectorRequest:
+          enum:
+          - NUMERADO
+          - NO_NUMERADO
+        cupos: &id004
+          type: integer
+          format: int32
+        precio: *id003
+        cuposReservados: *id004
+        cuposVendidos: *id004
+      example:
+        id: 2
+        lugar:
+          id: 1
+        idEvento: evento-01
+        nombre: Campo
+        tipo: NO_NUMERADO
+        cupos: 100
+        precio: 9000.0
+        cuposReservados: 0
+        cuposVendidos: 0
+    Asiento:
       type: object
       properties:
-        idEvento:
-          type: integer
-        idlugar:
-          type: integer
-        nombre:
+        id: *id001
+        sector:
+          type: object
+          properties:
+            id: *id001
+        fila: *id002
+        columna: *id004
+        estado: *id002
+        idClienteReserva: *id002
+        reservaHasta:
           type: string
-        precio:
-          type: number
-        cupos:
+          format: date-time
+          nullable: true
+        idTicketVendido:
           type: integer
-
-    SectorResponse:
+          format: int64
+          nullable: true
+      example:
+        id: 20
+        sector:
+          id: 2
+        fila: A
+        columna: 5
+        estado: DISPONIBLE
+        idClienteReserva: null
+        reservaHasta: null
+        idTicketVendido: null
+    CrearAsiento:
       type: object
       properties:
-        id:
-          type: integer
-        nombre:
-          type: string
-
-    AsientoResponse:
+        idSector: *id001
+        fila: *id002
+        columna: *id004
+      required:
+      - idSector
+      - fila
+      - columna
+      example:
+        idSector: 2
+        fila: A
+        columna: 5
+    ReservaAsiento:
       type: object
       properties:
-        id:
-          type: integer
-        estado:
-          type: string
-          example: "DISPONIBLE"
-
-    ReservaRequest:
+        idAsiento: *id001
+        idCliente: *id002
+      required:
+      - idAsiento
+      - idCliente
+      example:
+        idAsiento: 20
+        idCliente: cliente-01
+    ConfirmarAsiento:
       type: object
       properties:
-        idAsiento:
-          type: integer
-        idCliente:
-          type: string
-
-    ConfirmarRequest:
+        idAsiento: *id001
+        idCliente: *id002
+        idTicket: *id001
+      required:
+      - idAsiento
+      - idCliente
+      - idTicket
+      example:
+        idAsiento: 20
+        idCliente: cliente-01
+        idTicket: 100
+    ValidarAsiento:
       type: object
       properties:
-        idAsiento:
-          type: integer
+        idAsiento: *id001
+        idCliente: *id002
+        idSector: *id001
+        idEvento: *id002
+      required:
+      - idAsiento
+      - idCliente
+      - idSector
+      - idEvento
+      example:
+        idAsiento: 20
+        idCliente: cliente-01
+        idSector: 2
+        idEvento: evento-01
+    ReservaGeneral:
+      type: object
+      properties:
+        idSector: *id001
+        idCliente: *id002
+        cantidad: *id004
+      required:
+      - idSector
+      - idCliente
+      - cantidad
+      example:
+        idSector: 3
+        idCliente: cliente-01
+        cantidad: 2
+    ReservaGeneralResponse:
+      type: object
+      properties:
+        idReserva: *id001
+        idSector: *id001
+        idCliente: *id002
+        cantidad: *id004
+        estado: *id002
+        reservaHasta: *id002
+      example:
+        idReserva: 10
+        idSector: 3
+        idCliente: cliente-01
+        cantidad: 2
+        estado: RESERVADA
+        reservaHasta: '2026-12-15T20:10:00Z'
+    ValidarGeneral:
+      type: object
+      properties:
+        idSector: *id001
+        idReserva: *id001
+        idCliente: *id002
+        idEvento: *id002
+        cantidad: *id004
+      example:
+        idSector: 3
+        idReserva: 10
+        idCliente: cliente-01
+        idEvento: evento-01
+        cantidad: 2
+    ConfirmarGeneral:
+      type: object
+      properties:
+        idSector: *id001
+        idReserva: *id001
+        idCliente: *id002
+        idCompra: *id001
+        idsTickets:
+          type: array
+          items: *id001
+      example:
+        idSector: 3
+        idReserva: 10
+        idCliente: cliente-01
+        idCompra: 50
+        idsTickets:
+        - 100
+        - 101
+    Disponibilidad:
+      type: object
+      properties:
+        idSector: *id001
+        disponibles: *id004
+      example:
+        idSector: 3
+        disponibles: 98
+    PrecioSector:
+      type: object
+      properties:
+        idSector: *id001
+        idEvento: *id002
+        precio: *id003
+      example:
+        idSector: 3
+        idEvento: evento-01
+        precio: 9000.0

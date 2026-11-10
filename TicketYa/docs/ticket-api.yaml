@@ -1,134 +1,677 @@
-openapi: 3.0.0
+openapi: 3.0.3
 info:
   title: TicketYa - MicroServicioTicket
-  description: API para la emisión de tickets, generación de códigos QR y gestión de devoluciones.
   version: 1.0.0
+  description: 'Compras, pagos mock, QR, devoluciones, reintegros y avisos'
 
 servers:
-  - url: http://localhost:8084
-    description: Servidor de Desarrollo Local
-
+- url: http://localhost:8080
+  description: API Gateway - entrada externa recomendada
+- url: http://localhost:8084
+  description: Microservicio directo - desarrollo local
+tags:
+- name: Ticket
+  description: Operaciones del microservicio Ticket
+- name: Interno
+  description: Comunicacion HTTP entre microservicios; no destinada al usuario final
 paths:
-  /ticket/Emitir:
+  /ticket/comprar:
     post:
-      summary: crea el ticket y genera qr
-      description: Procesa la compra final, genera un código QR único y guarda el ticket en la base de datos.
-      operationId: emitirTicket
       tags:
-        - Tickets
+      - Ticket
+      summary: Comprar entradas numeradas
+      description: Requiere reserva previa, si falta confirmar en Lugar responde 202 con estado PENDIENTE_CONFIRMACION, no
+        se cobra de nuevo en reintentos
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/TicketRequest'
+              $ref: '#/components/schemas/CompraNumeradaRequest'
       responses:
         '201':
-          description: Ticket emitido exitosamente.
+          description: Recurso creado
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TicketEmitidoResponse'
+                $ref: '#/components/schemas/CompraResponse'
         '400':
-          description: Error en la solicitud o datos inválidos.
-
+          description: Datos invalidos o solicitud incorrecta
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Operacion no permitida
+        '409':
+          description: Operacion rechazada por el estado o por conflicto
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Operacion no permitida
+        '502':
+          description: Error de comunicacion con otro microservicio
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Operacion no permitida
+        '503':
+          description: Microservicio dependiente no disponible
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Operacion no permitida
+        '202':
+          description: Pago aprobado pero falta confirmar la venta en Lugar
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompraResponse'
+  /ticket/emitir:
+    post:
+      tags:
+      - Ticket
+      summary: Comprar entradas numeradas (ruta alternativa)
+      description: Requiere reserva previa si falta confirmar en Lugar responde 202 con estado PENDIENTE_CONFIRMACION, no
+        se cobra de nuevo en reintentos
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompraNumeradaRequest'
+      responses:
+        '201':
+          description: Recurso creado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompraResponse'
+        '400':
+          description: Datos invalidos o solicitud incorrecta
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Operacion no permitida
+        '409':
+          description: Operacion rechazada por el estado o por conflicto
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Operacion no permitida
+        '502':
+          description: Error de comunicacion con otro microservicio
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Operacion no permitida
+        '503':
+          description: Microservicio dependiente no disponible
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Operacion no permitida
+        '202':
+          description: Pago aprobado pero falta confirmar la venta en Lugar
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompraResponse'
+  /ticket/comprar-general:
+    post:
+      tags:
+      - Ticket
+      summary: Comprar entradas generales
+      description: Requiere reserva previa, si falta confirmar en Lugar responde 202 con estado PENDIENTE_CONFIRMACION, no
+        se cobra de nuevo en reintentos
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompraGeneralRequest'
+      responses:
+        '201':
+          description: Recurso creado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompraResponse'
+        '400':
+          description: Datos invalidos o solicitud incorrecta
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Operacion no permitida
+        '409':
+          description: Operacion rechazada por el estado o por conflicto
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Operacion no permitida
+        '502':
+          description: Error de comunicacion con otro microservicio
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Operacion no permitida
+        '503':
+          description: Microservicio dependiente no disponible
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Operacion no permitida
+        '202':
+          description: Pago aprobado pero falta confirmar la venta en Lugar
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompraResponse'
+  /ticket/compras/{idCompra}:
+    get:
+      tags:
+      - Ticket
+      summary: Consultar compra y sus entradas
+      parameters:
+      - name: idCompra
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+        example: 50
+      responses:
+        '200':
+          description: Operacion correcta
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompraResponse'
+        '404':
+          description: Recurso no encontrado
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Operacion no permitida
+  /ticket/compras/{idCompra}/reintentar:
+    post:
+      tags:
+      - Ticket
+      summary: Reintentar confirmacion de compra sin volver a cobrar
+      description: Se usa solo cuando la compra quedo pendiente
+      parameters:
+      - name: idCompra
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+        example: 50
+      responses:
+        '200':
+          description: Operacion correcta
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompraResponse'
+        '400':
+          description: Datos invalidos o solicitud incorrecta
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Operacion no permitida
+        '409':
+          description: Operacion rechazada por el estado o por conflicto
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Operacion no permitida
+        '202':
+          description: Confirmacion sigue pendiente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompraResponse'
   /ticket/{id}:
     get:
-      summary: cosulta datos del ticket
-      description: Retorna la información completa de un ticket mediante su ID.
-      operationId: obtenerTicket
       tags:
-        - Tickets
+      - Ticket
+      summary: Consultar ticket por ID
       parameters:
-        - name: id
-          in: path
-          required: true
-          description: ID del ticket.
-          schema:
-            type: integer
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+        example: 100
       responses:
         '200':
-          description: Datos del ticket obtenidos exitosamente.
+          description: Operacion correcta
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TicketFull'
+                $ref: '#/components/schemas/Ticket'
         '404':
-          description: El ticket no existe.
-
-  /Ticket/{id}/devolver:
-    delete:
-      summary: devuelve y elimina el ticket
-      description: Valida que falten más de 72hs para el evento, libera el asiento y elimina el ticket.
-      operationId: devolverTicket
+          description: Recurso no encontrado
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Operacion no permitida
+  /ticket/{id}/solicitar-devolucion:
+    post:
       tags:
-        - Tickets
+      - Ticket
+      summary: Solicitar devolucion hasta 72 horas antes
       parameters:
-        - name: id
-          in: path
-          required: true
-          description: ID del ticket a devolver.
-          schema:
-            type: integer
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+        example: 100
+      - name: idCliente
+        in: query
+        required: true
+        schema:
+          type: string
+        example: cliente-01
       responses:
         '200':
-          description: Ticket eliminado exitosamente.
+          description: Operacion correcta
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  mensaje:
-                    type: string
-                    example: "ticket eliminado"
+                $ref: '#/components/schemas/Ticket'
         '400':
-          description: No se puede devolver el ticket (Faltan < 72h para el evento).
-        '404':
-          description: El ticket no existe.
-
+          description: Datos invalidos o solicitud incorrecta
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Operacion no permitida
+  /ticket/{id}/revisar-devolucion:
+    patch:
+      tags:
+      - Ticket
+      summary: Aprobar o rechazar una devolucion
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+        example: 100
+      - name: idAdministrador
+        in: query
+        required: true
+        schema:
+          type: string
+        example: admin-01
+      - name: decision
+        in: query
+        required: true
+        schema:
+          type: string
+        description: APROBAR o RECHAZAR
+        example: APROBAR
+      responses:
+        '200':
+          description: Operacion correcta
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ticket'
+        '409':
+          description: Operacion rechazada por el estado o por conflicto
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Operacion no permitida
+  /ticket/{id}/procesar-reintegro:
+    patch:
+      tags:
+      - Ticket
+      summary: Procesar reintegro con pago mock
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+        example: 100
+      responses:
+        '200':
+          description: Operacion correcta
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ticket'
+        '409':
+          description: Operacion rechazada por el estado o por conflicto
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Operacion no permitida
+  /ticket/{id}/finalizar-devolucion:
+    patch:
+      tags:
+      - Ticket
+      summary: Liberar asiento o cupo y finalizar devolucion
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+        example: 100
+      responses:
+        '200':
+          description: Operacion correcta
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ticket'
+        '409':
+          description: Operacion rechazada por el estado o por conflicto
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Operacion no permitida
+  /ticket/eventos/{idEvento}/estado-cancelacion:
+    get:
+      tags:
+      - Ticket
+      summary: Consultar devoluciones y avisos de un evento cancelado
+      parameters:
+      - name: idEvento
+        in: path
+        required: true
+        schema:
+          type: string
+        example: evento-01
+      responses:
+        '200':
+          description: Operacion correcta
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EstadoCancelacion'
+  /ticket/avisos-cancelacion:
+    get:
+      tags:
+      - Ticket
+      summary: Consultar avisos registrados por cliente
+      parameters:
+      - name: idCliente
+        in: query
+        required: true
+        schema:
+          type: string
+        example: cliente-01
+      responses:
+        '200':
+          description: Operacion correcta
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AvisoCancelacion'
+  /ticket/interno/eventos/{idEvento}/bloquear-ventas:
+    post:
+      tags:
+      - Interno
+      summary: Bloquear nuevas compras antes de cancelar
+      parameters:
+      - name: idEvento
+        in: path
+        required: true
+        schema:
+          type: string
+        example: evento-01
+      responses:
+        '200':
+          description: Operacion correcta
+          content:
+            text/plain:
+              schema: &id001
+                type: string
+        '400':
+          description: Datos invalidos o solicitud incorrecta
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Operacion no permitida
+  /ticket/interno/eventos/{idEvento}/procesar-cancelacion:
+    post:
+      tags:
+      - Interno
+      summary: Procesar reintegros y avisos tras cancelar
+      parameters:
+      - name: idEvento
+        in: path
+        required: true
+        schema:
+          type: string
+        example: evento-01
+      - name: idAdministrador
+        in: query
+        required: true
+        schema:
+          type: string
+        example: admin-01
+      responses:
+        '200':
+          description: Operacion correcta
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EstadoCancelacion'
+        '400':
+          description: Datos invalidos o solicitud incorrecta
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Operacion no permitida
+        '409':
+          description: Operacion rechazada por el estado o por conflicto
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Operacion no permitida
 components:
   schemas:
-    TicketRequest:
+    CompraNumeradaRequest:
       type: object
       properties:
-        idCliente:
-          type: string
-          example: "65f1a2b3c4d5e6f7g8h9i0"
-        idEvento:
+        idCliente: *id001
+        idEvento: *id001
+        idSector: &id002
           type: integer
-          example: 1
-        idSector:
+          format: int64
+        idsAsientos:
+          type: array
+          items: *id002
+        medioPago: *id001
+        claveIdempotencia: *id001
+      required:
+      - idCliente
+      - idEvento
+      - idSector
+      - idsAsientos
+      - medioPago
+      example:
+        idCliente: cliente-01
+        idEvento: evento-01
+        idSector: 2
+        idsAsientos:
+        - 20
+        medioPago: TARJETA
+        claveIdempotencia: compra-numerada-001
+      description: El precio no se envia en el request, claveIdempotencia es opcional pero debe repetirse igual al reintentar
+    CompraGeneralRequest:
+      type: object
+      properties:
+        idCliente: *id001
+        idEvento: *id001
+        idSector: *id002
+        idReserva: *id002
+        cantidad: &id005
           type: integer
-          example: 5
+          format: int32
+        medioPago: *id001
+        claveIdempotencia: *id001
+      required:
+      - idCliente
+      - idEvento
+      - idSector
+      - idReserva
+      - cantidad
+      - medioPago
+      example:
+        idCliente: cliente-01
+        idEvento: evento-01
+        idSector: 3
+        idReserva: 10
+        cantidad: 2
+        medioPago: TARJETA
+        claveIdempotencia: compra-general-001
+    Ticket:
+      type: object
+      properties:
+        id: *id002
+        idCompra:
+          type: integer
+          format: int64
+          nullable: true
+        idEvento: *id001
+        idCliente: *id001
+        idSector: *id002
         idAsiento:
           type: integer
-          example: 12
-        precio:
+          format: int64
+          nullable: true
+        idReservaGeneral:
+          type: integer
+          format: int64
+          nullable: true
+        precio: &id003
           type: number
-          example: 5000.0
-
-    TicketEmitidoResponse:
+          format: double
+        qrCode: *id001
+        usado:
+          type: boolean
+        estadoDevolucion: *id001
+        idAdministradorRevision:
+          type: string
+          nullable: true
+        fechaRevision:
+          type: string
+          format: date-time
+          nullable: true
+      example: &id004
+        id: 100
+        idCompra: 50
+        idEvento: evento-01
+        idCliente: cliente-01
+        idSector: 2
+        idAsiento: 20
+        idReservaGeneral: null
+        precio: 12000.0
+        qrCode: TICKETYA-QR-EJEMPLO
+        usado: false
+        estadoDevolucion: SIN_SOLICITUD
+        idAdministradorRevision: null
+        fechaRevision: null
+    CompraResponse:
       type: object
       properties:
-        idTicket:
-          type: integer
-          example: 100
-        CodigoQR:
-          type: string
-          example: "TICKETYA-A1B2C3D4E5"
-
-    TicketFull:
+        idCompra: *id002
+        estado: *id001
+        medioPago: *id001
+        total: *id003
+        tickets:
+          type: array
+          items:
+            $ref: '#/components/schemas/Ticket'
+      example:
+        idCompra: 50
+        estado: CONFIRMADA
+        medioPago: TARJETA
+        total: 12000.0
+        tickets:
+        - *id004
+    AvisoCancelacion:
       type: object
       properties:
-        id:
-          type: integer
-          example: 100
-        idCliente:
+        id: *id002
+        idEvento: *id001
+        idCliente: *id001
+        mensaje: *id001
+        fechaCreacion:
           type: string
-        idEvento:
-          type: integer
-        idSector:
-          type: integer
-        idAsiento:
-          type: integer
-        precio:
+          format: date-time
+        fechaEntrega:
+          type: string
+          format: date-time
+          nullable: true
+      example:
+        id: 1
+        idEvento: evento-01
+        idCliente: cliente-01
+        mensaje: El evento fue cancelado
+        fechaCreacion: '2026-11-10T19:00:00Z'
+        fechaEntrega: '2026-11-10T19:00:05Z'
+    EstadoCancelacion:
+      type: object
+      properties:
+        idEvento: *id001
+        totalTickets: *id005
+        devueltos: *id005
+        pendientes: *id005
+        detallePendientes:
+          type: array
+          items:
+            type: object
+            properties:
+              idTicket: *id002
+              estado: *id001
+        avisosRegistrados: *id005
+        avisosEntregados: *id005
+        errores:
+          type: array
+          items: *id001
+      example:
+        idEvento: evento-01
+        totalTickets: 3
+        devueltos: 3
+        pendientes: 0
+        detallePendientes: []
+        avisosRegistrados: 2
+        avisosEntregados: 2
+        errores: []

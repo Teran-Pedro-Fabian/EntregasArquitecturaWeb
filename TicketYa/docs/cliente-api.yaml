@@ -1,121 +1,205 @@
-openapi: 3.0.0
+openapi: 3.0.3
 info:
   title: TicketYa - MicroServicioCliente
-  description: API para la gestión de perfiles de clientes y sus preferencias personales.
   version: 1.0.0
+  description: 'Registro de clientes, preferencias y avisos internos por cancelacion
 
 servers:
-  - url: http://localhost:8081
-    description: Servidor de Desarrollo Local
-
+- url: http://localhost:8080
+  description: API Gateway - entrada externa recomendada
+- url: http://localhost:8081
+  description: Microservicio directo - desarrollo local
+tags:
+- name: Cliente
+  description: Operaciones del microservicio Cliente
+- name: Interno
+  description: Comunicacion HTTP entre microservicios; no destinada al usuario final
 paths:
-  /cliente:
+  /clientes:
     post:
-      summary: Registra nuevo cliente
-      description: Registra un nuevo cliente en el sistema.
-      operationId: registrarCliente
       tags:
-        - Cliente
+      - Cliente
+      summary: Registrar cliente
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ClienteRequest'
+              $ref: '#/components/schemas/Cliente'
+            example:
+              nombre: Juan Perez
       responses:
         '201':
-          description: Cliente creado exitosamente.
+          description: Recurso creado
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ClienteResponse'
+                $ref: '#/components/schemas/Cliente'
         '400':
-          description: Error en la solicitud.
-
-  /cliente/{id}:
+          description: Datos invalidos o solicitud incorrecta
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Operacion no permitida
+  /clientes/{id}:
     get:
-      summary: obtiene datos del cliente
-      description: Retorna la información del cliente según el ID proporcionado.
-      operationId: obtenerCliente
       tags:
-        - Cliente
+      - Cliente
+      summary: Consultar cliente por ID
       parameters:
-        - name: id
-          in: path
-          required: true
-          description: ID del cliente.
-          schema:
-            type: string
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+        example: cliente-01
       responses:
         '200':
-          description: Datos del cliente obtenidos exitosamente.
+          description: Operacion correcta
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ClienteResponse'
+                $ref: '#/components/schemas/Cliente'
         '404':
-          description: Cliente no encontrado.
-
-  /cleinte/Preferencias:
+          description: Recurso no encontrado
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Operacion no permitida
+  /clientes/preferencias:
     post:
-      summary: actualiza gustos del cliente
-      description: Actualiza la información de preferencias del cliente.
-      operationId: actualizarPreferencias
       tags:
-        - Cliente
+      - Cliente
+      summary: Guardar preferencias
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PreferenciasRequest'
+              $ref: '#/components/schemas/Preferencias'
+            example:
+              idCliente: cliente-01
+              idEvento: evento-01
+              idParticipante: participante-01
+              idLugar: '1'
       responses:
-        '200':
-          description: Preferencias actualizadas.
+        '201':
+          description: Recurso creado
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  mensaje:
-                    type: string
-                    example: "Preferencias actualizadas"
+                $ref: '#/components/schemas/Preferencias'
         '400':
-          description: Error en la solicitud.
-        '404':
-          description: Cliente no encontrado.
-
+          description: Datos invalidos o solicitud incorrecta
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Operacion no permitida
+  /clientes/{id}/notificaciones:
+    get:
+      tags:
+      - Cliente
+      summary: Consultar bandeja de avisos
+      description: Devuelve lista vacia cuando no hay avisos, no envia email ni push
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+        example: cliente-01
+      responses:
+        '200':
+          description: Operacion correcta
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Notificacion'
+  /clientes/interno/notificaciones/cancelacion:
+    post:
+      tags:
+      - Interno
+      summary: Recibir aviso enviado desde Ticket
+      description: Crea una notificacion interna, se evita duplicar aviso por cliente y evento
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NotificacionCancelacionRequest'
+      responses:
+        '200':
+          description: Operacion correcta
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Notificacion'
+        '400':
+          description: Datos invalidos o solicitud incorrecta
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Operacion no permitida
 components:
   schemas:
-    ClienteRequest:
+    Cliente:
       type: object
       properties:
-        nombre:
+        id: &id001
           type: string
-          example: "Juan Perez"
-
-    ClienteResponse:
+        nombre: *id001
+      example:
+        id: cliente-01
+        nombre: Juan Perez
+    Preferencias:
+      type: object
+      properties:
+        id: *id001
+        idCliente: *id001
+        idEvento: *id001
+        idParticipante: *id001
+        idLugar: *id001
+      example:
+        id: preferencia-01
+        idCliente: cliente-01
+        idEvento: evento-01
+        idParticipante: participante-01
+        idLugar: '1'
+    NotificacionCancelacionRequest:
+      type: object
+      properties:
+        idEvento: *id001
+        idCliente: *id001
+        mensaje: *id001
+      required:
+      - idEvento
+      - idCliente
+      - mensaje
+      example:
+        idEvento: evento-01
+        idCliente: cliente-01
+        mensaje: El evento fue cancelado
+    Notificacion:
       type: object
       properties:
         id:
+          type: integer
+          format: int64
+        idEvento: *id001
+        idCliente: *id001
+        mensaje: *id001
+        fechaCreacion:
           type: string
-          example: "1"
-        nombre:
-          type: string
-          example: "Juan Perez"
-
-    PreferenciasRequest:
-      type: object
-      properties:
-        idCliente:
-          type: string
-          example: "1"
-        tipoEvento:
-          type: string
-          example: "Rock"
-        artistaFavorito:
-          type: string
-          example: "Taylor Swift"
-        ciudad:
-          type: string
-          example: "Buenos Aires"
+          format: date-time
+      example:
+        id: 1
+        idEvento: evento-01
+        idCliente: cliente-01
+        mensaje: El evento fue cancelado
+        fechaCreacion: '2026-11-10T19:00:00Z'

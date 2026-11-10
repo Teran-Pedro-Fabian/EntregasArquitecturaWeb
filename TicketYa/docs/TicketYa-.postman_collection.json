@@ -1,0 +1,1650 @@
+{
+  "info": {
+    "name": "TicketYa - Entrega 1 - Pruebas Core",
+    "_postman_id": "c5ec7161-276f-4263-9fc8-43b00e28b88d",
+    "description": "Coleccion para demostrar puntos 1 2 3 4 5 7 y 9. Ejecutar con Collection Runner en el orden incluido, una iteracion. Usa el Gateway localhost:8080 y crea lugar evento clientes sectores y entradas de prueba nuevos. Postman captura automaticamente los ID de cada respuesta. El ultimo bloque solicita una devolucion, cancela el evento de prueba y verifica avisos. REQUISITOS: servicios Cliente 8081 Evento 8082 Lugar 8083 Ticket 8084 y Gateway 8080 iniciados, PostgreSQL y Redis operativos, mock de pago y reintegro aprobado. No ejecutar sobre datos de produccion ni repetir pasos en forma aislada sin preparar las variables. La coleccion no prueba por si sola la concurrencia de muchos procesos ni el vencimiento real de 10 minutos.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "00 Preparar datos y publicar - Puntos 1 2 3",
+      "description": "Ejecutar primero y en orden. Genera todos los ID de prueba y publica el evento. No requiere datos previos.",
+      "item": [
+        {
+          "name": "01 Iniciar lote y comprobar Gateway",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/evento",
+            "description": "Ejecutar primero. Genera codigo, fecha futura y clave de idempotencia nuevas. Si se ejecuta de nuevo, los valores previos se reemplazan."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Cada ejecucion genera datos nuevos para no reutilizar reservas o compras anteriores",
+                  "const codigo = Date.now().toString(36);",
+                  "pm.collectionVariables.set(\"codigoPrueba\", codigo);",
+                  "pm.collectionVariables.set(\"organizador\", \"organizador-\" + codigo);",
+                  "pm.collectionVariables.set(\"administrador\", \"admin-postman\");",
+                  "pm.collectionVariables.set(\"participantePrueba\", \"Banda\" + codigo);",
+                  "const fecha = new Date(Date.now() + 45*24*60*60*1000);",
+                  "pm.collectionVariables.set(\"fechaEvento\", fecha.toISOString().slice(0,19));",
+                  "pm.collectionVariables.set(\"fechaDesde\", new Date(fecha.getTime() - 86400000).toISOString().slice(0,10));",
+                  "pm.collectionVariables.set(\"fechaHasta\", new Date(fecha.getTime() + 86400000).toISOString().slice(0,10));",
+                  "pm.collectionVariables.set(\"claveCompraN\", \"compra-num-\" + codigo);",
+                  "pm.collectionVariables.set(\"claveCompraN2\", \"compra-num2-\" + codigo);",
+                  "pm.collectionVariables.set(\"claveCompraG\", \"compra-general-\" + codigo);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.expect([200]).to.include(pm.response.code); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "02 Crear cliente numerado",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/clientes",
+            "description": "Cliente que comprara una entrada numerada y recibira aviso de cancelacion.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Cliente numerado {{codigoPrueba}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201\", function () { pm.expect([201]).to.include(pm.response.code); });",
+                  "if ([201].includes(pm.response.code)) {",
+                  "  const data = pm.response.json();",
+                  "  const valor = data.id;",
+                  "  pm.test(\"Se obtuvo idClienteNumerado\", function () { pm.expect(valor).to.not.be.oneOf([null, undefined, \"\"]); });",
+                  "  if (valor !== null && valor !== undefined) pm.collectionVariables.set(\"idClienteNumerado\", String(valor));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "03 Crear cliente general",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/clientes",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Cliente general {{codigoPrueba}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201\", function () { pm.expect([201]).to.include(pm.response.code); });",
+                  "if ([201].includes(pm.response.code)) {",
+                  "  const data = pm.response.json();",
+                  "  const valor = data.id;",
+                  "  pm.test(\"Se obtuvo idClienteGeneral\", function () { pm.expect(valor).to.not.be.oneOf([null, undefined, \"\"]); });",
+                  "  if (valor !== null && valor !== undefined) pm.collectionVariables.set(\"idClienteGeneral\", String(valor));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "04 Crear segundo cliente numerado",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/clientes",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Cliente devolucion {{codigoPrueba}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201\", function () { pm.expect([201]).to.include(pm.response.code); });",
+                  "if ([201].includes(pm.response.code)) {",
+                  "  const data = pm.response.json();",
+                  "  const valor = data.id;",
+                  "  pm.test(\"Se obtuvo idClienteDevolucion\", function () { pm.expect(valor).to.not.be.oneOf([null, undefined, \"\"]); });",
+                  "  if (valor !== null && valor !== undefined) pm.collectionVariables.set(\"idClienteDevolucion\", String(valor));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "05 Crear lugar",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/lugares",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Estadio demo {{codigoPrueba}}\",\n  \"direccion\": \"Calle Falsa 123\",\n  \"ciudad\": \"Tandil\",\n  \"latitud\": -37.32,\n  \"longitud\": -59.13\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201\", function () { pm.expect([201]).to.include(pm.response.code); });",
+                  "if ([201].includes(pm.response.code)) {",
+                  "  const data = pm.response.json();",
+                  "  const valor = data.id;",
+                  "  pm.test(\"Se obtuvo idLugar\", function () { pm.expect(valor).to.not.be.oneOf([null, undefined, \"\"]); });",
+                  "  if (valor !== null && valor !== undefined) pm.collectionVariables.set(\"idLugar\", String(valor));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "06 Crear evento en borrador",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/evento",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Recital demo {{codigoPrueba}}\",\n  \"descripcion\": \"Evento para probar los puntos 1 2 3 4 5 7 y 9\",\n  \"tipo\": \"RECITAL\",\n  \"organizador\": \"{{organizador}}\",\n  \"fechaHora\": \"{{fechaEvento}}\",\n  \"idLugar\": \"{{idLugar}}\",\n  \"demanda\": \"BAJA\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201\", function () { pm.expect([201]).to.include(pm.response.code); });",
+                  "if ([201].includes(pm.response.code)) {",
+                  "  const data = pm.response.json();",
+                  "  const valor = data.id;",
+                  "  pm.test(\"Se obtuvo idEvento\", function () { pm.expect(valor).to.not.be.oneOf([null, undefined, \"\"]); });",
+                  "  if (valor !== null && valor !== undefined) pm.collectionVariables.set(\"idEvento\", String(valor));",
+                  "}",
+                  "if ([201].includes(pm.response.code)) {",
+                  "  const data = pm.response.json();",
+                  "  pm.test(\"Regla de negocio\", function () { pm.expect(data.estado).to.equal(\"BORRADOR\"); });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "07 Crear participante",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/evento/participantes",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"{{participantePrueba}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201\", function () { pm.expect([201]).to.include(pm.response.code); });",
+                  "if ([201].includes(pm.response.code)) {",
+                  "  const data = pm.response.json();",
+                  "  const valor = data.id;",
+                  "  pm.test(\"Se obtuvo idParticipante\", function () { pm.expect(valor).to.not.be.oneOf([null, undefined, \"\"]); });",
+                  "  if (valor !== null && valor !== undefined) pm.collectionVariables.set(\"idParticipante\", String(valor));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "08 Asociar participante al evento",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/evento/{{idEvento}}/participantes/{{idParticipante}}?idOrganizador={{organizador}}",
+            "description": ""
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.expect([200]).to.include(pm.response.code); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "09 Crear sector numerado",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/lugares/sectores",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Platea demo\",\n  \"tipo\": \"NUMERADO\",\n  \"cupos\": 2,\n  \"precio\": 15000,\n  \"idEvento\": \"{{idEvento}}\",\n  \"lugar\": {\n    \"id\": \"{{idLugar}}\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201\", function () { pm.expect([201]).to.include(pm.response.code); });",
+                  "if ([201].includes(pm.response.code)) {",
+                  "  const data = pm.response.json();",
+                  "  const valor = data.id;",
+                  "  pm.test(\"Se obtuvo idSectorNumerado\", function () { pm.expect(valor).to.not.be.oneOf([null, undefined, \"\"]); });",
+                  "  if (valor !== null && valor !== undefined) pm.collectionVariables.set(\"idSectorNumerado\", String(valor));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "10 Crear asiento A1",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/lugares/asientos",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"idSector\": \"{{idSectorNumerado}}\",\n  \"fila\": \"A\",\n  \"columna\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201\", function () { pm.expect([201]).to.include(pm.response.code); });",
+                  "if ([201].includes(pm.response.code)) {",
+                  "  const data = pm.response.json();",
+                  "  const valor = data.id;",
+                  "  pm.test(\"Se obtuvo idAsiento1\", function () { pm.expect(valor).to.not.be.oneOf([null, undefined, \"\"]); });",
+                  "  if (valor !== null && valor !== undefined) pm.collectionVariables.set(\"idAsiento1\", String(valor));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "11 Crear asiento A2",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/lugares/asientos",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"idSector\": \"{{idSectorNumerado}}\",\n  \"fila\": \"A\",\n  \"columna\": 2\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201\", function () { pm.expect([201]).to.include(pm.response.code); });",
+                  "if ([201].includes(pm.response.code)) {",
+                  "  const data = pm.response.json();",
+                  "  const valor = data.id;",
+                  "  pm.test(\"Se obtuvo idAsiento2\", function () { pm.expect(valor).to.not.be.oneOf([null, undefined, \"\"]); });",
+                  "  if (valor !== null && valor !== undefined) pm.collectionVariables.set(\"idAsiento2\", String(valor));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "12 Crear sector general",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/lugares/sectores",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Campo general demo\",\n  \"tipo\": \"NO_NUMERADO\",\n  \"cupos\": 3,\n  \"precio\": 9000,\n  \"idEvento\": \"{{idEvento}}\",\n  \"lugar\": {\n    \"id\": \"{{idLugar}}\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201\", function () { pm.expect([201]).to.include(pm.response.code); });",
+                  "if ([201].includes(pm.response.code)) {",
+                  "  const data = pm.response.json();",
+                  "  const valor = data.id;",
+                  "  pm.test(\"Se obtuvo idSectorGeneral\", function () { pm.expect(valor).to.not.be.oneOf([null, undefined, \"\"]); });",
+                  "  if (valor !== null && valor !== undefined) pm.collectionVariables.set(\"idSectorGeneral\", String(valor));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "13 Publicar evento",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": "{{baseUrl}}/evento/{{idEvento}}/estado?idOrganizador={{organizador}}",
+            "description": ""
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.expect([200]).to.include(pm.response.code); });",
+                  "if ([200].includes(pm.response.code)) {",
+                  "  const data = pm.response.json();",
+                  "  pm.test(\"Regla de negocio\", function () { pm.expect(data.estado).to.equal(\"PUBLICADO\"); });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "14 Consultar evento publicado",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/evento/{{idEvento}}",
+            "description": ""
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.expect([200]).to.include(pm.response.code); });",
+                  "if ([200].includes(pm.response.code)) {",
+                  "  const data = pm.response.json();",
+                  "  pm.test(\"Regla de negocio\", function () { pm.expect(data.id).to.equal(pm.collectionVariables.get(\"idEvento\")); });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "01 Buscar eventos - Punto 9",
+      "description": "Filtros combinados y ordenamientos por fecha precio y relevancia.",
+      "item": [
+        {
+          "name": "01 Filtros combinados",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/evento/buscar?tipo=RECITAL&organizador={{organizador}}&participante={{participantePrueba}}&ciudad=Tandil&fechaDesde={{fechaDesde}}&fechaHasta={{fechaHasta}}&ordenarPor=fecha",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "200",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.expect([200]).to.include(pm.response.code); });",
+                  "if ([200].includes(pm.response.code)) {",
+                  "  const data = pm.response.json();",
+                  "  pm.test(\"Regla de negocio\", function () { pm.expect(data.map(e => e.id)).to.include(pm.collectionVariables.get(\"idEvento\")); });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "02 Orden por precio",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/evento/buscar?organizador={{organizador}}&ciudad=Tandil&ordenarPor=precio",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "200",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.expect([200]).to.include(pm.response.code); });",
+                  "if ([200].includes(pm.response.code)) {",
+                  "  const data = pm.response.json();",
+                  "  pm.test(\"Regla de negocio\", function () { pm.expect(data.length).to.be.greaterThan(0); pm.expect(data[0].precioDesde).to.be.a(\"number\"); });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "03 Relevancia",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/evento/buscar?texto=Recital&organizador={{organizador}}&ordenarPor=relevancia",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "200",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.expect([200]).to.include(pm.response.code); });",
+                  "if ([200].includes(pm.response.code)) {",
+                  "  const data = pm.response.json();",
+                  "  pm.test(\"Regla de negocio\", function () { pm.expect(data.map(e => e.id)).to.include(pm.collectionVariables.get(\"idEvento\")); });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "02 Compra numerada e idempotencia - Puntos 4 5",
+      "description": "Dos entradas numeradas; evita doble reserva y repite la misma clave de compra para verificar idempotencia.",
+      "item": [
+        {
+          "name": "01 Reservar A1 con cliente numerado",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/lugares/reservar",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"idAsiento\": \"{{idAsiento1}}\",\n  \"idCliente\": \"{{idClienteNumerado}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.expect([200]).to.include(pm.response.code); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "02 Intentar reservar A1 con otro cliente (409 esperado)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/lugares/reservar",
+            "description": "Caso negativo. El servidor debe rechazar la segunda reserva sin modificar el dueño.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"idAsiento\": \"{{idAsiento1}}\",\n  \"idCliente\": \"{{idClienteGeneral}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 409\", function () { pm.expect([409]).to.include(pm.response.code); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "03 Comprar A1",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/ticket/comprar",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"idCliente\": \"{{idClienteNumerado}}\",\n  \"idEvento\": \"{{idEvento}}\",\n  \"idSector\": \"{{idSectorNumerado}}\",\n  \"idsAsientos\": [\n    \"{{idAsiento1}}\"\n  ],\n  \"medioPago\": \"TARJETA\",\n  \"claveIdempotencia\": \"{{claveCompraN}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201\", function () { pm.expect([201]).to.include(pm.response.code); });",
+                  "if ([201].includes(pm.response.code)) {",
+                  "  const data = pm.response.json();",
+                  "  const valor = data.idCompra;",
+                  "  pm.test(\"Se obtuvo idCompraN\", function () { pm.expect(valor).to.not.be.oneOf([null, undefined, \"\"]); });",
+                  "  if (valor !== null && valor !== undefined) pm.collectionVariables.set(\"idCompraN\", String(valor));",
+                  "}",
+                  "if ([201].includes(pm.response.code)) {",
+                  "  const data = pm.response.json();",
+                  "  pm.test(\"Regla de negocio\", function () { pm.expect(data.estado).to.equal(\"CONFIRMADA\"); pm.expect(data.tickets).to.have.length(1); pm.expect(data.tickets[0].qrCode).to.be.a(\"string\"); });",
+                  "}",
+                  "",
+                  "if (pm.response.code === 201) {",
+                  " const r = pm.response.json();",
+                  " pm.collectionVariables.set(\"idTicketN\", String(r.tickets[0].id));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "04 Reintentar misma compra con la misma clave",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/ticket/comprar",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"idCliente\": \"{{idClienteNumerado}}\",\n  \"idEvento\": \"{{idEvento}}\",\n  \"idSector\": \"{{idSectorNumerado}}\",\n  \"idsAsientos\": [\n    \"{{idAsiento1}}\"\n  ],\n  \"medioPago\": \"TARJETA\",\n  \"claveIdempotencia\": \"{{claveCompraN}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200, 201\", function () { pm.expect([200, 201]).to.include(pm.response.code); });",
+                  "if ([200, 201].includes(pm.response.code)) {",
+                  "  const data = pm.response.json();",
+                  "  pm.test(\"Regla de negocio\", function () { pm.expect(data.idCompra.toString()).to.equal(pm.collectionVariables.get(\"idCompraN\")); pm.expect(data.tickets).to.have.length(1); });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "05 Consultar compra numerada",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/ticket/compras/{{idCompraN}}",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "200",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.expect([200]).to.include(pm.response.code); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "06 Consultar ticket numerado",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/ticket/{{idTicketN}}",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "200",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.expect([200]).to.include(pm.response.code); });",
+                  "if ([200].includes(pm.response.code)) {",
+                  "  const data = pm.response.json();",
+                  "  pm.test(\"Regla de negocio\", function () { pm.expect(data.qrCode).to.be.a(\"string\"); });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "07 Reservar A2 para devolucion individual",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/lugares/reservar",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"idAsiento\": \"{{idAsiento2}}\",\n  \"idCliente\": \"{{idClienteDevolucion}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.expect([200]).to.include(pm.response.code); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "08 Comprar A2",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/ticket/comprar",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"idCliente\": \"{{idClienteDevolucion}}\",\n  \"idEvento\": \"{{idEvento}}\",\n  \"idSector\": \"{{idSectorNumerado}}\",\n  \"idsAsientos\": [\n    \"{{idAsiento2}}\"\n  ],\n  \"medioPago\": \"TRANSFERENCIA\",\n  \"claveIdempotencia\": \"{{claveCompraN2}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201\", function () { pm.expect([201]).to.include(pm.response.code); });",
+                  "if ([201].includes(pm.response.code)) {",
+                  "  const data = pm.response.json();",
+                  "  const valor = data.idCompra;",
+                  "  pm.test(\"Se obtuvo idCompraN2\", function () { pm.expect(valor).to.not.be.oneOf([null, undefined, \"\"]); });",
+                  "  if (valor !== null && valor !== undefined) pm.collectionVariables.set(\"idCompraN2\", String(valor));",
+                  "}",
+                  "if ([201].includes(pm.response.code)) {",
+                  "  const data = pm.response.json();",
+                  "  pm.test(\"Regla de negocio\", function () { pm.expect(data.estado).to.equal(\"CONFIRMADA\"); pm.expect(data.tickets).to.have.length(1); });",
+                  "}",
+                  "",
+                  "if (pm.response.code === 201) pm.collectionVariables.set(\"idTicketDevolucion\", String(pm.response.json().tickets[0].id));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "03 Compra general y control de cupos - Puntos 4 5",
+      "description": "Reserva dos cupos de un sector general de tres; comprueba que no se pueda sobre-reservar.",
+      "item": [
+        {
+          "name": "01 Consultar disponibilidad general",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/lugares/sectores/{{idSectorGeneral}}/disponibilidad",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "200",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.expect([200]).to.include(pm.response.code); });",
+                  "if ([200].includes(pm.response.code)) {",
+                  "  const data = pm.response.json();",
+                  "  pm.test(\"Regla de negocio\", function () { pm.expect(data.disponibles).to.equal(3); });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "02 Reservar dos cupos generales",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/lugares/sectores/generales/reservar",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"idSector\": \"{{idSectorGeneral}}\",\n  \"idCliente\": \"{{idClienteGeneral}}\",\n  \"cantidad\": 2\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201\", function () { pm.expect([201]).to.include(pm.response.code); });",
+                  "if ([201].includes(pm.response.code)) {",
+                  "  const data = pm.response.json();",
+                  "  const valor = data.idReserva;",
+                  "  pm.test(\"Se obtuvo idReservaGeneral\", function () { pm.expect(valor).to.not.be.oneOf([null, undefined, \"\"]); });",
+                  "  if (valor !== null && valor !== undefined) pm.collectionVariables.set(\"idReservaGeneral\", String(valor));",
+                  "}",
+                  "if ([201].includes(pm.response.code)) {",
+                  "  const data = pm.response.json();",
+                  "  pm.test(\"Regla de negocio\", function () { pm.expect(data.cantidad).to.equal(2); });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "03 Intentar reservar dos cupos extra (409 esperado)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/lugares/sectores/generales/reservar",
+            "description": "Caso negativo. Hay 3 cupos totales y 2 reservados.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"idSector\": \"{{idSectorGeneral}}\",\n  \"idCliente\": \"{{idClienteNumerado}}\",\n  \"cantidad\": 2\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 409\", function () { pm.expect([409]).to.include(pm.response.code); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "04 Comprar dos entradas generales",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/ticket/comprar-general",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"idCliente\": \"{{idClienteGeneral}}\",\n  \"idEvento\": \"{{idEvento}}\",\n  \"idSector\": \"{{idSectorGeneral}}\",\n  \"idReserva\": \"{{idReservaGeneral}}\",\n  \"cantidad\": 2,\n  \"medioPago\": \"TARJETA\",\n  \"claveIdempotencia\": \"{{claveCompraG}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201\", function () { pm.expect([201]).to.include(pm.response.code); });",
+                  "if ([201].includes(pm.response.code)) {",
+                  "  const data = pm.response.json();",
+                  "  const valor = data.idCompra;",
+                  "  pm.test(\"Se obtuvo idCompraG\", function () { pm.expect(valor).to.not.be.oneOf([null, undefined, \"\"]); });",
+                  "  if (valor !== null && valor !== undefined) pm.collectionVariables.set(\"idCompraG\", String(valor));",
+                  "}",
+                  "if ([201].includes(pm.response.code)) {",
+                  "  const data = pm.response.json();",
+                  "  pm.test(\"Regla de negocio\", function () { pm.expect(data.estado).to.equal(\"CONFIRMADA\"); pm.expect(data.tickets).to.have.length(2); pm.expect(data.tickets[0].qrCode).to.not.equal(data.tickets[1].qrCode); });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "05 Consultar disponibilidad despues de venta",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/lugares/sectores/{{idSectorGeneral}}/disponibilidad",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "200",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.expect([200]).to.include(pm.response.code); });",
+                  "if ([200].includes(pm.response.code)) {",
+                  "  const data = pm.response.json();",
+                  "  pm.test(\"Regla de negocio\", function () { pm.expect(data.disponibles).to.equal(1); });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "06 Consultar compra general",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/ticket/compras/{{idCompraG}}",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "200",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.expect([200]).to.include(pm.response.code); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "04 Devolucion cancelacion y avisos - Punto 7",
+      "description": "Finaliza la devolucion individual de una entrada y despues cancela el evento completo. Probar al final.",
+      "item": [
+        {
+          "name": "01 Solicitar devolucion de A2",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/ticket/{{idTicketDevolucion}}/solicitar-devolucion?idCliente={{idClienteDevolucion}}",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "200",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.expect([200]).to.include(pm.response.code); });",
+                  "if ([200].includes(pm.response.code)) {",
+                  "  const data = pm.response.json();",
+                  "  pm.test(\"Regla de negocio\", function () { pm.expect(data.estadoDevolucion).to.equal(\"PENDIENTE\"); });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "02 Aprobar solicitud",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/ticket/{{idTicketDevolucion}}/revisar-devolucion?idAdministrador={{administrador}}&decision=APROBAR",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "200",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.expect([200]).to.include(pm.response.code); });",
+                  "if ([200].includes(pm.response.code)) {",
+                  "  const data = pm.response.json();",
+                  "  pm.test(\"Regla de negocio\", function () { pm.expect(data.estadoDevolucion).to.equal(\"APROBADA_PENDIENTE_REINTEGRO\"); });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "03 Procesar reintegro de A2",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/ticket/{{idTicketDevolucion}}/procesar-reintegro",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "200",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.expect([200]).to.include(pm.response.code); });",
+                  "if ([200].includes(pm.response.code)) {",
+                  "  const data = pm.response.json();",
+                  "  pm.test(\"Regla de negocio\", function () { pm.expect(data.estadoDevolucion).to.equal(\"REINTEGRADA_PENDIENTE_LIBERACION\"); });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "04 Finalizar devolucion y liberar A2",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/ticket/{{idTicketDevolucion}}/finalizar-devolucion",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "200",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.expect([200]).to.include(pm.response.code); });",
+                  "if ([200].includes(pm.response.code)) {",
+                  "  const data = pm.response.json();",
+                  "  pm.test(\"Regla de negocio\", function () { pm.expect(data.estadoDevolucion).to.equal(\"DEVUELTA\"); });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "05 Cancelar evento y reintegrar las otras entradas",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/evento/{{idEvento}}/cancelar?idAdministrador={{administrador}}",
+            "description": "Operación destructiva del lote de prueba. No usar sobre un evento real. Cancela las entradas activas y dispara avisos a sus compradores.",
+            "body": {
+              "mode": "raw",
+              "raw": "200",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.expect([200]).to.include(pm.response.code); });",
+                  "if ([200].includes(pm.response.code)) {",
+                  "  const data = pm.response.json();",
+                  "  pm.test(\"Regla de negocio\", function () { pm.expect(data.estado).to.equal(\"CANCELADO\"); });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "06 Ver estado de cancelacion",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/ticket/eventos/{{idEvento}}/estado-cancelacion",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "200",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.expect([200]).to.include(pm.response.code); });",
+                  "if ([200].includes(pm.response.code)) {",
+                  "  const data = pm.response.json();",
+                  "  pm.test(\"Regla de negocio\", function () { pm.expect(data.pendientes).to.equal(0); pm.expect(data.avisosEntregados).to.be.at.least(2); });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "07 Bandeja cliente numerado",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/clientes/{{idClienteNumerado}}/notificaciones",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "200",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.expect([200]).to.include(pm.response.code); });",
+                  "if ([200].includes(pm.response.code)) {",
+                  "  const data = pm.response.json();",
+                  "  pm.test(\"Regla de negocio\", function () { pm.expect(data.map(n => n.idEvento)).to.include(pm.collectionVariables.get(\"idEvento\")); });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "08 Bandeja cliente general",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/clientes/{{idClienteGeneral}}/notificaciones",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "200",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.expect([200]).to.include(pm.response.code); });",
+                  "if ([200].includes(pm.response.code)) {",
+                  "  const data = pm.response.json();",
+                  "  pm.test(\"Regla de negocio\", function () { pm.expect(data.map(n => n.idEvento)).to.include(pm.collectionVariables.get(\"idEvento\")); });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "09 Reintentar cancelacion sin duplicar avisos",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/evento/{{idEvento}}/reintentar-cancelacion?idAdministrador={{administrador}}",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "200",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.expect([200]).to.include(pm.response.code); });",
+                  "if ([200].includes(pm.response.code)) {",
+                  "  const data = pm.response.json();",
+                  "  pm.test(\"Regla de negocio\", function () { pm.expect(data.pendientes).to.equal(0); pm.expect(data.avisosRegistrados).to.equal(2); });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "10 Intentar comprar despues de cancelar (409 esperado)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/ticket/comprar",
+            "description": "Caso negativo. La compra de un evento CANCELADO debe quedar rechazada incluso si el asiento anterior fue liberado.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"idCliente\": \"{{idClienteDevolucion}}\",\n  \"idEvento\": \"{{idEvento}}\",\n  \"idSector\": \"{{idSectorNumerado}}\",\n  \"idsAsientos\": [\n    \"{{idAsiento2}}\"\n  ],\n  \"medioPago\": \"TARJETA\",\n  \"claveIdempotencia\": \"cancelado-{{codigoPrueba}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 409\", function () { pm.expect([409]).to.include(pm.response.code); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080",
+      "type": "string"
+    },
+    {
+      "key": "codigoPrueba",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "organizador",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "administrador",
+      "value": "admin-postman",
+      "type": "string"
+    },
+    {
+      "key": "fechaEvento",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}
