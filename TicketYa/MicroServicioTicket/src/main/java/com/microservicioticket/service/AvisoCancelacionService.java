@@ -39,6 +39,10 @@ public class AvisoCancelacionService {
         return avisoRepository.findByIdClienteOrderByFechaCreacionDesc(idCliente);
     }
 
+    public long contarEntregados(String idEvento) {
+        return avisoRepository.countByIdEventoAndFechaEntregaIsNotNull(idEvento);
+    }
+
     public long contarPorEvento(String idEvento) {
         return avisoRepository.countByIdEvento(idEvento);
     }

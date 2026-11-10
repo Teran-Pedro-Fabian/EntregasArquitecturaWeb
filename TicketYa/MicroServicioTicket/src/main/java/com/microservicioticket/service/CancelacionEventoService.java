@@ -26,6 +26,7 @@ public class CancelacionEventoService {
     @Autowired private CompraRepository compraRepository;
     @Autowired private TicketService ticketService;
     @Autowired private AvisoCancelacionService avisoCancelacionService;
+    @Autowired private EntregaAvisoService entregaAvisoService;
     @Autowired private CompraService compraService;
     @Autowired private RestTemplate restTemplate;
 
@@ -42,7 +43,7 @@ public class CancelacionEventoService {
             throw new IllegalStateException("El evento no esta cancelado");
         }
 
-        // 2) Registrar los avisos. Cada cliente recibe solo uno por evento.
+        // 2) Registrar los avisos. Cada cliente recibe solo uno por evento
         List<TicketEntity> tickets = ticketRepository.findByIdEventoOrderByIdAsc(idEvento);
         Set<String> clientes = new HashSet<>();
         List<String> errores = new ArrayList<>();
@@ -50,14 +51,17 @@ public class CancelacionEventoService {
             if (ticket.getIdCliente() != null && clientes.add(ticket.getIdCliente())) {
                 try {
                     avisoCancelacionService.registrar(idEvento, ticket.getIdCliente());
+                    // Entregar inmediatamente a la bandeja del cliente
+                    // Si no responde, registrar error y reintentar luego
+                    entregaAvisoService.entregar(idEvento, ticket.getIdCliente());
                 } catch (RuntimeException e) {
                     errores.add("Aviso para cliente " + ticket.getIdCliente() + ": " + e.getMessage());
                 }
             }
         }
 
-        // 3) Antes de reintegrar, intentar resolver compras con confirmacion incierta.
-        // Se reusan la misma compra y tickets; NO se vuelve a cobrar.
+        // 3) Antes de reintegrar, intentar resolver compras con confirmacion incierta
+        // Se reusan la misma compra y tickets, no se vuelve a cobrar
         Set<Long> comprasPendientes = new HashSet<>();
         for (TicketEntity ticket : tickets) {
             if (ticket.getIdCompra() == null) continue;
@@ -120,7 +124,7 @@ public class CancelacionEventoService {
         return construirResumen(idEvento, errores);
     }
 
-    /** Consultar el avance sin iniciar otro reintegro. */
+    /** Consultar el avance sin iniciar otro reintegro */
     public Map<String, Object> consultar(String idEvento) {
         if (idEvento == null || idEvento.isBlank()) {
             throw new IllegalArgumentException("Evento no valido");
@@ -149,6 +153,7 @@ public class CancelacionEventoService {
         resultado.put("pendientes", pendientesDetalle.size());
         resultado.put("detallePendientes", pendientesDetalle);
         resultado.put("avisosRegistrados", avisoCancelacionService.contarPorEvento(idEvento));
+        resultado.put("avisosEntregados", avisoCancelacionService.contarEntregados(idEvento));
         resultado.put("errores", errores);
         return resultado;
     }

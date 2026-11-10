@@ -3,9 +3,12 @@ package com.microservicioticket.Repository;
 import com.microservicioticket.entity.AvisoCancelacionEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
+import java.util.Optional;
 
 public interface AvisoCancelacionRepository extends JpaRepository<AvisoCancelacionEntity, Long> {
     boolean existsByIdEventoAndIdCliente(String idEvento, String idCliente);
     List<AvisoCancelacionEntity> findByIdClienteOrderByFechaCreacionDesc(String idCliente);
     long countByIdEvento(String idEvento);
+    long countByIdEventoAndFechaEntregaIsNotNull(String idEvento);
+    Optional<AvisoCancelacionEntity> findByIdEventoAndIdCliente(String idEvento, String idCliente);
 }
