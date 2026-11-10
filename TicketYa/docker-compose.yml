@@ -1,0 +1,48 @@
+services:
+
+  # Base de datos del microservicio Lugar
+  postgres-lugar:
+    image: postgres:16-alpine
+    container_name: ticketya-postgres-lugar
+    environment:
+      POSTGRES_DB: ticketya_lugares
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: admin
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_lugar_data:/var/lib/postgresql/data
+
+  # Base de datos del microservicio Ticket
+  postgres-ticket:
+    image: postgres:16-alpine
+    container_name: ticketya-postgres-ticket
+    environment:
+      POSTGRES_DB: ticketya_tickets
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: admin
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_ticket_data:/var/lib/postgresql/data
+
+  # Base de datos para Cliente y Evento
+  mongodb:
+    image: mongo:7
+    container_name: ticketya-mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
+  # Reservas temporales
+  redis:
+    image: redis:7-alpine
+    container_name: ticketya-redis
+    ports:
+      - "6379:6379"
+
+volumes:
+  postgres_lugar_data:
+  postgres_ticket_data:
+  mongo_data:
