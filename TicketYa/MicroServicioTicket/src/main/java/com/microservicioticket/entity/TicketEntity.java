@@ -22,12 +22,19 @@ public class TicketEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "id_compra")
+    private Long idCompra;
+
     private String idEvento;
     private String idCliente; //String porque viene de Mongo
     private Long idSector;
 
     // puede ser null si es entrada general
     private Long idAsiento;
+
+    // Una entrada no numerada referencia la reserva del sector general
+    @Column(name = "id_reserva_general")
+    private Long idReservaGeneral;
 
     private Double precio;
     private String qrCode;    // Guardaremos aquí la cadena del QR

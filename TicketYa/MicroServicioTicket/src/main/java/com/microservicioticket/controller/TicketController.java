@@ -18,7 +18,9 @@ public class TicketController {
      * Emitir un ticket
      * Validar la reserva antes de guardar
      */
-    @PostMapping("/emitir")
+    // Ruta anterior deshabilitada para evitar comprar sin validar precio ni limite
+    // El endpoint /ticket/emitir ahora esta en CompraController
+    @Deprecated
     public ResponseEntity<?> emitir(@RequestBody TicketEntity ticket) {
         try {
             // 1) Emitir el ticket
@@ -30,10 +32,14 @@ public class TicketController {
             return ResponseEntity.badRequest().body(e.getMessage());
         } catch (org.springframework.web.client.HttpClientErrorException e) {
             // 4) Informar reserva invalida
-            return ResponseEntity.status(HttpStatus.CONFLICT).body("Reserva invalida: " + e.getResponseBodyAsString());
+            return ResponseEntity.status(HttpStatus.CONFLICT).body("Operacion rechazada por Lugar: " + e.getResponseBodyAsString());
         } catch (org.springframework.web.client.ResourceAccessException e) {
             // 5) Informar error de conexion con Lugar
             return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body("No se pudo conectar con MicroServicioLugar");
+        }
+        catch (IllegalStateException e) {
+            // Informar si el pago fue rechazado
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
         }
     }
 

@@ -1,0 +1,45 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: ticketya-gateway
+
+  cloud:
+    gateway:
+      # El Gateway agrega esta cabecera para comprobar que la peticion paso por 8080.
+      default-filters:
+        - AddResponseHeader=X-TicketYa-Gateway, TicketYa
+
+      # Conservar las rutas originales, sin reescribir prefijos ni parametros.
+      # Los otros cuatro microservicios siguen ejecutandose en IntelliJ.
+      routes:
+        - id: cliente
+          uri: ${TICKETYA_CLIENTE_URL:http://localhost:8081}
+          predicates:
+            - Path=/clientes/**
+
+        - id: evento
+          uri: ${TICKETYA_EVENTO_URL:http://localhost:8082}
+          predicates:
+            - Path=/evento/**
+
+        - id: lugar
+          uri: ${TICKETYA_LUGAR_URL:http://localhost:8083}
+          predicates:
+            - Path=/lugares/**
+
+        - id: ticket
+          uri: ${TICKETYA_TICKET_URL:http://localhost:8084}
+          predicates:
+            - Path=/ticket/**
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+logging:
+  level:
+    org.springframework.cloud.gateway: INFO

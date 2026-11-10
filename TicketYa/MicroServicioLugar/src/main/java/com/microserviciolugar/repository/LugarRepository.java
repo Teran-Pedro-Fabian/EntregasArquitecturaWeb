@@ -14,4 +14,5 @@ public interface LugarRepository extends JpaRepository<LugarEntity, Long> {
     @Query("SELECT l FROM LugarEntity l WHERE l.latitud = :lat AND l.longitud = :lon")
     public List<LugarEntity> findByLatitudAndLongitud(@Param("lat") Double latitud, @Param("lon") Double longitud);
 
+    List<LugarEntity> findByCiudadIgnoreCase(String ciudad);
 }

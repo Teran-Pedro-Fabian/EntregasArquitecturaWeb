@@ -1,0 +1,18 @@
+Documentación Técnica Adicional
+
+
+Sección 1: Arquitectura
+    ¿Por qué Microservicios? Permite escalar el servicio de reservas independientemente del catálogo de eventos.
+    ¿Por qué MongoDB? los eventos y preferencias son datos no estructurados que varían mucho, por lo que una DB NoSQL es la opción más eficiente.
+    ¿Por qué PostgreSQL? la compra de un ticket requiere transacciones ACID (Atomicidad, Consistencia, Aislamiento y Durabilidad) para asegurar que no haya errores en la venta.
+    ¿Por qué Redis? es la herramienta ideal para manejar el tiempo de expiración (TTL) de las reservas temporales sin saturar la DB principal.
+
+Sección 2: El Mecanismo contra la Doble Venta
+    Para evitar que dos usuarios compren la misma entrada simultáneamente, el
+    sistema utiliza la anotación `@Lock(LockModeType.PESSIMISTIC_WRITE)`.
+    Esto genera un bloqueo a nivel de fila en la base de datos PostgreSQL,
+    obligando a que cualquier otra petición sobre el mismo asiento espere hasta que la
+    transacción actual finalice, eliminando así la posibilidad de ventas duplicadas."
+
+Sección 3: Diagramas
+link de los diagramas: "https://lucid.app/lucidchart/afcbc288-b1be-4fab-99be-552547e771f6/edit?viewport_loc=-12228%2C33749%2C17764%2C7133%2C0_0&invitationId=inv_151ed65e-3745-4d22-9fbb-b40b7c1f69b7"

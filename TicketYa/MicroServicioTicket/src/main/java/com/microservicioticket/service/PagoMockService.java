@@ -8,6 +8,8 @@ public class PagoMockService {
 
     @Value("${ticketya.pagos.mock.reintegro-aprobado:true}")
     private boolean reintegroAprobado;
+    @Value("${ticketya.pagos.mock.pago-aprobado:true}")
+    private boolean pagoAprobado;
 
     /**
      * Simular el reintegro de una entrada
@@ -24,5 +26,18 @@ public class PagoMockService {
         }
         // 2) Simular la respuesta de la pasarela de pagos
         return reintegroAprobado;
+    }
+    /**
+     * Simular el pago de una entrada
+     * Verificar los datos y devolver si fue aprobado
+     */
+    public boolean procesarPago(String idCliente, Double monto) {
+        // 1) Verificar los datos del pago
+        if (idCliente == null || idCliente.isBlank()
+                || monto == null || monto <= 0) {
+            throw new RuntimeException("Datos del pago no validos");
+        }
+        // 2) Simular la respuesta de la pasarela
+        return pagoAprobado;
     }
 }
