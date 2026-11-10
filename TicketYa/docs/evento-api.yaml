@@ -1,172 +1,805 @@
-openapi: 3.0.0
+openapi: 3.0.3
 info:
   title: TicketYa - MicroServicioEvento
-  description: API para la gestión del catálogo de eventos y sus estados.
   version: 1.0.0
+  description: 'Creacion, publicacion, administracion y busqueda de eventos
 
 servers:
-  - url: http://localhost:8082
-    description: Servidor de Desarrollo Local
-
+- url: http://localhost:8080
+  description: API Gateway - entrada externa recomendada
+- url: http://localhost:8082
+  description: Microservicio directo - desarrollo local
+tags:
+- name: Evento
+  description: Operaciones del microservicio Evento
+- name: Interno
+  description: Comunicacion HTTP entre microservicios; no destinada al usuario final
 paths:
   /evento:
     post:
-      summary: Crea Evento en estado BORRADOR
-      description: Registra un nuevo evento en la base de datos con estado inicial BORRADOR.
-      operationId: crearEvento
       tags:
-        - Eventos
+      - Evento
+      summary: Crear evento en borrador
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/EventoRequest'
+              $ref: '#/components/schemas/Evento'
+            example:
+              nombre: Festival de verano
+              descripcion: Festival de musica
+              tipo: RECITAL
+              organizador: organizador-01
+              fechaHora: '2026-12-15T21:00:00'
+              idLugar: 1
+              demanda: NORMAL
       responses:
         '201':
-          description: Evento creado exitosamente.
+          description: Recurso creado
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/EventoEstadoResponse'
+                $ref: '#/components/schemas/Evento'
         '400':
-          description: Error en la solicitud.
-
+          description: Datos invalidos o solicitud incorrecta
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Operacion no permitida
     get:
-      summary: busca Eventos
-      description: Retorna la lista de eventos registrados.
-      operationId: buscarEventos
       tags:
-        - Eventos
+      - Evento
+      summary: Listar eventos visibles al publico
+      description: No muestra borradores, suspendidos ni cancelados
       responses:
         '200':
-          description: Lista de eventos obtenida exitosamente.
+          description: Operacion correcta
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/EventoFull'
-
-  /evento/{id}/estado:
-    put:
-      summary: cambia estado
-      description: Modifica el estado actual del evento (de BORRADOR a PUBLICADO).
-      operationId: cambiarEstado
+                  $ref: '#/components/schemas/Evento'
+  /evento/{id}:
+    get:
       tags:
-        - Eventos
+      - Evento
+      summary: Consultar evento por ID
       parameters:
-        - name: id
-          in: path
-          required: true
-          description: ID del evento.
-          schema:
-            type: string
+      - &id001
+        name: id
+        in: path
+        required: true
+        schema:
+          type: string
+        example: evento-01
+      responses:
+        '200':
+          description: Operacion correcta
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Evento'
+        '404':
+          description: Recurso no encontrado
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Operacion no permitida
+    put:
+      tags:
+      - Evento
+      summary: Modificar un borrador
+      parameters: &id002
+      - *id001
+      - name: idOrganizador
+        in: query
+        required: true
+        schema:
+          type: string
+        example: organizador-01
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/EstadoRequest'
+              $ref: '#/components/schemas/Evento'
       responses:
         '200':
-          description: Estado actualizado correctamente.
+          description: Operacion correcta
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/EventoEstadoResponse'
+                $ref: '#/components/schemas/Evento'
         '400':
-          description: Error en la solicitud.
+          description: Datos invalidos o solicitud incorrecta
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Operacion no permitida
+        '403':
+          description: El ID del organizador no corresponde al evento
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Operacion no permitida
         '404':
-          description: Evento no encontrado.
-
-  /evento/{id}:
-    get:
-      summary: datalle completo del evento del evento
-      description: Retorna toda la información detallada de un evento específico.
-      operationId: obtenerEvento
+          description: Recurso no encontrado
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Operacion no permitida
+        '409':
+          description: Operacion rechazada por el estado o por conflicto
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Operacion no permitida
+  /evento/{id}/estado:
+    put:
       tags:
-        - Eventos
-      parameters:
-        - name: id
-          in: path
-          required: true
-          description: ID del evento.
-          schema:
-            type: string
+      - Evento
+      summary: Publicar borrador
+      description: Valida participantes, lugar, sectores y precios antes de publicar, no necesita body
+      parameters: *id002
       responses:
         '200':
-          description: Detalle del evento obtenido exitosamente.
+          description: Operacion correcta
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/EventoFull'
+                $ref: '#/components/schemas/Evento'
+        '400':
+          description: Datos invalidos o solicitud incorrecta
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Operacion no permitida
+        '403':
+          description: El ID del organizador no corresponde al evento
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Operacion no permitida
         '404':
-          description: Evento no encontrado.
-
-  /eveto/buscar:
-    get:
-      summary: Busqueda por parametros
-      description: Busca eventos filtrando por diversos criterios.
-      operationId: buscarPorParametros
+          description: Recurso no encontrado
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Operacion no permitida
+        '409':
+          description: Operacion rechazada por el estado o por conflicto
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Operacion no permitida
+        '502':
+          description: Error de comunicacion con otro microservicio
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Operacion no permitida
+        '503':
+          description: Microservicio dependiente no disponible
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Operacion no permitida
+  /evento/{id}/suspender:
+    patch:
       tags:
-        - Eventos
+      - Evento
+      summary: Suspender evento
+      parameters: &id003
+      - *id001
+      - name: idAdministrador
+        in: query
+        required: true
+        schema:
+          type: string
+        example: admin-01
       responses:
-        '202':
-          description: Solicitud aceptada. Retorna lista de eventos o lista vacía.
+        '200':
+          description: Operacion correcta
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Evento'
+        '400':
+          description: Datos invalidos o solicitud incorrecta
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Operacion no permitida
+        '404':
+          description: Recurso no encontrado
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Operacion no permitida
+        '409':
+          description: Operacion rechazada por el estado o por conflicto
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Operacion no permitida
+  /evento/{id}/reactivar:
+    patch:
+      tags:
+      - Evento
+      summary: Reactivar evento
+      parameters: *id003
+      responses:
+        '200':
+          description: Operacion correcta
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Evento'
+        '400':
+          description: Datos invalidos o solicitud incorrecta
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Operacion no permitida
+        '404':
+          description: Recurso no encontrado
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Operacion no permitida
+        '409':
+          description: Operacion rechazada por el estado o por conflicto
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Operacion no permitida
+  /evento/{id}/cancelar:
+    patch:
+      tags:
+      - Evento
+      summary: Cancelar evento y solicitar reintegros
+      description: La cancelacion bloquea nuevas compras e inicia reintegros y notificaciones internas
+      parameters: *id003
+      responses:
+        '200':
+          description: Operacion correcta
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Evento'
+        '400':
+          description: Datos invalidos o solicitud incorrecta
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Operacion no permitida
+        '404':
+          description: Recurso no encontrado
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Operacion no permitida
+        '409':
+          description: Operacion rechazada por el estado o por conflicto
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Operacion no permitida
+  /evento/{id}/agotar:
+    patch:
+      tags:
+      - Evento
+      summary: Marcar evento agotado
+      parameters: *id003
+      responses:
+        '200':
+          description: Operacion correcta
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Evento'
+        '400':
+          description: Datos invalidos o solicitud incorrecta
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Operacion no permitida
+        '404':
+          description: Recurso no encontrado
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Operacion no permitida
+        '409':
+          description: Operacion rechazada por el estado o por conflicto
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Operacion no permitida
+  /evento/{id}/finalizar:
+    patch:
+      tags:
+      - Evento
+      summary: Finalizar evento
+      parameters: *id003
+      responses:
+        '200':
+          description: Operacion correcta
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Evento'
+        '400':
+          description: Datos invalidos o solicitud incorrecta
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Operacion no permitida
+        '404':
+          description: Recurso no encontrado
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Operacion no permitida
+        '409':
+          description: Operacion rechazada por el estado o por conflicto
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Operacion no permitida
+  /evento/{id}/reintentar-cancelacion:
+    post:
+      tags:
+      - Evento
+      summary: Reintentar reintegros y avisos pendientes
+      description: Reprocesa pasos pendientes sin duplicar reintegros ni avisos
+      parameters: *id003
+      responses:
+        '200':
+          description: Operacion correcta
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EstadoCancelacion'
+        '400':
+          description: Datos invalidos o solicitud incorrecta
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Operacion no permitida
+        '404':
+          description: Recurso no encontrado
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Operacion no permitida
+        '409':
+          description: Operacion rechazada por el estado o por conflicto
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Operacion no permitida
+  /evento/participantes:
+    post:
+      tags:
+      - Evento
+      summary: Registrar participante
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Participante'
+            example:
+              nombre: Banda invitada
+      responses:
+        '201':
+          description: Recurso creado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Participante'
+        '400':
+          description: Datos invalidos o solicitud incorrecta
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Operacion no permitida
+    get:
+      tags:
+      - Evento
+      summary: Listar participantes
+      responses:
+        '200':
+          description: Operacion correcta
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/EventoFull'
-
+                  $ref: '#/components/schemas/Participante'
+  /evento/{idEvento}/participantes/{idParticipante}:
+    post:
+      tags:
+      - Evento
+      summary: Asociar participante a un borrador
+      parameters:
+      - &id004
+        name: idEvento
+        in: path
+        required: true
+        schema:
+          type: string
+        example: evento-01
+      - &id005
+        name: idParticipante
+        in: path
+        required: true
+        schema:
+          type: string
+        example: participante-01
+      - name: idOrganizador
+        in: query
+        required: true
+        schema:
+          type: string
+        example: organizador-01
+      responses:
+        '200':
+          description: Operacion correcta
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventoParticipante'
+        '400':
+          description: Datos invalidos o solicitud incorrecta
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Operacion no permitida
+        '403':
+          description: El ID del organizador no corresponde al evento
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Operacion no permitida
+        '404':
+          description: Recurso no encontrado
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Operacion no permitida
+        '409':
+          description: Operacion rechazada por el estado o por conflicto
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Operacion no permitida
+    delete:
+      tags:
+      - Evento
+      summary: Quitar participante del borrador
+      parameters:
+      - *id004
+      - *id005
+      - name: idOrganizador
+        in: query
+        required: true
+        schema:
+          type: string
+        example: organizador-01
+      responses:
+        '204':
+          description: Operacion completada sin contenido
+        '400':
+          description: Datos invalidos o solicitud incorrecta
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Operacion no permitida
+        '403':
+          description: El ID del organizador no corresponde al evento
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Operacion no permitida
+        '404':
+          description: Recurso no encontrado
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Operacion no permitida
+        '409':
+          description: Operacion rechazada por el estado o por conflicto
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Operacion no permitida
+  /evento/{idEvento}/participantes:
+    get:
+      tags:
+      - Evento
+      summary: Listar participantes de un evento
+      parameters:
+      - name: idEvento
+        in: path
+        required: true
+        schema:
+          type: string
+        example: evento-01
+      responses:
+        '200':
+          description: Operacion correcta
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Participante'
+        '404':
+          description: Recurso no encontrado
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Operacion no permitida
+  /evento/buscar:
+    get:
+      tags:
+      - Evento
+      summary: Buscar eventos por filtros combinables
+      description: Resultados de eventos publicados, se agrega precioDesde desde Lugar, devuelve [] si no hay coincidencias
+      parameters:
+      - name: tipo
+        in: query
+        required: false
+        schema:
+          type: string
+        description: Tipo de evento
+        example: RECITAL
+      - name: organizador
+        in: query
+        required: false
+        schema:
+          type: string
+        example: organizador-01
+      - name: participante
+        in: query
+        required: false
+        schema:
+          type: string
+        description: Nombre del participante
+        example: Banda
+      - name: ciudad
+        in: query
+        required: false
+        schema:
+          type: string
+        example: Tandil
+      - name: fechaDesde
+        in: query
+        required: false
+        schema:
+          type: string
+        description: Fecha inicial yyyy-MM-dd, inclusiva
+        example: '2026-12-01'
+      - name: fechaHasta
+        in: query
+        required: false
+        schema:
+          type: string
+        description: Fecha final yyyy-MM-dd, inclusiva
+        example: '2026-12-31'
+      - name: texto
+        in: query
+        required: false
+        schema:
+          type: string
+        description: Busqueda en titulo, descripcion, tipo, organizador y participantes
+      - name: q
+        in: query
+        required: false
+        schema:
+          type: string
+        description: Alias de texto
+      - name: lat
+        in: query
+        required: false
+        schema:
+          type: number
+          format: double
+      - name: lon
+        in: query
+        required: false
+        schema:
+          type: number
+          format: double
+      - name: ordenarPor
+        in: query
+        required: false
+        schema:
+          type: string
+        description: fecha, precio o relevancia
+        example: precio
+      responses:
+        '200':
+          description: Operacion correcta
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EventoBusqueda'
+        '400':
+          description: Datos invalidos o solicitud incorrecta
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Operacion no permitida
+        '502':
+          description: Error de comunicacion con otro microservicio
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Operacion no permitida
+        '503':
+          description: Microservicio dependiente no disponible
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Operacion no permitida
 components:
   schemas:
-    EventoRequest:
+    Evento:
       type: object
       properties:
-        Nombre:
+        id: &id006
           type: string
-        Recital:
-          type: string
-        Tipo:
-          type: string
-        idLugar:
-          type: integer
-        FechaHora:
-          type: string
-
-    EventoEstadoResponse:
-      type: object
-      properties:
-        id:
-          type: string
-        estado:
-          type: string
-
-    EstadoRequest:
-      type: object
-      properties:
-        Estado:
-          type: string
-
-    EventoFull:
-      type: object
-      properties:
-        id:
-          type: string
-        nombre:
-          type: string
-        descripcion:
-          type: string
-        tipo:
-          type: string
-        organizador:
-          type: string
+        nombre: *id006
+        descripcion: *id006
+        tipo: *id006
+        organizador: *id006
         fechaHora:
           type: string
-        idLugar:
+          description: Fecha y hora guardada como texto ISO en la entidad actual
+        idLugar: &id007
           type: integer
+          format: int64
         estado:
           type: string
+          enum:
+          - BORRADOR
+          - PUBLICADO
+          - SUSPENDIDO
+          - AGOTADO
+          - CANCELADO
+          - FINALIZADO
+        demanda: *id006
+      example:
+        id: evento-01
+        nombre: Festival de verano
+        descripcion: Festival de musica
+        tipo: RECITAL
+        organizador: organizador-01
+        fechaHora: '2026-12-15T21:00:00'
+        idLugar: 1
+        estado: BORRADOR
+        demanda: NORMAL
+    Participante:
+      type: object
+      properties:
+        id: *id006
+        nombre: *id006
+      example:
+        id: participante-01
+        nombre: Banda invitada
+    EventoParticipante:
+      type: object
+      properties:
+        id: *id006
+        idEvento: *id006
+        idParticipante: *id006
+      example:
+        id: asociacion-01
+        idEvento: evento-01
+        idParticipante: participante-01
+    EventoBusqueda:
+      type: object
+      properties:
+        id: *id006
+        nombre: *id006
+        descripcion: *id006
+        tipo: *id006
+        organizador: *id006
+        fechaHora: *id006
+        idLugar: *id007
+        estado: *id006
+        demanda: *id006
+        precioDesde:
+          type: number
+          format: double
+      example:
+        id: evento-01
+        nombre: Festival de verano
+        descripcion: Festival de musica
+        tipo: RECITAL
+        organizador: organizador-01
+        fechaHora: '2026-12-15T21:00:00'
+        idLugar: 1
+        estado: PUBLICADO
+        demanda: NORMAL
+        precioDesde: 9000.0
+    EstadoCancelacion:
+      type: object
+      properties:
+        idEvento: *id006
+        totalTickets: &id008
+          type: integer
+          format: int32
+        devueltos: *id008
+        pendientes: *id008
+        detallePendientes:
+          type: array
+          items:
+            type: object
+            properties:
+              idTicket: *id007
+              estado: *id006
+        avisosRegistrados: *id008
+        avisosEntregados: *id008
+        errores:
+          type: array
+          items: *id006
+      example:
+        idEvento: evento-01
+        totalTickets: 3
+        devueltos: 3
+        pendientes: 0
+        detallePendientes: []
+        avisosRegistrados: 2
+        avisosEntregados: 2
+        errores: []
