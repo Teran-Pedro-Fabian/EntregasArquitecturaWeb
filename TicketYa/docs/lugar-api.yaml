@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: TicketYa - MicroServicioLugar
   version: 1.0.0
-  description: 'Recintos, sectores, asientos y reservas numeradas y generales
+  description: 'Recintos, sectores, asientos y reservas numeradas y generales'
 
 servers:
 - url: http://localhost:8080
