@@ -58,8 +58,20 @@ services:
     ports:
       - "6379:6379"
 
+  # MongoDB
+  mongodb:
+    image: mongo:7
+    container_name: ticketya-mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
 volumes:
   postgres_lugar_data:
   postgres_ticket_data:
   postgres_cliente_data:
   postgres_evento_data:
+  mongo_data:
+    external: true
+    name: ticketya_mongo_data
