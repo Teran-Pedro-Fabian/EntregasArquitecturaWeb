@@ -9,6 +9,9 @@ import com.microServicioEvento.repository.EventoRepository;
 import com.microServicioEvento.repository.EventoParticipanteRepositoy;
 import com.microServicioEvento.repository.ParticipanteRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Caching;
 import jakarta.persistence.criteria.Predicate;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
@@ -45,6 +48,10 @@ public class EventoService {
      * Crear un evento siempre en BORRADOR
      * El cliente no puede elegir el ID ni el estado
      */
+    @Caching(evict = {
+            @CacheEvict(cacheNames = "catalogo-eventos", allEntries = true),
+            @CacheEvict(cacheNames = "busqueda-eventos", allEntries = true)
+    })
     public EventoEntity crearEvento(EventoEntity evento) {
         validarDatos(evento);
         evento.setId(null);
@@ -57,6 +64,10 @@ public class EventoService {
      * Editar un borrador
      * Solo lo puede hacer el organizador que creo el evento
      */
+    @Caching(evict = {
+            @CacheEvict(cacheNames = "catalogo-eventos", allEntries = true),
+            @CacheEvict(cacheNames = "busqueda-eventos", allEntries = true)
+    })
     public EventoEntity actualizarBorrador(String id, String idOrganizador, EventoEntity datos) {
         EventoEntity original = buscarObligatorio(id);
         verificarOrganizador(original, idOrganizador);
@@ -78,6 +89,10 @@ public class EventoService {
     /**
      * Publicar un borrador solo cuando tiene los datos y sectores configurados
      */
+    @Caching(evict = {
+            @CacheEvict(cacheNames = "catalogo-eventos", allEntries = true),
+            @CacheEvict(cacheNames = "busqueda-eventos", allEntries = true)
+    })
     public EventoEntity publicarEvento(String id, String idOrganizador) {
         EventoEntity evento = buscarObligatorio(id);
         verificarOrganizador(evento, idOrganizador);
@@ -89,6 +104,10 @@ public class EventoService {
     }
 
     // Un administrador puede detener temporalmente la venta
+    @Caching(evict = {
+            @CacheEvict(cacheNames = "catalogo-eventos", allEntries = true),
+            @CacheEvict(cacheNames = "busqueda-eventos", allEntries = true)
+    })
     public EventoEntity suspenderEvento(String id, String idAdministrador) {
         verificarAdministrador(idAdministrador);
         EventoEntity evento = buscarObligatorio(id);
@@ -100,6 +119,10 @@ public class EventoService {
     }
 
     // Solo un administrador reactiva un evento suspendido
+    @Caching(evict = {
+            @CacheEvict(cacheNames = "catalogo-eventos", allEntries = true),
+            @CacheEvict(cacheNames = "busqueda-eventos", allEntries = true)
+    })
     public EventoEntity reactivarEvento(String id, String idAdministrador) {
         verificarAdministrador(idAdministrador);
         EventoEntity evento = buscarObligatorio(id);
@@ -114,6 +137,10 @@ public class EventoService {
      * Primero guardar CANCELADO para impedir nuevas compras
      * Si Ticket no responde, el evento queda cancelado y se puede reintentar
      */
+    @Caching(evict = {
+            @CacheEvict(cacheNames = "catalogo-eventos", allEntries = true, beforeInvocation = true),
+            @CacheEvict(cacheNames = "busqueda-eventos", allEntries = true, beforeInvocation = true)
+    })
     public EventoEntity cancelarEvento(String id, String idAdministrador) {
         verificarAdministrador(idAdministrador);
         EventoEntity evento = buscarObligatorio(id);
@@ -181,6 +208,10 @@ public class EventoService {
     }
 
     // Estado manual mientras no exista la sincronizacion automatica de disponibilidad
+    @Caching(evict = {
+            @CacheEvict(cacheNames = "catalogo-eventos", allEntries = true),
+            @CacheEvict(cacheNames = "busqueda-eventos", allEntries = true)
+    })
     public EventoEntity marcarAgotado(String id, String idAdministrador) {
         verificarAdministrador(idAdministrador);
         EventoEntity evento = buscarObligatorio(id);
@@ -190,6 +221,10 @@ public class EventoService {
     }
 
     // Finalizar un evento que ya ocurrio
+    @Caching(evict = {
+            @CacheEvict(cacheNames = "catalogo-eventos", allEntries = true),
+            @CacheEvict(cacheNames = "busqueda-eventos", allEntries = true)
+    })
     public EventoEntity finalizarEvento(String id, String idAdministrador) {
         verificarAdministrador(idAdministrador);
         EventoEntity evento = buscarObligatorio(id);
@@ -211,10 +246,15 @@ public class EventoService {
      * Listar publicados y agotados para que sigan apareciendo en el catalogo
      * Los compradores solo pueden adquirir tickets de PUBLICADO
      */
+    @Cacheable(cacheNames = "catalogo-eventos")
     public List<EventoEntity> buscarEventosPublicados() {
         return eventoRepository.findByEstadoIn(List.of("PUBLICADO", "AGOTADO"));
     }
 
+    @Caching(evict = {
+            @CacheEvict(cacheNames = "catalogo-eventos", allEntries = true),
+            @CacheEvict(cacheNames = "busqueda-eventos", allEntries = true)
+    })
     public ParticipanteEntity crearParticipante(ParticipanteEntity participante) {
         if (participante == null || vacio(participante.getNombre())) {
             throw new IllegalArgumentException("El participante necesita un nombre");
@@ -232,6 +272,10 @@ public class EventoService {
      * Asociar un participante existente con un evento borrador
      * Se evita duplicar la misma asociacion
      */
+    @Caching(evict = {
+            @CacheEvict(cacheNames = "catalogo-eventos", allEntries = true),
+            @CacheEvict(cacheNames = "busqueda-eventos", allEntries = true)
+    })
     public EventoParticipanteEntity agregarParticipante(String idEvento, String idParticipante,
                                                          String idOrganizador) {
         EventoEntity evento = buscarObligatorio(idEvento);
@@ -250,6 +294,10 @@ public class EventoService {
                 });
     }
 
+    @Caching(evict = {
+            @CacheEvict(cacheNames = "catalogo-eventos", allEntries = true),
+            @CacheEvict(cacheNames = "busqueda-eventos", allEntries = true)
+    })
     public void quitarParticipante(String idEvento, String idParticipante, String idOrganizador) {
         EventoEntity evento = buscarObligatorio(idEvento);
         verificarOrganizador(evento, idOrganizador);
@@ -341,6 +389,8 @@ public class EventoService {
      * 9) Buscar solo eventos publicos y combinar todos los criterios
      * Los participantes se filtran por sus relaciones reales, no por descripcion
      */
+    // Lombok @Data da a BusquedaEventoFiltro un toString estable segun sus campos.
+    @Cacheable(cacheNames = "busqueda-eventos", key = "#p0 == null ? 'sin-filtros' : #p0.toString()")
     public List<EventoBusquedaDTO> buscarEventos(BusquedaEventoFiltro filtro) {
         if (filtro == null) {
             filtro = new BusquedaEventoFiltro();

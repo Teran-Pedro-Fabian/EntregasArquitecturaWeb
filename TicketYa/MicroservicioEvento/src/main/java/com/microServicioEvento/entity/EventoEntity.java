@@ -15,7 +15,8 @@ import java.util.UUID;
 @NoArgsConstructor
 @Entity
 @Table(name = "evento")
-public class EventoEntity {
+public class EventoEntity implements java.io.Serializable {
+    private static final long serialVersionUID = 1L;
     @Id
     @Column(name = "id", length = 64, nullable = false)
     private String id;
