@@ -33,6 +33,10 @@ public class EventoEntity implements java.io.Serializable {
     private String estado;
     private String demanda;
 
+    // Avisos pendientes, para poder reintentar si Cliente o Ticket no responden
+    @Column(name = "publicacion_avisada", nullable = false)
+    private boolean publicacionAvisada = true;
+
     @PrePersist
     public void generarId() {
         if (id == null || id.isBlank()) {

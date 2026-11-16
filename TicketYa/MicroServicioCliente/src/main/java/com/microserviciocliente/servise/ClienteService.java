@@ -10,6 +10,8 @@ public class ClienteService {
 
     @Autowired
     private ClienteRepository clienteRepository;
+    @Autowired
+    private CorreoNotificacionService correoNotificacionService;
 
     /**
      * Guarda un cliente en la base de datos
@@ -18,7 +20,23 @@ public class ClienteService {
      * @return cliente guardado
      */
     public ClienteEntity save(ClienteEntity clienteEntity) {
-        return clienteRepository.save(clienteEntity);
+        ClienteEntity guardado = clienteRepository.save(clienteEntity);
+        if (guardado.getEmail() != null && !guardado.getEmail().isBlank()) {
+            correoNotificacionService.reactivarSinEmail(guardado.getId());
+        }
+        return guardado;
+    }
+
+    public ClienteEntity actualizarEmail(String id, String email) {
+        if (email == null || !email.matches("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$") || email.length() > 254) {
+            throw new IllegalArgumentException("Email no valido");
+        }
+        ClienteEntity cliente = clienteRepository.findById(id).orElseThrow(() ->
+                new IllegalArgumentException("Cliente no encontrado"));
+        cliente.setEmail(email.trim());
+        ClienteEntity guardado = clienteRepository.save(cliente);
+        correoNotificacionService.reactivarSinEmail(id);
+        return guardado;
     }
 
     /**

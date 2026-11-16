@@ -9,4 +9,5 @@ import java.util.List;
 public interface EventoRepository extends JpaRepository<EventoEntity, String>, JpaSpecificationExecutor<EventoEntity> {
     List<EventoEntity> findByEstado(String estado);
     List<EventoEntity> findByEstadoIn(Collection<String> estados);
+    List<EventoEntity> findTop50ByEstadoAndPublicacionAvisadaFalseOrderByIdAsc(String estado);
 }

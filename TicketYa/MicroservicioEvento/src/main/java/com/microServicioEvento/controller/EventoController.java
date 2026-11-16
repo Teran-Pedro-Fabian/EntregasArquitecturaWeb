@@ -33,6 +33,13 @@ public class EventoController {
         return ResponseEntity.ok(eventoService.actualizarBorrador(id, idOrganizador, datos));
     }
 
+    // Cambio controlado de un evento publicado, genera aviso a compradores
+    @PatchMapping("/{id}/modificar-publicado")
+    public ResponseEntity<EventoEntity> modificarPublicado(@PathVariable String id,
+            @RequestParam String idOrganizador, @RequestBody EventoEntity datos) {
+        return ResponseEntity.ok(eventoService.modificarPublicado(id, idOrganizador, datos));
+    }
+
     /** Se conserva la ruta /estado que ya usaba el proyecto. */
     @PutMapping("/{id}/estado")
     public ResponseEntity<EventoEntity> publicar(@PathVariable String id,

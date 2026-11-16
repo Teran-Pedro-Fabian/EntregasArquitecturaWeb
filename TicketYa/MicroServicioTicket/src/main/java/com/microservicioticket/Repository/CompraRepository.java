@@ -6,4 +6,5 @@ import java.util.Optional;
 
 public interface CompraRepository extends JpaRepository<CompraEntity, Long> {
     Optional<CompraEntity> findByClaveIdempotencia(String claveIdempotencia);
+    java.util.List<CompraEntity> findTop50ByEstadoAndNotificacionEnviadaFalseOrderByIdAsc(String estado);
 }

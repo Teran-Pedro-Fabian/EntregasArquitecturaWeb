@@ -3,6 +3,8 @@ package com.microServicioEvento.service;
 import com.microServicioEvento.dto.BusquedaEventoFiltro;
 import com.microServicioEvento.dto.EventoBusquedaDTO;
 import com.microServicioEvento.entity.EventoEntity;
+import com.microServicioEvento.entity.CambioAvisoEntity;
+import com.microServicioEvento.repository.CambioAvisoRepository;
 import com.microServicioEvento.entity.EventoParticipanteEntity;
 import com.microServicioEvento.entity.ParticipanteEntity;
 import com.microServicioEvento.repository.EventoRepository;
@@ -15,6 +17,7 @@ import org.springframework.cache.annotation.Caching;
 import jakarta.persistence.criteria.Predicate;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -37,6 +40,8 @@ public class EventoService {
 
     @Autowired
     private EventoRepository eventoRepository;
+    @Autowired
+    private CambioAvisoRepository cambioAvisoRepository;
     @Autowired
     private EventoParticipanteRepositoy eventoParticipanteRepository;
     @Autowired
@@ -100,7 +105,40 @@ public class EventoService {
         validarDatos(evento);
         validarConfiguracionPublicacion(evento);
         evento.setEstado("PUBLICADO");
+        evento.setPublicacionAvisada(false);
         return eventoRepository.save(evento);
+    }
+
+    /** Modificar un evento publicado sin alterar lugar, precios ni asientos */
+    @Caching(evict = {
+            @CacheEvict(cacheNames = "catalogo-eventos", allEntries = true),
+            @CacheEvict(cacheNames = "busqueda-eventos", allEntries = true)
+    })
+    @Transactional
+    public EventoEntity modificarPublicado(String id, String idOrganizador, EventoEntity datos) {
+        EventoEntity evento = buscarObligatorio(id);
+        verificarOrganizador(evento, idOrganizador);
+        exigirEstado(evento, "PUBLICADO");
+        if (datos == null || vacio(datos.getNombre()) || vacio(datos.getDescripcion()) ||
+                vacio(datos.getFechaHora())) {
+            throw new IllegalArgumentException("Nombre, descripcion y fecha son obligatorios");
+        }
+        try {
+            LocalDateTime.parse(datos.getFechaHora());
+        } catch (DateTimeParseException ex) {
+            throw new IllegalArgumentException("fechaHora debe tener formato yyyy-MM-ddTHH:mm:ss");
+        }
+        if (java.util.Objects.equals(evento.getNombre(), datos.getNombre()) &&
+                java.util.Objects.equals(evento.getDescripcion(), datos.getDescripcion()) &&
+                java.util.Objects.equals(evento.getFechaHora(), datos.getFechaHora())) return evento;
+        evento.setNombre(datos.getNombre());
+        evento.setDescripcion(datos.getDescripcion());
+        evento.setFechaHora(datos.getFechaHora());
+        EventoEntity actualizado = eventoRepository.save(evento);
+        cambioAvisoRepository.save(new CambioAvisoEntity(id,
+                "El evento " + evento.getNombre() + " fue modificado. Nueva fecha: "
+                        + evento.getFechaHora() + "."));
+        return actualizado;
     }
 
     // Un administrador puede detener temporalmente la venta

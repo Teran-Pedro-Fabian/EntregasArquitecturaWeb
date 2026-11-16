@@ -34,4 +34,7 @@ public class CompraEntity {
     private String medioPago;
     private String estado;
     private Instant fechaCompra;
+    // Solo marcar cuando Cliente confirme que guardo la notificacion
+    @Column(name = "notificacion_enviada", nullable = false)
+    private boolean notificacionEnviada = false;
 }

@@ -5,6 +5,8 @@ import com.microserviciocliente.entity.ClienteEntity;
 import com.microserviciocliente.entity.PreferenciasEntity;
 import com.microserviciocliente.entity.NotificacionEntity;
 import com.microserviciocliente.dto.NotificacionCancelacionRequest;
+import com.microserviciocliente.dto.NotificacionRequest;
+import com.microserviciocliente.dto.NotificacionPublicacionRequest;
 import com.microserviciocliente.servise.NotificacionService;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -55,8 +57,47 @@ public class ClienteController {
             return ResponseEntity.notFound().build(); // 404 Not Found
         }
     }
+    // Registrar o actualizar el correo del cliente para el envio SMTP
+    @PatchMapping("/{id}/email")
+    public ResponseEntity<?> actualizarEmail(@PathVariable String id, @RequestBody java.util.Map<String, String> datos) {
+        try {
+            return ResponseEntity.ok(clienteService.actualizarEmail(id, datos.get("email")));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    // Avisos internos que llegan desde Ticket
+    @PostMapping("/interno/notificaciones/compra")
+    public ResponseEntity<?> recibirCompra(@RequestBody NotificacionRequest datos) {
+        try {
+            return ResponseEntity.ok(notificacionService.recibirCompra(datos));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @PostMapping("/interno/notificaciones/cambio")
+    public ResponseEntity<?> recibirCambio(@RequestBody NotificacionRequest datos) {
+        try {
+            return ResponseEntity.ok(notificacionService.recibirCambio(datos));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    // Evento informa cuando se publica un artista favorito
+    @PostMapping("/interno/notificaciones/publicacion")
+    public ResponseEntity<?> recibirPublicacion(@RequestBody NotificacionPublicacionRequest datos) {
+        try {
+            return ResponseEntity.ok(java.util.Map.of("notificados", notificacionService.recibirPublicacion(datos)));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
     // Ticket envia este aviso cuando cancela un evento
-    // No se utiliza email ni push aun
+    // El correo se procesa despues, sin bloquear la cancelacion
     @PostMapping("/interno/notificaciones/cancelacion")
     public ResponseEntity<?> recibirCancelacion(@RequestBody NotificacionCancelacionRequest datos) {
         try {
@@ -66,7 +107,7 @@ public class ClienteController {
         }
     }
 
-    // Bandeja de notificaciones que consulta el comprador desde el Gateway.
+    // Bandeja de notificaciones que consulta el comprador desde el Gateway
     @GetMapping("/{id}/notificaciones")
     public ResponseEntity<List<NotificacionEntity>> consultarNotificaciones(@PathVariable String id) {
         return ResponseEntity.ok(notificacionService.listarPorCliente(id));

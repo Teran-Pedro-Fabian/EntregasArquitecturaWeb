@@ -23,6 +23,10 @@ public class ClienteEntity {
     @Column(name = "nombre")
     private String nombre;
 
+    // Destinatario de las notificaciones por correo
+    @Column(name = "email", length = 254)
+    private String email;
+
     // los ID heredados de Mongo se conservan al importar
     @PrePersist
     public void generarId() {

@@ -20,6 +20,8 @@ public class PreferenciasEntity {
     private String idEvento;
     private String idParticipante;
     private String idLugar;
+    // Ciudad favorita para los avisos de nuevos eventos
+    private String ciudad;
 
     // En MongoDB no se ejecuta el @PrePersist de JPA
     public void generarId() {

@@ -9,4 +9,5 @@ import java.util.List;
 @Repository
 public interface PreferenciasRepository extends MongoRepository<PreferenciasEntity, String> {
     List<PreferenciasEntity> findByIdCliente(String idCliente);
+    List<PreferenciasEntity> findByIdParticipanteIn(List<String> idsParticipantes);
 }
