@@ -126,4 +126,11 @@ public class EventoController {
         return ResponseEntity.ok(eventoService.buscarEventos(filtro));
     }
 
+
+    @GetMapping ("/participante/{id}")
+    public ResponseEntity<ParticipanteEntity> obtenerParticipantePorId(@PathVariable String id) {
+        ParticipanteEntity participante = eventoService.findbyparticipanteByidParticipante(id);
+        return participante != null ? ResponseEntity.ok(participante) : ResponseEntity.notFound().build();
+    }
+
 }

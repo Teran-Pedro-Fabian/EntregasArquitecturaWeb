@@ -141,7 +141,7 @@ public class TicketServiceTest {
         assertEquals(10L, resultado.getId());
         assertTrue(resultado.getQrCode().startsWith("TICKETYA-"));
         assertEquals("SIN_SOLICITUD", resultado.getEstadoDevolucion());
-        assertFalse(resultado.isUsado());
+        assertFalse(resultado.getUsado());
         verify(ticketRepository).saveAndFlush(any(TicketEntity.class));
         verify(restTemplate).postForEntity(eq(URL_VALIDAR), any(), eq(String.class));
         verify(restTemplate).postForEntity(eq(URL_CONFIRMAR), any(), eq(String.class));

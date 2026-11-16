@@ -44,5 +44,14 @@ public class TicketEntity {
     private String idAdministradorRevision;
     // Fecha en la que se reviso
     private Instant fechaRevision;
+
+
+
+    public boolean getUsado() {
+        return usado;
+    }
+    public void setUsado(boolean usado) {
+        this.usado = usado;
+    }
 }
 

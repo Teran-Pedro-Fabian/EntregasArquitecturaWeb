@@ -439,6 +439,33 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/AvisoCancelacion'
+  /ticket/escanearQrcode:
+    post:
+      tags:
+      - Ticket
+      summary: Escanear Qr y marcar la entrada como utilizada
+      description: Registra el ingreso del asistente al presentar su Qr
+      parameters:
+      - name: qrCode
+        in: query
+        required: true
+        schema:
+          type: string
+        example: TICKETYA-QR-EJEMPLO
+      responses:
+        '200':
+          description: Operacion correcta
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ticket'
+        '409':
+          description: La entrada ya fue utilizada
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: La entrada ya fue utilizada
   /ticket/interno/eventos/{idEvento}/bloquear-ventas:
     post:
       tags:
@@ -504,6 +531,65 @@ paths:
               schema:
                 type: string
               example: Operacion no permitida
+  /ticket/cola/{idEvento}/entrar:
+    post:
+      tags:
+      - Ticket
+      summary: Ingresar a la fila virtual de un evento
+      description: Para eventos con demanda ALTA la compra se habilita en orden de llegada con tanda de habilitacion
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ColaRequest'
+      responses:
+        '201':
+          description: Cliente agregado a la fila virtual
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ColaResponse'
+        '400':
+          description: Datos invalidos o cliente ya no esta en la fila
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: 'Fila virtual: evento y cliente no validos'
+  /ticket/cola/{idEvento}/posicion:
+    get:
+      tags:
+      - Ticket
+      summary: Consultar posicion en la fila virtual de un evento
+      description: posicion 1 es el primero en la fila; habilitado indica si el cliente tiene turno dentro de la tanda
+      parameters:
+      - name: idEvento
+        in: path
+        required: true
+        schema:
+          type: string
+        example: evento-01
+      - name: idCliente
+        in: query
+        required: true
+        schema:
+          type: string
+        example: cliente-01
+      responses:
+        '200':
+          description: Operacion correcta
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ColaResponse'
+        '400':
+          description: Datos invalidos o cliente no esta en la fila
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: El cliente no esta en la fila del evento
 components:
   schemas:
     CompraNumeradaRequest:
@@ -675,3 +761,41 @@ components:
         avisosRegistrados: 2
         avisosEntregados: 2
         errores: []
+    ColaRequest:
+      type: object
+      properties:
+        idCliente:
+          type: string
+          example: cliente-01
+      required:
+      - idCliente
+      example:
+        idCliente: cliente-01
+      description: Cliente que ingresa a la fila virtual de un evento de alta demanda
+    ColaResponse:
+      type: object
+      properties:
+        idEvento:
+          type: string
+          example: evento-01
+        idCliente:
+          type: string
+          example: cliente-01
+        posicion:
+          type: integer
+          format: int32
+          example: 1
+        total:
+          type: integer
+          format: int32
+          example: 3
+        habilitado:
+          type: boolean
+          example: true
+      example:
+        idEvento: evento-01
+        idCliente: cliente-01
+        posicion: 1
+        total: 3
+        habilitado: true
+      description: Posicion del cliente en la fila virtual y si tiene habilitado el turno dentro de la tanda

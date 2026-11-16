@@ -11,6 +11,7 @@ import com.microServicioEvento.repository.ParticipanteRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.persistence.criteria.Predicate;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -536,5 +537,9 @@ public class EventoService {
 
     private boolean contiene(String valor, String buscado) {
         return valor != null && valor.toLowerCase(Locale.ROOT).contains(buscado);
+    }
+
+    public ParticipanteEntity findbyparticipanteByidParticipante(@NonNull String id) {
+        return participanteRepository.findById(id).orElse(null);
     }
 }

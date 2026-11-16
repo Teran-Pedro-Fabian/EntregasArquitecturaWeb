@@ -3,6 +3,7 @@ package com.microservicioticket.service;
 import com.microservicioticket.Repository.CompraRepository;
 import com.microservicioticket.Repository.TicketRepository;
 import com.microservicioticket.dto.CompraRequest;
+import com.microservicioticket.dto.ColaResponse;
 import com.microservicioticket.dto.CompraResponse;
 import com.microservicioticket.dto.CompraGeneralRequest;
 import com.microservicioticket.entity.CompraEntity;
@@ -45,6 +46,8 @@ public class CompraService {
     private PagoMockService pagoMockService;
     @Autowired
     private BloqueoVentaEventoService bloqueoVentaEventoService;
+    @Autowired
+    private ColaService colaService;
 
     @Value("${ticketya.compra.max-entradas:4}")
     private int maxEntradas;
@@ -90,6 +93,8 @@ public class CompraService {
         if (evento == null || !"PUBLICADO".equals(evento.get("estado"))) {
             throw new IllegalStateException("El evento no esta publicado");
         }
+        // Punto nuevo: eventos de alta demanda exigen entrada a la fila virtual
+        verificarFilaVirtual(idEvento, idCliente, evento);
 
         // 3) Verificar que el cliente no supere el limite
         long activos = ticketRepository.contarActivos(idCliente, idEvento);
@@ -205,6 +210,8 @@ public class CompraService {
         if (evento == null || !"PUBLICADO".equals(evento.get("estado"))) {
             throw new IllegalStateException("El evento no esta publicado");
         }
+        // Punto nuevo: eventos de alta demanda exigen entrada a la fila virtual
+        verificarFilaVirtual(idEvento, idCliente, evento);
 
         // 2) Verificar el limite de entradas del cliente
         long activos = ticketRepository.contarActivos(idCliente, idEvento);
@@ -308,6 +315,20 @@ public class CompraService {
             throw new IllegalStateException("El evento aun admite ventas");
         }
         return reintentarCompra(compra);
+    }
+
+    /**
+     * Eventos de alta demanda: la compra debe pasar por la fila virtual
+     * El cliente habilitado (primer lugar de la fila) puede comprar en orden
+     */
+    private void verificarFilaVirtual(String idEvento, String idCliente, Map<String, Object> evento) {
+        if (evento == null || !"ALTA".equals(evento.get("demanda"))) {
+            return;
+        }
+        ColaResponse posicion = colaService.consultarPosicion(idEvento, idCliente);
+        if (!Boolean.TRUE.equals(posicion.getHabilitado())) {
+            throw new IllegalStateException("Evento de alta demanda: la compra debe hacerse en orden desde la fila virtual");
+        }
     }
 
     private CompraResponse reintentarCompra(CompraEntity compra) {

@@ -1618,6 +1618,87 @@
           ]
         }
       ]
+    },
+    {
+      "name": "05 Fila virtual - Alta demanda",
+      "description": "Eventos con demanda ALTA: los clientes compran en orden desde la fila virtual. Tanda de habilitacion de 10 personas hasta que la lista se vacie.",
+      "item": [
+        {
+          "name": "01 Ingresar a la fila virtual",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/ticket/cola/{{idEvento}}/entrar",
+            "description": "El cliente ingresa a la fila virtual del evento marcado como ALTA demanda.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"idCliente\": \"{{idClienteNumerado}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201\", function () { pm.expect([201]).to.include(pm.response.code); });",
+                  "if ([201].includes(pm.response.code)) {",
+                  "  const data = pm.response.json();",
+                  "  const valor = data.idCliente;",
+                  "  pm.test(\"Se obtuvo idClienteFila\", function () { pm.expect(valor).to.not.be.oneOf([null, undefined, \"\"]); });",
+                  "  if (valor !== null && valor !== undefined) pm.collectionVariables.set(\"idClienteFila\", String(valor));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "02 Consultar posicion en la fila",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/ticket/cola/{{idEvento}}/posicion?idCliente={{idClienteFila}}",
+            "description": "Consulta la posicion del cliente en la fila virtual y si tiene habilitado el turno.",
+            "body": {
+              "mode": "raw",
+              "raw": "200",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.expect([200]).to.include(pm.response.code); });",
+                  "if ([200].includes(pm.response.code)) {",
+                  "  const data = pm.response.json();",
+                  "  pm.test(\"Regla de negocio\", function () { pm.expect(data.posicion).to.not.be.oneOf([null, undefined, 0]); });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
     }
   ],
   "variable": [
@@ -1643,6 +1724,11 @@
     },
     {
       "key": "fechaEvento",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "idClienteFila",
       "value": "",
       "type": "string"
     }

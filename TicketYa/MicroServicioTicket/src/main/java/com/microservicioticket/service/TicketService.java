@@ -264,4 +264,19 @@ public class TicketService {
         // 8) Guardar el ticket en PostgreSQL
         return ticketRepository.save(ticket);
     }
+
+
+    public TicketEntity marcarEntradaUtilizada(String qrCode) {
+        // 1) Buscar el ticket y bloquearlo
+        TicketEntity ticket = ticketRepository.findByQrCodeParaRevision(qrCode).orElseThrow(() -> new RuntimeException("Ticket no encontrado"));
+        // 2) Verificar si la entrada ya fue utilizada
+        if (ticket.getUsado()) {
+            throw new RuntimeException("La entrada ya fue utilizada");
+        }
+        // 3) Marcar la entrada como utilizada
+        ticketRepository.marcaComoUtilizadaEntrada(qrCode);
+        // 4) Actualizar el estado en la entidad
+        ticket.setUsado(true);
+        return ticket;
+    }
 }

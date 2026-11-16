@@ -4,6 +4,7 @@ package com.microserviciocliente.controller;
 import com.microserviciocliente.entity.ClienteEntity;
 import com.microserviciocliente.entity.PreferenciasEntity;
 import com.microserviciocliente.entity.NotificacionEntity;
+import com.microserviciocliente.dto.EventoEntityDTO;
 import com.microserviciocliente.dto.NotificacionCancelacionRequest;
 import com.microserviciocliente.servise.NotificacionService;
 import java.util.List;
@@ -13,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import com.microserviciocliente.servise.ClienteService;
 import com.microserviciocliente.servise.PreferenciasService;
+
 
 @RestController
 @RequestMapping("/clientes")
@@ -70,5 +72,12 @@ public class ClienteController {
     @GetMapping("/{id}/notificaciones")
     public ResponseEntity<List<NotificacionEntity>> consultarNotificaciones(@PathVariable String id) {
         return ResponseEntity.ok(notificacionService.listarPorCliente(id));
+    }
+
+
+    @GetMapping("/{id}/recomendaciones")
+    public ResponseEntity<List<EventoEntityDTO>> obtenerRecomendaciones(@PathVariable String idCliente) {
+        List<EventoEntityDTO> recomendaciones = clienteService.obtenerRecomendaciones(idCliente);
+        return ResponseEntity.ok(recomendaciones);
     }
 }

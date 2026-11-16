@@ -135,4 +135,20 @@ public class TicketController {
                     .body(e.getMessage());
         }
     }
+
+
+    @PostMapping("/escanearQrcode")
+    public ResponseEntity<?> escanearQrcode(
+            @RequestParam String qrCode) {
+        try {
+            // 1) Marcar la entrada como utilizada
+            TicketEntity ticket = ticketService.marcarEntradaUtilizada(qrCode);
+            // 2) Devolver el ticket actualizado
+            return ResponseEntity.ok(ticket);
+        } catch (RuntimeException e) {
+            // 3) Informar si no se pudo marcar
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(e.getMessage());
+        }
+    }
 }
