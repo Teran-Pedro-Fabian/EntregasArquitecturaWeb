@@ -5,6 +5,7 @@ import com.microservicioticket.service.ReporteService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -29,6 +30,7 @@ public class ReporteController {
      * Cuando se incorpore JWT se debe obtener del usuario autenticado.
      */
     @GetMapping("/eventos/{idEvento}")
+    @PreAuthorize("hasRole('ADMINISTRADOR') or (hasRole('ORGANIZADOR') and #idOrganizador == authentication.name)")
     public ResponseEntity<?> obtenerReporte(@PathVariable String idEvento,
                                             @RequestParam String idOrganizador) {
         try {

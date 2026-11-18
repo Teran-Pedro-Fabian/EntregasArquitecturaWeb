@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 import java.util.List;
 import java.util.Map;
 
@@ -44,12 +45,14 @@ public class CancelacionEventoController {
 
     /** Consultar cuantas entradas siguen pendientes de reintegro */
     @GetMapping("/eventos/{idEvento}/estado-cancelacion")
+    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'ORGANIZADOR')")
     public ResponseEntity<Map<String, Object>> estado(@PathVariable String idEvento) {
         return ResponseEntity.ok(cancelacionService.consultar(idEvento));
     }
 
     /** Avisos persistidos en Ticket, la bandeja activa esta en Cliente */
     @GetMapping("/avisos-cancelacion")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<List<AvisoCancelacionEntity>> avisos(@RequestParam String idCliente) {
         return ResponseEntity.ok(avisoService.listarPorCliente(idCliente));
     }

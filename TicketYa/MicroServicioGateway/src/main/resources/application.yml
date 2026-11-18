@@ -43,3 +43,8 @@ management:
 logging:
   level:
     org.springframework.cloud.gateway: INFO
+
+# Misma firma HS256 que los cuatro microservicios (solo para desarrollo local)
+ticketya:
+  jwt:
+    secret: ${TICKETYA_JWT_SECRET:ticketya-dev-only-change-this-jwt-secret-2026}

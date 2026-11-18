@@ -11,6 +11,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.UUID;
 
 @Service
@@ -264,4 +265,48 @@ public class TicketService {
         // 8) Guardar el ticket en PostgreSQL
         return ticketRepository.save(ticket);
     }
+
+    /**
+     * validar un QR en la puerta y registrar el ingreso
+     * bloquear la fila hasta guardar para que no pueda usarse dos veces
+     */
+    @Transactional
+    public TicketEntity marcarEntradaUtilizada(String qrCode, String idEvento) {
+        if (qrCode == null || qrCode.isBlank() || idEvento == null || idEvento.isBlank()) {
+            throw new IllegalArgumentException("Debe indicar el QR y el evento");
+        }
+
+        // buscar con bloqueo para evitar dos escaneos simultaneos
+        TicketEntity ticket = ticketRepository.findByQrCodeParaRevision(qrCode)
+                .orElseThrow(() -> new NoSuchElementException("Ticket no encontrado"));
+
+        if (!idEvento.equals(ticket.getIdEvento())) {
+            throw new IllegalStateException("El QR no pertenece a este evento");
+        }
+        if (ticket.isUsado()) {
+            throw new IllegalStateException("La entrada ya fue utilizada");
+        }
+
+        // no permitir entradas que estan en proceso de devolucion o ya fueron devueltas
+        String devolucion = ticket.getEstadoDevolucion();
+        if (devolucion != null && !"SIN_SOLICITUD".equals(devolucion)
+                && !"RECHAZADA".equals(devolucion)) {
+            throw new IllegalStateException("La entrada no esta habilitada por su estado de devolucion");
+        }
+
+        // consultar que el evento siga habilitado
+        Map<?, ?> evento = restTemplate.getForObject(
+                "http://localhost:8082/evento/" + idEvento, Map.class);
+        if (evento == null || !idEvento.equals(evento.get("id"))) {
+            throw new IllegalStateException("No se pudo validar el evento");
+        }
+        String estado = String.valueOf(evento.get("estado"));
+        if (!"PUBLICADO".equals(estado) && !"AGOTADO".equals(estado)) {
+            throw new IllegalStateException("El evento no admite ingresos en su estado actual");
+        }
+
+        ticket.setUsado(true);
+        return ticketRepository.saveAndFlush(ticket);
+    }
+
 }
