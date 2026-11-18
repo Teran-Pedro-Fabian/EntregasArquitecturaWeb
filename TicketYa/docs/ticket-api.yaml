@@ -12,6 +12,10 @@ servers:
 tags:
 - name: Ticket
   description: Operaciones del microservicio Ticket
+- name: Cliente
+  description: Operaciones de clientes y emision de tokens JWT
+- name: Auth
+  description: Emision de tokens JWT (login) para clientes, organizadores, administradores y personal de acceso
 - name: Interno
   description: Comunicacion HTTP entre microservicios; no destinada al usuario final
 paths:
@@ -590,6 +594,173 @@ paths:
               schema:
                 type: string
               example: El cliente no esta en la fila del evento
+  /clientes/login:
+    post:
+      tags:
+      - Auth
+      summary: Login y emision de token JWT
+      description: >
+        Endpoint publico que emite un JWT firmado con HS256 para el cliente indicado.
+        El token expira en 24 horas y trae el claim roles=CLIENTE. El Gateway lo valida
+        y propaga X-User-Id y X-User-Roles a los microservicios.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                idCliente:
+                  type: string
+                  example: cliente-01
+              required:
+                - idCliente
+            example:
+              idCliente: cliente-01
+      responses:
+        '200':
+          description: Token emitido correctamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                    description: JWT firmado con HS256
+                  idCliente:
+                    type: string
+                  roles:
+                    type: string
+                    example: CLIENTE
+              example:
+                token: eyJhbGciOiJIUzI1NiJ9.eyJjbGllbnQiOiJjcm9iZXItMDEiLCJyb2xlIjoiQ0xVNTUifQ.example
+                idCliente: cliente-01
+                roles: CLIENTE
+        '400':
+          description: Falta el idCliente o el cliente no existe
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Falta el idCliente del cliente
+        '404':
+          description: Cliente no encontrado
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Cliente no encontrado
+  /ticket/login:
+    post:
+      tags:
+      - Auth
+      summary: Login personal de acceso (emitir JWT PERSONAL_ACCESO)
+      description: >
+        Endpoint publico que emite un JWT firmado con HS256 para el personal de acceso
+        indicado. El Gateway lo valida y propaga X-User-Id y X-User-Roles a los microservicios.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                idUsuario:
+                  type: string
+                  example: personal-01
+                rol:
+                  type: string
+                  enum: [PERSONAL_ACCESO]
+                  example: PERSONAL_ACCESO
+              required:
+                - idUsuario
+                - rol
+            example:
+              idUsuario: personal-01
+              rol: PERSONAL_ACCESO
+      responses:
+        '200':
+          description: Token emitido correctamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                    description: JWT firmado con HS256
+                  id:
+                    type: string
+                  roles:
+                    type: string
+                    example: PERSONAL_ACCESO
+              example:
+                token: eyJhbGciOiJIUzI1NiJ9.eyJ1aWQiOiJwYWludC0wMSIsInJvbGUiOiJQQVJUSU9MTiJ9.example
+                id: personal-01
+                roles: PERSONAL_ACCESO
+        '400':
+          description: Datos invalidos o rol no permitido
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: "Rol no valido: debe ser PERSONAL_ACCESO"
+  /evento/login:
+    post:
+      tags:
+      - Auth
+      summary: Login organizador o administrador (emitir JWT)
+      description: >
+        Endpoint publico que emite un JWT firmado con HS256 para un organizador o administrador.
+        El Gateway lo valida y propaga X-User-Id y X-User-Roles a los microservicios.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                idUsuario:
+                  type: string
+                  example: organizador-01
+                rol:
+                  type: string
+                  enum: [ORGANIZADOR, ADMINISTRADOR]
+                  example: ORGANIZADOR
+              required:
+                - idUsuario
+                - rol
+            example:
+              idUsuario: organizador-01
+              rol: ORGANIZADOR
+      responses:
+        '200':
+          description: Token emitido correctamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                    description: JWT firmado con HS256
+                  id:
+                    type: string
+                  roles:
+                    type: string
+                    example: ORGANIZADOR
+              example:
+                token: eyJhbGciOiJIUzI1NiJ9.eyJ1aWQiOiJvcGFybmV0ZXItMDEiLCJyb2xlIjoiT0VORlNJRiJ9.example
+                id: organizador-01
+                roles: ORGANIZADOR
+        '400':
+          description: Datos invalidos o rol no permitido
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: "Rol no valido: debe ser ORGANIZADOR o ADMINISTRADOR"
 components:
   schemas:
     CompraNumeradaRequest:

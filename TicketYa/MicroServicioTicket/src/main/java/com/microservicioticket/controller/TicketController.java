@@ -1,10 +1,14 @@
 package com.microservicioticket.controller;
 
+import com.microservicioticket.dto.LoginRequest;
+import com.microservicioticket.dto.TokenResponse;
 import com.microservicioticket.entity.TicketEntity;
 import com.microservicioticket.service.TicketService;
+import com.microservicioticket.service.TokenService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -13,6 +17,8 @@ public class TicketController {
 
     @Autowired
     private TicketService ticketService;
+    @Autowired
+    private TokenService tokenService;
 
     /**
      * Emitir un ticket
@@ -44,111 +50,99 @@ public class TicketController {
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<TicketEntity> obtener(@PathVariable Long id) {
         TicketEntity ticket = ticketService.obtenerTicket(id);
         return ticket != null ? ResponseEntity.ok(ticket) : ResponseEntity.notFound().build();
     }
 
     /**
-     * Solicitar la devolucion de un ticket
-     *
-     * @param id ID del ticket
-     * @param idCliente ID del cliente
-     * @return resultado de la solicitud
+     * Solicitar la devolucion de un ticket (solo el cliente dueño o un administrador)
      */
     @PostMapping("/{id}/solicitar-devolucion")
+    @PreAuthorize("#idCliente == authentication.name or hasRole('ADMINISTRADOR')")
     public ResponseEntity<?> solicitarDevolucion(@PathVariable Long id, @RequestParam String idCliente) {
         try {
-            // 1) Registrar la solicitud de devolucion
             TicketEntity ticket = ticketService.solicitarDevolucion(id, idCliente);
-            // 2) Devolver el ticket con su nuevo estado
             return ResponseEntity.ok(ticket);
         } catch (RuntimeException e) {
-            // 3) Informar si no se pudo realizar la solicitud
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 
     /**
-     * Procesar el reintegro de una devolucion aprobada
-     *
-     * @param id ID del ticket
-     * @return resultado del reintegro
+     * Procesar el reintegro de una devolucion aprobada (solo administrador)
      */
     @PatchMapping("/{id}/procesar-reintegro")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<?> procesarReintegro(@PathVariable Long id) {
         try {
-            // 1) Procesar el reintegro simulado
             TicketEntity ticket = ticketService.procesarReintegro(id);
-            // 2) Devolver el ticket actualizado
             return ResponseEntity.ok(ticket);
         } catch (RuntimeException e) {
-            // 3) Informar si no se pudo procesar
             return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
         }
     }
 
     /**
-     * Finalizar una devolucion aprobada
-     * Liberar el asiento y actualizar el ticket
-     *
-     * @param id ID del ticket
-     * @return ticket actualizado
+     * Finalizar una devolucion aprobada y liberar el asiento (solo administrador)
      */
     @PatchMapping("/{id}/finalizar-devolucion")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<?> finalizarDevolucion(@PathVariable Long id) {
         try {
-            // 1) Finalizar la devolucion
             TicketEntity ticket = ticketService.finalizarDevolucion(id);
-            // 2) Devolver el ticket actualizado
             return ResponseEntity.ok(ticket);
         } catch (RuntimeException e) {
-            // 3) Informar si no se pudo finalizar
-            return ResponseEntity.status(HttpStatus.CONFLICT)
-                    .body(e.getMessage());
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
         }
     }
 
     /**
-     * Revisar una solicitud de devolucion
-     * Permitir aprobar o rechazar
-     *
-     * @param id ID del ticket
-     * @param idAdministrador ID del administrador
-     * @param decision APROBAR o RECHAZAR
-     * @return ticket actualizado
+     * Revisar una solicitud de devolucion para aprobar o rechazar (solo administrador)
      */
     @PatchMapping("/{id}/revisar-devolucion")
-    public ResponseEntity<?> revisarDevolucion(
-            @PathVariable Long id,
-            @RequestParam String idAdministrador,
-            @RequestParam String decision) {
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
+    public ResponseEntity<?> revisarDevolucion(@PathVariable Long id,
+                                               @RequestParam String idAdministrador,
+                                               @RequestParam String decision) {
         try {
-            // 1) Revisar la solicitud
             TicketEntity ticket = ticketService.revisarDevolucion(id, idAdministrador, decision);
-            // 2) Devolver el ticket actualizado
             return ResponseEntity.ok(ticket);
-
         } catch (RuntimeException e) {
-            // 3) Informar si no se pudo revisar
-            return ResponseEntity.status(HttpStatus.CONFLICT)
-                    .body(e.getMessage());
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
         }
     }
 
-
+    /**
+     * Registrar el ingreso en puerta escaneando el codigo QR (personal de acceso o administrador)
+     */
     @PostMapping("/escanearQrcode")
-    public ResponseEntity<?> escanearQrcode(
-            @RequestParam String qrCode) {
+    @PreAuthorize("hasAnyRole('PERSONAL_ACCESO', 'ADMINISTRADOR')")
+    public ResponseEntity<?> escanearQrcode(@RequestParam String qrCode) {
         try {
-            // 1) Marcar la entrada como utilizada
             TicketEntity ticket = ticketService.marcarEntradaUtilizada(qrCode);
-            // 2) Devolver el ticket actualizado
             return ResponseEntity.ok(ticket);
         } catch (RuntimeException e) {
-            // 3) Informar si no se pudo marcar
-            return ResponseEntity.status(HttpStatus.CONFLICT)
-                    .body(e.getMessage());
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
         }
+    }
+
+    /**
+     * Login que emite un JWT exclusivo para el personal de acceso
+     */
+    @PostMapping("/login")
+    public ResponseEntity<?> login(@RequestBody LoginRequest datos) {
+        if (datos == null || datos.getIdUsuario() == null || datos.getIdUsuario().isBlank()) {
+            return new ResponseEntity<>("Falta el idUsuario del personal de acceso", HttpStatus.BAD_REQUEST);
+        }
+        if (datos.getRol() == null || !datos.getRol().trim().equalsIgnoreCase("PERSONAL_ACCESO")) {
+            return new ResponseEntity<>("Rol no valido: debe ser PERSONAL_ACCESO", HttpStatus.BAD_REQUEST);
+        }
+        String rolNormalizado = "PERSONAL_ACCESO";
+        String token = tokenService.generarTokenJwt(datos.getIdUsuario(), rolNormalizado);
+        TokenResponse respuesta = new TokenResponse(token, datos.getIdUsuario(), rolNormalizado);
+        return new ResponseEntity<>(respuesta, HttpStatus.OK);
     }
 }
+

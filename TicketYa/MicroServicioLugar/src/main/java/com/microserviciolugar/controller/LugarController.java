@@ -8,6 +8,7 @@ import com.microserviciolugar.service.LugarService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -20,8 +21,10 @@ public class LugarController {
     @Autowired
     private LugarService lugarService;
 
+
     // --- GESTIÓN DE RECINTOS (LUGAR) ---
     @PostMapping
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<LugarEntity> crearLugar(@RequestBody LugarEntity lugar) {
         LugarEntity nuevoLugar = lugarService.guardarLugar(lugar);
         return new ResponseEntity<>(nuevoLugar, HttpStatus.CREATED);
@@ -40,6 +43,7 @@ public class LugarController {
 
     /** Los lugares antiguos pueden actualizar su ciudad sin perder los sectores. */
     @PatchMapping("/{idLugar}/ciudad")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<?> actualizarCiudad(@PathVariable Long idLugar, @RequestParam String ciudad) {
         try {
             return ResponseEntity.ok(lugarService.actualizarCiudad(idLugar, ciudad));
@@ -66,6 +70,7 @@ public class LugarController {
     // --- GESTIÓN DE SECTORES ---
 
     @PostMapping("/sectores")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<?> crearSector(@RequestBody SectorEntity sector) {
         try {
             SectorEntity nuevoSector = lugarService.guardarSector(sector);
@@ -101,6 +106,7 @@ public class LugarController {
      * Body esperado: {"idAsiento": 1, "idCliente": "ID_DE_MONGO"}
      */
     @PostMapping("/reservar")
+    @PreAuthorize("hasAnyRole('CLIENTE', 'ADMINISTRADOR')")
     public ResponseEntity<?> reservarAsiento(@RequestBody Map<String, Object> request) {
         try {
             Long idAsiento = Long.valueOf(request.get("idAsiento").toString());
@@ -149,6 +155,7 @@ public class LugarController {
      * @return resultado de la cancelacion
      */
     @DeleteMapping("/reservas/{idAsiento}")
+    @PreAuthorize("#idCliente == authentication.name or hasRole('ADMINISTRADOR')")
     public ResponseEntity<?> cancelarReserva(@PathVariable Long idAsiento, @RequestParam String idCliente) {
         try {
             // 1) Cancelar la reserva del cliente
@@ -199,6 +206,7 @@ public class LugarController {
      * @return asiento creado
      */
     @PostMapping("/asientos")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<?> crearAsiento(@RequestBody Map<String, Object> request) {
         // 1) Verificar los datos
         if (request.get("idSector") == null || request.get("fila") == null || request.get("columna") == null) {

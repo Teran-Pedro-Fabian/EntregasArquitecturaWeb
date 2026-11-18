@@ -1699,6 +1699,166 @@
           ]
         }
       ]
+    },
+    {
+      "name": "06 Autenticacion y acceso - JWT",
+      "description": "Flujo de autenticacion con JWT: login para emitir token y escaneo de Qr por personal de acceso.",
+      "item": [
+        {
+          "name": "01 Login (emitir token JWT)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/clientes/login",
+            "description": "Emite un JWT firmado con el rol CLIENTE para el idCliente indicado.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"idCliente\": \"{{idClienteNumerado}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.expect([200]).to.include(pm.response.code); });",
+                  "if ([200].includes(pm.response.code)) {",
+                  "  const data = pm.response.json();",
+                  "  pm.test(\"Se obtuvo token\", function () { pm.expect(data.token).to.not.be.oneOf([null, undefined, \"\"]); });",
+                  "  if (data.token) pm.collectionVariables.set(\"token\", data.token);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "02 Escanear Qr (personal de acceso)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/ticket/escanearQrcode?qrCode={{codigoQr}}",
+            "description": "El personal de acceso escanea el Qr del ticket para registrar la entrada."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.expect([200]).to.include(pm.response.code); });",
+                  "if ([200].includes(pm.response.code)) {",
+                  "  const data = pm.response.json();",
+                  "  pm.test(\"Ticket actualizado\", function () { pm.expect(data.idTicket).to.not.be.oneOf([null, undefined]); });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "03 Login organizador/administrador",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/evento/login",
+            "description": "Emite un JWT con rol ORGANIZADOR o ADMINISTRADOR para gestion de eventos.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"idUsuario\": \"{{organizador}}\",\n  \"rol\": \"ORGANIZADOR\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.expect([200]).to.include(pm.response.code); });",
+                  "if ([200].includes(pm.response.code)) {",
+                  "  const data = pm.response.json();",
+                  "  pm.test(\"Se obtuvo token\", function () { pm.expect(data.token).to.not.be.oneOf([null, undefined, \"\"]); });",
+                  "  if (data.token) pm.collectionVariables.set(\"token\", data.token);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "04 Login personal de acceso",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/ticket/login",
+            "description": "Emite un JWT con rol PERSONAL_ACCESO para escanear Qr.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"idUsuario\": \"personal-01\",\n  \"rol\": \"PERSONAL_ACCESO\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.expect([200]).to.include(pm.response.code); });",
+                  "if ([200].includes(pm.response.code)) {",
+                  "  const data = pm.response.json();",
+                  "  pm.test(\"Se obtuvo token\", function () { pm.expect(data.token).to.not.be.oneOf([null, undefined, \"\"]); });",
+                  "  if (data.token) pm.collectionVariables.set(\"token\", data.token);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
     }
   ],
   "variable": [
@@ -1729,6 +1889,16 @@
     },
     {
       "key": "idClienteFila",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "codigoQr",
       "value": "",
       "type": "string"
     }

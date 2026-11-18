@@ -49,7 +49,13 @@ public class CompraController {
 
     /** Comprar entradas de Campo General (sector no numerado). */
     @PostMapping("/comprar-general")
-    public ResponseEntity<?> comprarGeneral(@RequestBody CompraGeneralRequest request) {
+    public ResponseEntity<?> comprarGeneral(@RequestBody CompraGeneralRequest request,
+            @RequestHeader(value = "X-User-Roles", required = false) String roles) {
+        // Solo un cliente autenticado puede comprar
+        if (roles == null || !roles.contains("CLIENTE")) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body("No autorizado: se requiere rol CLIENTE");
+        }
         try {
             CompraResponse respuesta = compraService.comprarGeneral(request);
             return ResponseEntity.status("CONFIRMADA".equals(respuesta.getEstado())
@@ -71,7 +77,13 @@ public class CompraController {
      * El precio se consulta a Lugar
      */
     @PostMapping({"/comprar", "/emitir"})
-    public ResponseEntity<?> comprar(@RequestBody CompraRequest request) {
+    public ResponseEntity<?> comprar(@RequestBody CompraRequest request,
+            @RequestHeader(value = "X-User-Roles", required = false) String roles) {
+        // Solo un cliente autenticado puede comprar
+        if (roles == null || !roles.contains("CLIENTE")) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body("No autorizado: se requiere rol CLIENTE");
+        }
         try {
             CompraResponse respuesta = compraService.comprar(request);
             return ResponseEntity.status("CONFIRMADA".equals(respuesta.getEstado())

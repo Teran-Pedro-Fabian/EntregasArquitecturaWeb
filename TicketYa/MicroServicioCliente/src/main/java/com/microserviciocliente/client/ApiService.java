@@ -5,12 +5,8 @@ import java.util.List;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.http.MediaType;
-import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
-
-import org.springframework.stereotype.Component;
 
 
 import com.microserviciocliente.dto.BusquedaEventoFiltro;
