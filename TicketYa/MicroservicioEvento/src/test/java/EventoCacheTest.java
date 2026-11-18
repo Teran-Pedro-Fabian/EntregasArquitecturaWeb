@@ -2,6 +2,7 @@ import com.microServicioEvento.entity.EventoEntity;
 import com.microServicioEvento.dto.BusquedaEventoFiltro;
 import com.microServicioEvento.repository.EventoParticipanteRepositoy;
 import com.microServicioEvento.repository.EventoRepository;
+import com.microServicioEvento.repository.CambioAvisoRepository;
 import com.microServicioEvento.repository.ParticipanteRepository;
 import com.microServicioEvento.service.EventoService;
 import org.junit.jupiter.api.BeforeEach;
@@ -96,6 +97,7 @@ public class EventoCacheTest {
     static class Config {
         @Bean EventoService service() { return new EventoService(); }
         @Bean EventoRepository eventoRepository() { return mock(EventoRepository.class); }
+        @Bean CambioAvisoRepository cambioAvisoRepository() { return mock(CambioAvisoRepository.class); }
         @Bean EventoParticipanteRepositoy eventoParticipanteRepositoy() { return mock(EventoParticipanteRepositoy.class); }
         @Bean ParticipanteRepository participanteRepository() { return mock(ParticipanteRepository.class); }
         @Bean RestTemplate restTemplate() { return mock(RestTemplate.class); }

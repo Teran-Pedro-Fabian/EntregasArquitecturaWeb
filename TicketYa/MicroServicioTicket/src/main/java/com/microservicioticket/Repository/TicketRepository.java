@@ -36,4 +36,10 @@ public interface TicketRepository extends JpaRepository<TicketEntity, Long> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT t FROM TicketEntity t WHERE t.id = :id")
     Optional<TicketEntity> findByIdParaRevision(@Param("id") Long id);
+
+    // bloquear el ticket por QR para impedir ingresos simultaneos
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT t FROM TicketEntity t WHERE t.qrCode = :qrCode")
+    Optional<TicketEntity> findByQrCodeParaRevision(@Param("qrCode") String qrCode);
+
 }

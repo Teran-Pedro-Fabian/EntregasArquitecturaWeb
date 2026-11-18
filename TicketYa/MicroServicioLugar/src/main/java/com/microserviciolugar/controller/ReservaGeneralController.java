@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import java.util.List;
 import java.util.Map;
@@ -29,6 +30,7 @@ public class ReservaGeneralController {
 
     /** Reservar N cupos generales durante 10 minutos. */
     @PostMapping("/sectores/generales/reservar")
+    @PreAuthorize("#datos['idCliente'] == authentication.name or hasRole('ADMINISTRADOR')")
     public ResponseEntity<?> reservar(@RequestBody Map<String, Object> datos) {
         try {
             Long idSector = Long.valueOf(datos.get("idSector").toString());
@@ -49,6 +51,7 @@ public class ReservaGeneralController {
 
     /** Cancelar la reserva del cliente ante pago rechazado. */
     @DeleteMapping("/sectores/generales/reservas/{idReserva}")
+    @PreAuthorize("#idCliente == authentication.name or hasRole('ADMINISTRADOR') or @internoAuth.esInterna()")
     public ResponseEntity<?> cancelar(@PathVariable Long idReserva,
                                      @RequestParam Long idSector,
                                      @RequestParam String idCliente) {

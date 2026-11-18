@@ -45,6 +45,8 @@ public class CompraService {
     private PagoMockService pagoMockService;
     @Autowired
     private BloqueoVentaEventoService bloqueoVentaEventoService;
+    @Autowired
+    private ColaService colaService;
 
     @Value("${ticketya.compra.max-entradas:4}")
     private int maxEntradas;
@@ -90,6 +92,7 @@ public class CompraService {
         if (evento == null || !"PUBLICADO".equals(evento.get("estado"))) {
             throw new IllegalStateException("El evento no esta publicado");
         }
+        colaService.validarTurno(idEvento, idCliente, String.valueOf(evento.get("demanda")));
 
         // 3) Verificar que el cliente no supere el limite
         long activos = ticketRepository.contarActivos(idCliente, idEvento);
@@ -205,6 +208,7 @@ public class CompraService {
         if (evento == null || !"PUBLICADO".equals(evento.get("estado"))) {
             throw new IllegalStateException("El evento no esta publicado");
         }
+        colaService.validarTurno(idEvento, idCliente, String.valueOf(evento.get("demanda")));
 
         // 2) Verificar el limite de entradas del cliente
         long activos = ticketRepository.contarActivos(idCliente, idEvento);
