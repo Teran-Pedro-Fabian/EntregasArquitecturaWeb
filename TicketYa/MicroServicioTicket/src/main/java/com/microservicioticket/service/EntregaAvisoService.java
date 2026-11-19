@@ -11,6 +11,8 @@ import org.springframework.web.client.RestTemplate;
 /** Entrega el aviso automaticamente a Cliente sin duplicarlo al reintentar */
 @Service
 public class EntregaAvisoService {
+    private static final String URL_CLIENTE = System.getenv().getOrDefault("TICKETYA_CLIENTE_URL", "http://localhost:8081");
+
 
     @Autowired private AvisoCancelacionRepository avisoRepository;
     @Autowired private RestTemplate restTemplate;
@@ -29,7 +31,7 @@ public class EntregaAvisoService {
                 "idCliente", aviso.getIdCliente(),
                 "mensaje", aviso.getMensaje());
         restTemplate.postForEntity(
-                "http://localhost:8081/clientes/interno/notificaciones/cancelacion",
+                URL_CLIENTE + "/clientes/interno/notificaciones/cancelacion",
                 datos, Void.class);
         aviso.setFechaEntrega(Instant.now());
         avisoRepository.saveAndFlush(aviso);

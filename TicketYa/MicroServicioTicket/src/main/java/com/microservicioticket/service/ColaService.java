@@ -13,6 +13,8 @@ import java.util.Map;
 
 @Service
 public class ColaService {
+    private static final String URL_EVENTO = System.getenv().getOrDefault("TICKETYA_EVENTO_URL", "http://localhost:8082");
+
 
     private static final String PREFIJO = "fila:evento:";
 
@@ -32,7 +34,7 @@ public class ColaService {
         validarDatos(idEvento, idCliente);
 
         Map<String, Object> evento = restTemplate.getForObject(
-                "http://localhost:8082/evento/" + idEvento, Map.class);
+                URL_EVENTO + "/evento/" + idEvento, Map.class);
         if (evento == null || !"PUBLICADO".equals(evento.get("estado"))) {
             throw new IllegalStateException("El evento no esta publicado");
         }
