@@ -19,8 +19,16 @@ public class ApiService {
     public ApiService(RestClient.Builder builder,
                       @Value("${microservices.eventos.url}") String urlEvento,
                       @Value("${microservices.lugar.url}") String urlLugar) {
-        this.restClientEvento = builder.clone().baseUrl(urlEvento).build();
-        this.restClientLugar = builder.clone().baseUrl(urlLugar).build();
+        this.restClientEvento = builder.clone().requestInterceptor((request, body, execution) -> {
+            String trace = org.slf4j.MDC.get("traceId");
+            if (trace != null) request.getHeaders().set("X-Trace-Id", trace);
+            return execution.execute(request, body);
+        }).baseUrl(urlEvento).build();
+        this.restClientLugar = builder.clone().requestInterceptor((request, body, execution) -> {
+            String trace = org.slf4j.MDC.get("traceId");
+            if (trace != null) request.getHeaders().set("X-Trace-Id", trace);
+            return execution.execute(request, body);
+        }).baseUrl(urlLugar).build();
     }
 
     // Busca los eventos publicados con su precio desde el servicio Evento

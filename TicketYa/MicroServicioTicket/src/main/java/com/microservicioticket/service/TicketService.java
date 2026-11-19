@@ -16,6 +16,10 @@ import java.util.UUID;
 
 @Service
 public class TicketService {
+    private static final String URL_LUGAR = System.getenv().getOrDefault("TICKETYA_LUGAR_URL", "http://localhost:8083");
+
+    private static final String URL_EVENTO = System.getenv().getOrDefault("TICKETYA_EVENTO_URL", "http://localhost:8082");
+
     @Autowired
     private TicketRepository ticketRepository;
     @Autowired
@@ -52,7 +56,7 @@ public class TicketService {
                 "idEvento", ticket.getIdEvento()
         );
         // 3) Validar la reserva en Lugar
-        String url = "http://localhost:8083/lugares/interno/reservas/validar";
+        String url = URL_LUGAR + "/lugares/interno/reservas/validar";
         restTemplate.postForEntity(
                 url,
                 datosReserva,
@@ -82,7 +86,7 @@ public class TicketService {
                 "idTicket", ticketGuardado.getId()
         );
         // 10) Confirmar la venta en MicroServicioLugar
-        String urlConfirmacion = "http://localhost:8083/lugares/asiento/confirmar";
+        String urlConfirmacion = URL_LUGAR + "/lugares/asiento/confirmar";
 
         restTemplate.postForEntity(
                 urlConfirmacion,
@@ -118,7 +122,7 @@ public class TicketService {
             throw new RuntimeException("El ticket ya tiene una solicitud de devolucion");
         }
         // 4) Consultar la fecha del evento
-        String urlEvento = "http://localhost:8082/evento/" + ticket.getIdEvento();
+        String urlEvento = URL_EVENTO + "/evento/" + ticket.getIdEvento();
         Map<String, Object> evento = restTemplate.getForObject(urlEvento, Map.class);
         if (evento == null || evento.get("fechaHora") == null) {
             throw new RuntimeException("No se pudo consultar la fecha del evento");
@@ -250,10 +254,10 @@ public class TicketService {
         // 4) Liberar el asiento numerado o un cupo de Campo General
         String urlLugar;
         if (ticket.getIdAsiento() != null) {
-            urlLugar = "http://localhost:8083/lugares/interno/asientos/"
+            urlLugar = URL_LUGAR + "/lugares/interno/asientos/"
                     + ticket.getIdAsiento() + "/liberar-venta?idTicket=" + ticket.getId();
         } else if (ticket.getIdReservaGeneral() != null && ticket.getIdSector() != null) {
-            urlLugar = "http://localhost:8083/lugares/interno/sectores/generales/"
+            urlLugar = URL_LUGAR + "/lugares/interno/sectores/generales/"
                     + ticket.getIdSector() + "/liberar-venta?idTicket=" + ticket.getId();
         } else {
             throw new RuntimeException("El ticket no tiene un asiento ni una reserva general");
@@ -296,7 +300,7 @@ public class TicketService {
 
         // consultar que el evento siga habilitado
         Map<?, ?> evento = restTemplate.getForObject(
-                "http://localhost:8082/evento/" + idEvento, Map.class);
+                URL_EVENTO + "/evento/" + idEvento, Map.class);
         if (evento == null || !idEvento.equals(evento.get("id"))) {
             throw new IllegalStateException("No se pudo validar el evento");
         }

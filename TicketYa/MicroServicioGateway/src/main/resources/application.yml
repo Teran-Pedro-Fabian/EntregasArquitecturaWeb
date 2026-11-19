@@ -10,6 +10,7 @@ spring:
       # El Gateway agrega esta cabecera para comprobar que la peticion paso por 8080.
       default-filters:
         - AddResponseHeader=X-TicketYa-Gateway, TicketYa
+        - DedupeResponseHeader=X-Trace-Id RETAIN_FIRST
 
       # Conservar las rutas originales, sin reescribir prefijos ni parametros.
       # Los otros cuatro microservicios siguen ejecutandose en IntelliJ.

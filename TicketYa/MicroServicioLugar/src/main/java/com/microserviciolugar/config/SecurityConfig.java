@@ -16,6 +16,7 @@ import org.springframework.security.oauth2.jwt.JwtValidators;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.authorization.AuthorizationDecision;
@@ -55,6 +56,12 @@ public class SecurityConfig {
                         .access((usuario, contexto) -> new AuthorizationDecision(esInterna(contexto.getRequest().getHeader("X-TicketYa-Internal"))))
                         .requestMatchers(HttpMethod.POST, "/lugares/asiento/confirmar")
                         .access((usuario, contexto) -> new AuthorizationDecision(esInterna(contexto.getRequest().getHeader("X-TicketYa-Internal"))))
+                        // Ticket puede cancelar reservas con su clave interna, sin JWT de cliente
+                        // Los clientes autenticados siguen sujetos a @PreAuthorize (propietario o admin)
+                        .requestMatchers(HttpMethod.DELETE, "/lugares/reservas/*", "/lugares/sectores/generales/reservas/*")
+                        .access((usuario, contexto) -> new AuthorizationDecision(
+                                esInterna(contexto.getRequest().getHeader("X-TicketYa-Internal"))
+                                        || usuario.get() instanceof JwtAuthenticationToken))
                         .requestMatchers(HttpMethod.GET, "/lugares", "/lugares/buscarPorCiudad", "/lugares/buscarPorUbicacion", "/lugares/sectores/*/disponibilidad").permitAll()
                         .requestMatchers("/actuator/health", "/actuator/info").permitAll()
                         .anyRequest().authenticated())

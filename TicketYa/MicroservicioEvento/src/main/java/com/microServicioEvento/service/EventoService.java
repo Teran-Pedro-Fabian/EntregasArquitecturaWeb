@@ -37,6 +37,10 @@ import java.util.NoSuchElementException;
 
 @Service
 public class EventoService {
+    private static final String URL_TICKET = System.getenv().getOrDefault("TICKETYA_TICKET_URL", "http://localhost:8084");
+
+    private static final String URL_LUGAR = System.getenv().getOrDefault("TICKETYA_LUGAR_URL", "http://localhost:8083");
+
 
     @Autowired
     private EventoRepository eventoRepository;
@@ -210,7 +214,7 @@ public class EventoService {
     }
 
     private void bloquearVentasAntesDeCancelar(String id) {
-        String url = "http://localhost:8084/ticket/interno/eventos/" + id + "/bloquear-ventas";
+        String url = URL_TICKET + "/ticket/interno/eventos/" + id + "/bloquear-ventas";
         try {
             restTemplate.postForEntity(url, null, String.class);
         } catch (org.springframework.web.client.RestClientException ex) {
@@ -220,7 +224,7 @@ public class EventoService {
 
     private Map<String, Object> procesarReintegrosCancelacion(String id, String idAdministrador) {
         String url = UriComponentsBuilder
-                .fromHttpUrl("http://localhost:8084/ticket/interno/eventos/" + id + "/procesar-cancelacion")
+                .fromHttpUrl(URL_TICKET + "/ticket/interno/eventos/" + id + "/procesar-cancelacion")
                 .queryParam("idAdministrador", idAdministrador)
                 .toUriString();
         Map<String, Object> resultado;
@@ -362,7 +366,7 @@ public class EventoService {
             throw new IllegalStateException("El evento necesita al menos un participante");
         }
         String url = UriComponentsBuilder
-                .fromHttpUrl("http://localhost:8083/lugares/interno/eventos/" + evento.getId() + "/configuracion")
+                .fromHttpUrl(URL_LUGAR + "/lugares/interno/eventos/" + evento.getId() + "/configuracion")
                 .queryParam("idLugar", evento.getIdLugar())
                 .toUriString();
         Map<String, Object> datos = restTemplate.getForObject(url, Map.class);
@@ -464,14 +468,14 @@ public class EventoService {
         Set<Long> idsLugares = null;
         String ciudad = limpiar(filtro.getCiudad());
         if (ciudad != null) {
-            java.net.URI url = UriComponentsBuilder.fromHttpUrl("http://localhost:8083/lugares/buscarPorCiudad")
+            java.net.URI url = UriComponentsBuilder.fromHttpUrl(URL_LUGAR + "/lugares/buscarPorCiudad")
                     .queryParam("ciudad", ciudad).build().encode().toUri();
             Long[] ids = restTemplate.getForObject(url, Long[].class);
             idsLugares = new HashSet<>();
             if (ids != null) idsLugares.addAll(List.of(ids));
         }
         if (filtro.getLat() != null) {
-            String url = UriComponentsBuilder.fromHttpUrl("http://localhost:8083/lugares/buscarPorUbicacion")
+            String url = UriComponentsBuilder.fromHttpUrl(URL_LUGAR + "/lugares/buscarPorUbicacion")
                     .queryParam("lat", filtro.getLat())
                     .queryParam("lon", filtro.getLon()).toUriString();
             Long[] ids = restTemplate.getForObject(url, Long[].class);
@@ -571,7 +575,7 @@ public class EventoService {
 
     private Map<String, Double> obtenerPreciosMinimos(List<String> idsEventos) {
         Map<?, ?> respuesta = restTemplate.postForObject(
-                "http://localhost:8083/lugares/interno/eventos/precios-minimos", idsEventos, Map.class);
+                URL_LUGAR + "/lugares/interno/eventos/precios-minimos", idsEventos, Map.class);
         if (respuesta == null) {
             throw new IllegalStateException("Lugar no devolvio los precios de los eventos");
         }

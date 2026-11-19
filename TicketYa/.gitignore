@@ -1,2 +1,4 @@
 # Respaldos y exportaciones de la migracion
 migracion/backups/
+# Configuracion Docker local y secretos
+.env
