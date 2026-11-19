@@ -63,6 +63,7 @@ public class LugarController {
 
     /** Precio mas bajo por evento para ordenar resultados de busqueda. */
     @PostMapping("/interno/eventos/precios-minimos")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<Map<String, Double>> preciosMinimosPorEvento(@RequestBody List<String> idsEventos) {
         return ResponseEntity.ok(lugarService.preciosMinimosPorEvento(idsEventos));
     }
@@ -84,6 +85,7 @@ public class LugarController {
      * Devolver el precio oficial del sector para una compra
      */
     @GetMapping("/interno/sectores/{idSector}/precio")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<?> obtenerPrecioSector(
             @PathVariable Long idSector, @RequestParam String idEvento) {
         try {
@@ -129,6 +131,7 @@ public class LugarController {
      * @return resultado de la confirmacion
      */
     @PostMapping("/asiento/confirmar")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<?> confirmarVenta(@RequestBody Map<String, Object> request) {
         // 1) Verificar los datos recibidos
         if (request.get("idAsiento") == null || request.get("idCliente") == null || request.get("idTicket") == null) {
@@ -176,6 +179,7 @@ public class LugarController {
      * @return resultado de la liberacion
      */
     @PostMapping("/interno/asientos/{idAsiento}/liberar-venta")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<?> liberarAsientoVendido(@PathVariable Long idAsiento, @RequestParam Long idTicket) {
         try {
             // 1) Liberar el asiento vendido
@@ -234,6 +238,7 @@ public class LugarController {
      * Validar una reserva para la emision de tickets
      */
     @PostMapping("/interno/reservas/validar")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<?> validarReserva(@RequestBody Map<String, Object> request) {
         try {
             // 1) Obtener los datos
@@ -256,6 +261,7 @@ public class LugarController {
      * Lo utiliza el MicroservicioEvento antes de publicar
      */
     @GetMapping("/interno/eventos/{idEvento}/configuracion")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<?> verificarConfiguracionEvento(@PathVariable String idEvento,
             @RequestParam Long idLugar) {
         try {

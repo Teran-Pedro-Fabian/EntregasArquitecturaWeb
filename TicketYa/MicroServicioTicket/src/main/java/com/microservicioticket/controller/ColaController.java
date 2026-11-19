@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
 @RequestMapping("/ticket")
@@ -20,6 +21,7 @@ public class ColaController {
      * Para eventos de alta demanda la venta se habilita en orden de llegada
      */
     @PostMapping("/cola/{idEvento}/entrar")
+    @PreAuthorize("hasAnyRole('CLIENTE', 'ADMINISTRADOR')")
     public ResponseEntity<?> entrar(@PathVariable String idEvento, @RequestBody ColaRequest request) {
         try {
             ColaResponse respuesta = colaService.entrar(idEvento, request.getIdCliente());
@@ -33,6 +35,7 @@ public class ColaController {
      * Consultar la posicion de un cliente dentro de la fila virtual de un evento
      */
     @GetMapping("/cola/{idEvento}/posicion")
+    @PreAuthorize("#idCliente == authentication.name or hasRole('ADMINISTRADOR')")
     public ResponseEntity<?> posicion(@PathVariable String idEvento, @RequestParam String idCliente) {
         try {
             ColaResponse respuesta = colaService.consultarPosicion(idEvento, idCliente);

@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import java.util.List;
 import java.util.Map;
@@ -29,6 +30,7 @@ public class ReservaGeneralController {
 
     /** Reservar N cupos generales durante 10 minutos. */
     @PostMapping("/sectores/generales/reservar")
+    @PreAuthorize("hasAnyRole('CLIENTE', 'ADMINISTRADOR')")
     public ResponseEntity<?> reservar(@RequestBody Map<String, Object> datos) {
         try {
             Long idSector = Long.valueOf(datos.get("idSector").toString());
@@ -49,6 +51,7 @@ public class ReservaGeneralController {
 
     /** Cancelar la reserva del cliente ante pago rechazado. */
     @DeleteMapping("/sectores/generales/reservas/{idReserva}")
+    @PreAuthorize("#idCliente == authentication.name or hasRole('ADMINISTRADOR')")
     public ResponseEntity<?> cancelar(@PathVariable Long idReserva,
                                      @RequestParam Long idSector,
                                      @RequestParam String idCliente) {
@@ -62,6 +65,7 @@ public class ReservaGeneralController {
 
     /** Uso interno de Ticket: validar la reserva antes del pago. */
     @PostMapping("/interno/sectores/generales/reservas/validar")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<?> validar(@RequestBody Map<String, Object> datos) {
         try {
             reservaGeneralService.validar(
@@ -78,6 +82,7 @@ public class ReservaGeneralController {
 
     /** Uso interno de Ticket: confirmar los N tickets de la reserva. */
     @PostMapping("/interno/sectores/generales/confirmar")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<?> confirmar(@RequestBody Map<String, Object> datos) {
         try {
             Object ids = datos.get("idsTickets");
@@ -99,6 +104,7 @@ public class ReservaGeneralController {
 
     /** Uso interno de Ticket: devolver un cupo vendido por ticket. */
     @PostMapping("/interno/sectores/generales/{idSector}/liberar-venta")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<?> liberarVenta(@PathVariable Long idSector, @RequestParam Long idTicket) {
         try {
             reservaGeneralService.liberarVenta(idSector, idTicket);

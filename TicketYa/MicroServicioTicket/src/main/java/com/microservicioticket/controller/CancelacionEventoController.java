@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 import java.util.List;
 import java.util.Map;
 
@@ -20,6 +21,7 @@ public class CancelacionEventoController {
 
     /** Antes de cancelar, esperar todas las compras activas y cerrar nuevas ventas. */
     @PostMapping("/interno/eventos/{idEvento}/bloquear-ventas")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<?> bloquearVentas(@PathVariable String idEvento) {
         try {
             bloqueoVentaEventoService.bloquearDefinitivamente(idEvento);
@@ -31,6 +33,7 @@ public class CancelacionEventoController {
 
     /** Llamado por Evento luego de registrar CANCELADO en PostgreSQL */
     @PostMapping("/interno/eventos/{idEvento}/procesar-cancelacion")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<?> procesar(@PathVariable String idEvento,
                                       @RequestParam String idAdministrador) {
         try {
@@ -44,12 +47,14 @@ public class CancelacionEventoController {
 
     /** Consultar cuantas entradas siguen pendientes de reintegro */
     @GetMapping("/eventos/{idEvento}/estado-cancelacion")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<Map<String, Object>> estado(@PathVariable String idEvento) {
         return ResponseEntity.ok(cancelacionService.consultar(idEvento));
     }
 
     /** Avisos persistidos en Ticket, la bandeja activa esta en Cliente */
     @GetMapping("/avisos-cancelacion")
+    @PreAuthorize("#idCliente == authentication.name or hasRole('ADMINISTRADOR')")
     public ResponseEntity<List<AvisoCancelacionEntity>> avisos(@RequestParam String idCliente) {
         return ResponseEntity.ok(avisoService.listarPorCliente(idCliente));
     }

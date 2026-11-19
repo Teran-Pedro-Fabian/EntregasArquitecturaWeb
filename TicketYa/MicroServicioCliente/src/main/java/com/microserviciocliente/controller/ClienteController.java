@@ -92,24 +92,38 @@ public class ClienteController {
 
 
 
+    // ENDPOINT: Login que emite un JWT para el rol indicado
+    // Fase 1: emision con rol CLIENTE | Fase 2: emision con los roles faltantes (ORGANIZADOR, ADMINISTRADOR, PERSONAL_ACCESO)
+    // POST http://localhost:8081/clientes/login
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest datos) {
         if (datos == null || datos.getIdCliente() == null || datos.getIdCliente().isBlank()) {
             return new ResponseEntity<>("Falta el idCliente del cliente", HttpStatus.BAD_REQUEST);
         }
-        ClienteEntity cliente = clienteService.findById(datos.getIdCliente());
-        if (cliente == null) {
-            return new ResponseEntity<>("Cliente no encontrado", HttpStatus.NOT_FOUND);
+
+        // El rol se toma del request: CLIENTE, ORGANIZADOR, ADMINISTRADOR o PERSONAL_ACCESO
+        // Fase 2: emision de tokens con los roles faltantes
+        String rol = (datos.getRol() == null || datos.getRol().isBlank()) ? "CLIENTE" : datos.getRol().toUpperCase();
+        if (!esRolValido(rol)) {
+            return new ResponseEntity<>("Rol no valido: debe ser CLIENTE, ORGANIZADOR, ADMINISTRADOR o PERSONAL_ACCESO", HttpStatus.BAD_REQUEST);
         }
 
-        // SEGURIDAD: Obtener el rol desde la entidad de BD (o fijo como "CLIENTE"), nunca desde 'datos.getRol()'
-        // Si tu ClienteEntity tiene getRol(), usalo así:
-        // String rol = (cliente.getRol() == null || cliente.getRol().isBlank()) ? "CLIENTE" : cliente.getRol().toUpperCase();
-        String rol = "CLIENTE";
+        // El CLIENTE se valida contra la base de datos; los demas roles viajan con el id indicado
+        if ("CLIENTE".equals(rol)) {
+            ClienteEntity cliente = clienteService.findById(datos.getIdCliente());
+            if (cliente == null) {
+                return new ResponseEntity<>("Cliente no encontrado", HttpStatus.NOT_FOUND);
+            }
+        }
 
+        // Emision del token con el rol correspondiente
         String token = jwtService.generarTokenJwt(datos.getIdCliente(), rol);
         TokenResponse respuesta = new TokenResponse(token, datos.getIdCliente(), rol);
         return new ResponseEntity<>(respuesta, HttpStatus.OK);
+    }
+
+    private boolean esRolValido(String rol) {
+        return rol != null && (rol.equals("CLIENTE") || rol.equals("ORGANIZADOR") || rol.equals("ADMINISTRADOR") || rol.equals("PERSONAL_ACCESO"));
     }
 
 

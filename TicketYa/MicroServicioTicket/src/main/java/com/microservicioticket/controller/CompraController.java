@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClientResponseException;
@@ -49,6 +50,7 @@ public class CompraController {
 
     /** Comprar entradas de Campo General (sector no numerado). */
     @PostMapping("/comprar-general")
+    @PreAuthorize("hasRole('CLIENTE')")
     public ResponseEntity<?> comprarGeneral(@RequestBody CompraGeneralRequest request,
             @RequestHeader(value = "X-User-Roles", required = false) String roles) {
         // Solo un cliente autenticado puede comprar
@@ -77,6 +79,7 @@ public class CompraController {
      * El precio se consulta a Lugar
      */
     @PostMapping({"/comprar", "/emitir"})
+    @PreAuthorize("hasRole('CLIENTE')")
     public ResponseEntity<?> comprar(@RequestBody CompraRequest request,
             @RequestHeader(value = "X-User-Roles", required = false) String roles) {
         // Solo un cliente autenticado puede comprar

@@ -159,6 +159,7 @@ public class EventoController {
     }
 
     @GetMapping("/participantes")
+    @PreAuthorize ("hasAnyRole('ORGANIZADOR', 'ADMINISTRADOR')")
     public ResponseEntity<List<ParticipanteEntity>> listarParticipantes() {
         return ResponseEntity.ok(eventoService.listarParticipantes());
     }
@@ -189,6 +190,7 @@ public class EventoController {
     }
 
     @GetMapping("/{idEvento}/participantes")
+    @PreAuthorize ("hasAnyRole('ORGANIZADOR', 'ADMINISTRADOR')")
     public ResponseEntity<List<ParticipanteEntity>> participantesDelEvento(@PathVariable String idEvento) {
         return ResponseEntity.ok(eventoService.participantesDelEvento(idEvento));
     }

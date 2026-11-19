@@ -12,6 +12,8 @@ servers:
 tags:
 - name: Cliente
   description: Operaciones del microservicio Cliente
+- name: Auth
+  description: Emision de tokens JWT (login) para clientes, organizadores, administradores y personal de acceso
 - name: Interno
   description: Comunicacion HTTP entre microservicios; no destinada al usuario final
 paths:
@@ -68,6 +70,69 @@ paths:
               schema:
                 type: string
               example: Operacion no permitida
+  /clientes/login:
+    post:
+      tags:
+      - Auth
+      summary: Login y emision de token JWT
+      description: >
+        Endpoint publico que emite un JWT firmado con HS256 para el rol indicado.
+        Fase 1: emision con rol CLIENTE. Fase 2: emision con los roles faltantes
+        (ORGANIZADOR, ADMINISTRADOR, PERSONAL_ACCESO).
+        El Gateway lo valida y propaga X-User-Id y X-User-Roles a los microservicios.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                idCliente:
+                  type: string
+                  example: cliente-01
+                rol:
+                  type: string
+                  enum: [CLIENTE, ORGANIZADOR, ADMINISTRADOR, PERSONAL_ACCESO]
+                  example: CLIENTE
+              required:
+                - idCliente
+            example:
+              idCliente: cliente-01
+              rol: CLIENTE
+      responses:
+        '200':
+          description: Token emitido correctamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                    description: JWT firmado con HS256
+                  idCliente:
+                    type: string
+                  roles:
+                    type: string
+                    example: CLIENTE
+              example:
+                token: eyJhbGciOiJIUzI1NiJ9.eyJjbGllbnQiOiJjcm9iZXItMDEiLCJyb2xlIjoiQ0xVNTUifQ.example
+                idCliente: cliente-01
+                roles: CLIENTE
+        '400':
+          description: Falta el idCliente o el rol no es valido
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: "Rol no valido: debe ser CLIENTE, ORGANIZADOR, ADMINISTRADOR o PERSONAL_ACCESO"
+        '404':
+          description: Cliente no encontrado
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Cliente no encontrado
   /clientes/preferencias:
     post:
       tags:
