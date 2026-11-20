@@ -2,3 +2,5 @@
 migracion/backups/
 # Configuracion Docker local y secretos
 .env
+
+/logs/
