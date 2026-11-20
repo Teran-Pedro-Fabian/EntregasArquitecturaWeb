@@ -24,7 +24,7 @@ class JwtCompatibleConSeguridadTest {
         Jwt jwt = decoder.decode(token);
 
         assertEquals("cliente-1", jwt.getSubject());
-        assertEquals("ticketya", jwt.getIssuer().toString());
+        assertEquals("ticketya", jwt.getClaimAsString("iss"));
         assertEquals("CLIENTE", jwt.getClaimAsString("roles"));
         assertNotNull(jwt.getExpiresAt());
 
