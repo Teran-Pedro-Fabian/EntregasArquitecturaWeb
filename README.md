@@ -455,6 +455,8 @@ Las siguientes rutas muestran las operaciones principales de cada microservicio
 | GET | `/clientes/{id}` | Consultar cliente |
 | POST | `/clientes/preferencias` | Guardar preferencias |
 | GET | `/clientes/{id}/notificaciones` | Consultar avisos del cliente |
+| POST | `/clientes/login` | Login que emite token JWT para el rol indicado |
+| GET | `/clientes/{id}/recomendaciones` | Recomendaciones del cliente por preferencias y eventos similares |
 
 ### Evento
 
@@ -514,7 +516,12 @@ Las siguientes rutas muestran las operaciones principales de cada microservicio
 
 Las rutas `/interno/` se usan para la comunicación entre microservicios
 
-**Seguridad de Entrega 1:** no se utiliza JWT. Se identifica al cliente organizador o administrador mediante ID enviados en el cuerpo o como parámetros según el endpoint
+**Seguridad JWT :**
+
+- **Autenticación:** el endpoint publico `POST /clientes/login` emite un JWT firmado con HS256 (secret `ticketya_gateway_jwt_secret_phase1_2026_abcdefg`) con claim `roles` y expiracion de 24 horas. La Fase 2 amplio la emision a los roles faltantes: `CLIENTE`, `ORGANIZADOR`, `ADMINISTRADOR` y `PERSONAL_ACCESO`.
+- **Autorización:** los endpoints protegidos aplican `@PreAuthorize` con `hasRole`, `hasAnyRole` y verificaciones de propietario (`#id == authentication.name`) para permitir o denegar el acceso segun el rol y el usuario.
+- **Propagacion:** el API Gateway valida el JWT y propaga los headers `X-User-Id` y `X-User-Roles` para que los microservicios confien en la identidad del llamador.
+- **Interna:** la comunicacion entre microservicios se autentica con la clave interna enviada en el header `X-TicketYa-Internal`.
 
 ## 3. Diagrama de módulos
 
@@ -1602,13 +1609,21 @@ Las pruebas se realizaron con JUnit y Mockito usando Maven desde IntelliJ IDEA
 
 | Microservicio | Pruebas aprobadas |
 |---|---:|
-| Cliente | 7 |
-| Evento | 6 |
-| Lugar | 18 |
-| Ticket | 64 |
-| Total | 95 |
+| Cliente | 41 |
+| Evento | 22 |
+| Lugar | 23 |
+| Ticket | 111 |
+| Gateway | 0 (compila, no tiene pruebas propias) |
+| Total | 197 |
 
-Los cinco terminaron con `BUILD SUCCESS` sin fallos
+Los microservicios con pruebas aprobaron con `BUILD SUCCESS` sin fallos
+
+### Pruebas de seguridad JWT
+
+- `JwtServiceTest` valida la emision de tokens con cada rol soportado
+- `LoginServiceTest` valida el inicio de sesion y la contrasena del cliente
+- `ClienteControllerLoginTest` valida el endpoint de login desde el controlador
+- Los tests de recomendaciones y notificaciones quedaron en verde tras la integracion del merge
 
 Gateway compila correctamente pero no tiene pruebas unitarias propias
 

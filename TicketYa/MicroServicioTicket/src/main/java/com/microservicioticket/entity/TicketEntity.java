@@ -47,9 +47,14 @@ public class TicketEntity {
 
 
 
+    public boolean isUsado() {
+        return usado;
+    }
+
     public boolean getUsado() {
         return usado;
     }
+
     public void setUsado(boolean usado) {
         this.usado = usado;
     }

@@ -7,7 +7,6 @@ import com.microserviciocliente.entity.NotificacionEntity;
 import com.microserviciocliente.dto.EventoEntityDTO;
 import com.microserviciocliente.dto.LoginRequest;
 import com.microserviciocliente.dto.NotificacionCancelacionRequest;
-import com.microserviciocliente.dto.EventoEntityDTO;
 import com.microserviciocliente.dto.NotificacionRequest;
 import com.microserviciocliente.dto.NotificacionPublicacionRequest;
 import com.microserviciocliente.dto.TokenResponse;
@@ -18,8 +17,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.security.access.prepost.PreAuthorize;
-import com.microserviciocliente.dto.LoginRequest;
 import com.microserviciocliente.servise.LoginService;
 import com.microserviciocliente.servise.ClienteService;
 import com.microserviciocliente.servise.JwtService;
@@ -105,27 +102,8 @@ public class ClienteController {
         }
     }
 
-    // Punto 10: recomendaciones personales y por clientes con gustos similares
-    // GET http://localhost:8081/clientes/{id}/recomendaciones
-    @GetMapping("/{id}/recomendaciones")
-    @PreAuthorize("#id == authentication.name or hasRole('ADMINISTRADOR')")
-    public ResponseEntity<?> obtenerRecomendaciones(@PathVariable String id) {
-        try {
-            List<EventoEntityDTO> recomendaciones = recomendacionService.obtenerRecomendaciones(id);
-            return ResponseEntity.ok(recomendaciones);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        } catch (NoSuchElementException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
-        } catch (RestClientException e) {
-            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
-                    .body("No se pudieron consultar los eventos o lugares");
-        }
-    }
-
     // Solo el propio dueño del ID o un ADMINISTRADOR pueden ver el perfil
     @GetMapping("/{id}")
-    @PreAuthorize("#id == authentication.name or hasRole('ADMINISTRADOR')")
     @PreAuthorize("#id == authentication.name or hasRole('ADMINISTRADOR')")
     public ResponseEntity<ClienteEntity> obtenerCliente(@PathVariable String id) {
         ClienteEntity cliente = clienteService.findById(id);
@@ -141,14 +119,6 @@ public class ClienteController {
     @PreAuthorize("#id == authentication.name or hasRole('ADMINISTRADOR')")
     public ResponseEntity<List<NotificacionEntity>> consultarNotificaciones(@PathVariable String id) {
         return ResponseEntity.ok(notificacionService.listarPorCliente(id));
-    }
-
-    // Solo el propio dueño del ID o un ADMINISTRADOR pueden ver sus recomendaciones
-    @GetMapping("/{id}/recomendaciones")
-    @PreAuthorize("#idCliente == authentication.name or hasRole('ADMINISTRADOR')")
-    public ResponseEntity<List<EventoEntityDTO>> obtenerRecomendaciones(@PathVariable("id") String idCliente) {
-        List<EventoEntityDTO> recomendaciones = clienteService.obtenerRecomendaciones(idCliente);
-        return ResponseEntity.ok(recomendaciones);
     }
 
     // Registrar o actualizar el correo del cliente para el envio SMTP
@@ -200,13 +170,6 @@ public class ClienteController {
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
-    }
-
-    // Bandeja de notificaciones que consulta el comprador desde el Gateway
-    @GetMapping("/{id}/notificaciones")
-    @PreAuthorize("#id == authentication.name or hasRole('ADMINISTRADOR')")
-    public ResponseEntity<List<NotificacionEntity>> consultarNotificaciones(@PathVariable String id) {
-        return ResponseEntity.ok(notificacionService.listarPorCliente(id));
     }
 
     // ENDPOINT: Login que emite un JWT para el rol indicado

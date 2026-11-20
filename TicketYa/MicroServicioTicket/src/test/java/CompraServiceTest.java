@@ -97,8 +97,8 @@ class CompraServiceTest {
         when(compraRepository.findByClaveIdempotencia(anyString())).thenReturn(Optional.empty());
         when(restTemplate.getForObject(eq("http://localhost:8082/evento/evento-1"), eq(Map.class)))
                 .thenReturn(Map.of("estado", "PUBLICADO", "demanda", "ALTA"));
-        when(colaService.consultarPosicion("evento-1", "cliente-1"))
-                .thenThrow(new IllegalArgumentException("El cliente no esta en la fila del evento"));
+        doThrow(new IllegalArgumentException("El cliente no esta en la fila del evento"))
+                .when(colaService).validarTurno("evento-1", "cliente-1", "ALTA");
 
         IllegalArgumentException error = assertThrows(IllegalArgumentException.class,
                 () -> compraService.comprar(numerada(List.of(1L))));
@@ -114,8 +114,8 @@ class CompraServiceTest {
         when(compraRepository.findByClaveIdempotencia(anyString())).thenReturn(Optional.empty());
         when(restTemplate.getForObject(eq("http://localhost:8082/evento/evento-1"), eq(Map.class)))
                 .thenReturn(Map.of("estado", "PUBLICADO", "demanda", "ALTA"));
-        when(colaService.consultarPosicion("evento-1", "cliente-1"))
-                .thenReturn(new ColaResponse("evento-1", "cliente-1", 2, 2, false));
+        doThrow(new IllegalStateException("Todavia no estas habilitado para comprar en la fila virtual"))
+                .when(colaService).validarTurno("evento-1", "cliente-1", "ALTA");
 
         IllegalStateException error = assertThrows(IllegalStateException.class,
                 () -> compraService.comprar(numerada(List.of(1L))));
@@ -138,8 +138,8 @@ class CompraServiceTest {
         when(compraRepository.findByClaveIdempotencia(anyString())).thenReturn(Optional.empty());
         when(restTemplate.getForObject(eq("http://localhost:8082/evento/evento-1"), eq(Map.class)))
                 .thenReturn(Map.of("estado", "PUBLICADO", "demanda", "ALTA"));
-        when(colaService.consultarPosicion("evento-1", "cliente-1"))
-                .thenThrow(new IllegalArgumentException("El cliente no esta en la fila del evento"));
+        doThrow(new IllegalArgumentException("El cliente no esta en la fila del evento"))
+                .when(colaService).validarTurno("evento-1", "cliente-1", "ALTA");
 
         IllegalArgumentException error = assertThrows(IllegalArgumentException.class,
                 () -> compraService.comprarGeneral(r));

@@ -434,10 +434,10 @@ public class CompraService {
      * Dos compras del mismo cliente/evento no superan el limite por carrera.
      */
     private void bloquearComprasClienteEvento(String idCliente, String idEvento) {
-        entityManager.createNativeQuery(
-                "SELECT 1 FROM pg_advisory_xact_lock(CAST(hashtext(:clave) AS BIGINT))")
-                .setParameter("clave", "ticketya|" + idCliente + "|" + idEvento)
-                .getSingleResult();
+        jakarta.persistence.Query query = entityManager.createNativeQuery(
+                "SELECT 1 FROM pg_advisory_xact_lock(CAST(hashtext(:clave) AS BIGINT))");
+        query.setParameter("clave", "ticketya|" + idCliente + "|" + idEvento);
+        query.getSingleResult();
     }
 
     private String hash(String valor) {
