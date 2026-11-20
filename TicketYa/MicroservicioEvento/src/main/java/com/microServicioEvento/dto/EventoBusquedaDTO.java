@@ -5,7 +5,8 @@ import lombok.Data;
 
 /** Respuesta publica: datos del evento mas precio minimo de sus sectores. */
 @Data
-public class EventoBusquedaDTO {
+public class EventoBusquedaDTO implements java.io.Serializable {
+    private static final long serialVersionUID = 1L;
     private String id;
     private String nombre;
     private String descripcion;

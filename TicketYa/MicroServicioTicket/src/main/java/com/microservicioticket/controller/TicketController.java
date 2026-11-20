@@ -10,6 +10,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.client.ResourceAccessException;
+import org.springframework.web.client.HttpStatusCodeException;
+import java.util.NoSuchElementException;
 
 @RestController
 @RequestMapping("/ticket")
@@ -103,9 +107,10 @@ public class TicketController {
      */
     @PatchMapping("/{id}/revisar-devolucion")
     @PreAuthorize("hasRole('ADMINISTRADOR')")
-    public ResponseEntity<?> revisarDevolucion(@PathVariable Long id,
-                                               @RequestParam String idAdministrador,
-                                               @RequestParam String decision) {
+    public ResponseEntity<?> revisarDevolucion(
+            @PathVariable Long id,
+            @RequestParam String idAdministrador,
+            @RequestParam String decision) {
         try {
             TicketEntity ticket = ticketService.revisarDevolucion(id, idAdministrador, decision);
             return ResponseEntity.ok(ticket);
@@ -115,15 +120,26 @@ public class TicketController {
     }
 
     /**
-     * Registrar el ingreso en puerta escaneando el codigo QR (personal de acceso o administrador)
+     * escanear un QR en la puerta del evento
+     * la validacion de rol se agrega junto con JWT en la integracion 04
      */
     @PostMapping("/escanearQrcode")
     @PreAuthorize("hasAnyRole('PERSONAL_ACCESO', 'ADMINISTRADOR')")
-    public ResponseEntity<?> escanearQrcode(@RequestParam String qrCode) {
+    public ResponseEntity<?> escanearQrcode(@RequestParam String qrCode,
+                                             @RequestParam String idEvento) {
         try {
-            TicketEntity ticket = ticketService.marcarEntradaUtilizada(qrCode);
-            return ResponseEntity.ok(ticket);
-        } catch (RuntimeException e) {
+            return ResponseEntity.ok(ticketService.marcarEntradaUtilizada(qrCode, idEvento));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (ResourceAccessException e) {
+            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                    .body("No se pudo conectar con MicroServicioEvento");
+        } catch (HttpStatusCodeException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body("No se pudo validar el estado del evento");
+        } catch (IllegalStateException e) {
             return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
         }
     }

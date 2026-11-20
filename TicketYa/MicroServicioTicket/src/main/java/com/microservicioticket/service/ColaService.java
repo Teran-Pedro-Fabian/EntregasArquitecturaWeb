@@ -5,79 +5,109 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ZSetOperations;
-import org.springframework.data.redis.core.ZSetOperations.TypedTuple;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 
-import java.time.Instant;
-import java.util.HashMap;
+import java.time.Duration;
 import java.util.Map;
-import java.util.Set;
 
 @Service
 public class ColaService {
-    // Namespace propio de la fila virtual, distinto de las reservas de asientos
-    private static final String PREFIXO_FILA = "fila:evento:";
+    private static final String URL_EVENTO = System.getenv().getOrDefault("TICKETYA_EVENTO_URL", "http://localhost:8082");
+
+
+    private static final String PREFIJO = "fila:evento:";
 
     @Autowired
     private StringRedisTemplate redisTemplate;
 
-    // Cantidad de personas habilitadas por tanda en la fila virtual
+    @Autowired
+    private RestTemplate restTemplate;
+
     @Value("${ticketya.cola.tanda-size:10}")
     private int tandaSize;
 
-    /**
-     * Ingresar a la fila virtual de un evento
-     * Se usa cuando el evento esta marcado como de alta demanda
-     * Los clientes compran en orden de llegada
-     */
+    @Value("${ticketya.cola.ttl-minutos:60}")
+    private long ttlMinutos;
+
     public ColaResponse entrar(String idEvento, String idCliente) {
-        validar(idEvento, idCliente);
+        validarDatos(idEvento, idCliente);
+
+        Map<String, Object> evento = restTemplate.getForObject(
+                URL_EVENTO + "/evento/" + idEvento, Map.class);
+        if (evento == null || !"PUBLICADO".equals(evento.get("estado"))) {
+            throw new IllegalStateException("El evento no esta publicado");
+        }
+        if (!"ALTA".equalsIgnoreCase(String.valueOf(evento.get("demanda")))) {
+            throw new IllegalStateException("El evento no requiere fila virtual");
+        }
+
         String clave = claveFila(idEvento);
         ZSetOperations<String, String> operaciones = redisTemplate.opsForZSet();
-        if (operaciones.score(clave, idCliente) == null) {
-            Map<String, Double> puntuaciones = new HashMap<>();
-            puntuaciones.put(idCliente, (double) Instant.now().toEpochMilli());
-            operaciones.add(clave, (Set<TypedTuple<String>>) puntuaciones);
+
+        // La secuencia de Redis permite ordenar clientes entre varias instancias
+        Long orden = redisTemplate.opsForValue().increment(claveSecuencia(idEvento));
+        if (orden == null) {
+            throw new IllegalStateException("No se pudo asignar un turno");
         }
+        operaciones.addIfAbsent(clave, idCliente, orden.doubleValue());
+
+        redisTemplate.expire(clave, Duration.ofMinutes(ttlMinutos));
+        redisTemplate.expire(claveSecuencia(idEvento), Duration.ofMinutes(ttlMinutos));
         return respuesta(idEvento, idCliente);
     }
 
-    /**
-     * Consultar la posicion de un cliente dentro de la fila virtual de un evento
-     * habilitado indica si el cliente tiene el primer lugar y puede comprar
-     */
     public ColaResponse consultarPosicion(String idEvento, String idCliente) {
-        validar(idEvento, idCliente);
-        String clave = claveFila(idEvento);
-        ZSetOperations<String, String> operaciones = redisTemplate.opsForZSet();
-        if (operaciones.score(clave, idCliente) == null) {
+        validarDatos(idEvento, idCliente);
+        if (redisTemplate.opsForZSet().score(claveFila(idEvento), idCliente) == null) {
             throw new IllegalArgumentException("El cliente no esta en la fila del evento");
         }
         return respuesta(idEvento, idCliente);
     }
 
-    /**
-     * Armar la respuesta con la posicion (1 es el primero en la fila)
-     * y si el cliente tiene habilitado el turno de compra
-     */
-    private ColaResponse respuesta(String idEvento, String idCliente) {
-        String clave = claveFila(idEvento);
-        ZSetOperations<String, String> operaciones = redisTemplate.opsForZSet();
-        Long posicion = operaciones.rank(clave, idCliente);
-        // Tanda: habilita a los primeros 'tandaSize' lugares hasta que la lista se vacie
-        boolean habilitado = posicion != null && posicion < tandaSize;
-        long total = operaciones.zCard(clave);
-        int posicionFinal = posicion == null ? 0 : posicion.intValue() + 1;
-        return new ColaResponse(idEvento, idCliente, posicionFinal, (int) total, habilitado);
+    // La compra solo necesita fila cuando demanda es ALTA
+    public void validarTurno(String idEvento, String idCliente, String demanda) {
+        if (!"ALTA".equalsIgnoreCase(demanda)) {
+            return;
+        }
+        validarDatos(idEvento, idCliente);
+        Long posicion = redisTemplate.opsForZSet().rank(claveFila(idEvento), idCliente);
+        if (posicion == null) {
+            throw new IllegalStateException("Debes ingresar a la fila virtual antes de comprar");
+        }
+        if (posicion >= tandaSize) {
+            throw new IllegalStateException("Todavia no estas habilitado para comprar");
+        }
     }
 
-    private void validar(String idEvento, String idCliente) {
+    // Se retira al comprador confirmado para que avance la siguiente tanda
+    public void finalizarCompra(String idEvento, String idCliente) {
+        validarDatos(idEvento, idCliente);
+        redisTemplate.opsForZSet().remove(claveFila(idEvento), idCliente);
+    }
+
+    private ColaResponse respuesta(String idEvento, String idCliente) {
+        ZSetOperations<String, String> operaciones = redisTemplate.opsForZSet();
+        String clave = claveFila(idEvento);
+        Long posicion = operaciones.rank(clave, idCliente);
+        Long total = operaciones.zCard(clave);
+        int numero = posicion == null ? 0 : Math.toIntExact(posicion + 1);
+        int cantidad = total == null ? 0 : Math.toIntExact(total);
+        boolean habilitado = posicion != null && posicion < tandaSize;
+        return new ColaResponse(idEvento, idCliente, numero, cantidad, habilitado);
+    }
+
+    private void validarDatos(String idEvento, String idCliente) {
         if (idEvento == null || idEvento.isBlank() || idCliente == null || idCliente.isBlank()) {
-            throw new IllegalArgumentException("Fila virtual: evento y cliente no validos");
+            throw new IllegalArgumentException("Evento y cliente son obligatorios");
         }
     }
 
     private String claveFila(String idEvento) {
-        return PREFIXO_FILA + idEvento;
+        return PREFIJO + idEvento;
+    }
+
+    private String claveSecuencia(String idEvento) {
+        return claveFila(idEvento) + ":secuencia";
     }
 }

@@ -1,88 +1,65 @@
 package com.microserviciocliente.client;
 
-
-import java.util.List;
-
+import com.microserviciocliente.dto.EventoEntityDTO;
+import com.microserviciocliente.dto.LugarEntityDTO;
+import com.microserviciocliente.dto.ParticipanteEntityDTO;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
-
-import com.microserviciocliente.dto.BusquedaEventoFiltro;
-import com.microserviciocliente.dto.EventoEntityDTO;
-import com.microserviciocliente.dto.LugarEntityDTO;
-import com.microserviciocliente.dto.ParticipanteEntityDTO;
+import java.util.List;
 
 @Service
 public class ApiService {
 
     private final RestClient restClientEvento;
     private final RestClient restClientLugar;
-    
 
-    // Inyectamos la URL base desde el application.properties / application.yml
-    public ApiService(RestClient.Builder builder,   
-                      @Value("${microservices.eventos.url}") String baseUrlEvento,
-                      @Value("${microservices.lugar.url}") String baseUrlLugar) {
-        this.restClientEvento = builder
-                .baseUrl(baseUrlEvento)
-                .build();
-        this.restClientLugar = builder
-                .baseUrl(baseUrlLugar)
-                .build();
+    public ApiService(RestClient.Builder builder,
+                      @Value("${microservices.eventos.url}") String urlEvento,
+                      @Value("${microservices.lugar.url}") String urlLugar) {
+        this.restClientEvento = builder.clone().requestInterceptor((request, body, execution) -> {
+            String trace = org.slf4j.MDC.get("traceId");
+            if (trace != null) request.getHeaders().set("X-Trace-Id", trace);
+            return execution.execute(request, body);
+        }).baseUrl(urlEvento).build();
+        this.restClientLugar = builder.clone().requestInterceptor((request, body, execution) -> {
+            String trace = org.slf4j.MDC.get("traceId");
+            if (trace != null) request.getHeaders().set("X-Trace-Id", trace);
+            return execution.execute(request, body);
+        }).baseUrl(urlLugar).build();
     }
 
-    public List<EventoEntityDTO> buscarEventos(BusquedaEventoFiltro filtro) {
-    return restClientEvento.get()
-            .uri(uriBuilder -> uriBuilder
-                    .path("/evento/buscar")
-                    .queryParam("tipo", filtro.getTipo())
-                    .queryParam("organizador", filtro.getOrganizador())
-                    .queryParam("participante", filtro.getParticipante())
-                    .queryParam("ciudad", filtro.getCiudad())
-                    .queryParam("fechaDesde", filtro.getFechaDesde())
-                    .queryParam("fechaHasta", filtro.getFechaHasta())
-                    .queryParam("texto", filtro.getTexto())
-                    .queryParam("q", filtro.getQ())
-                    .queryParam("lat", filtro.getLat())
-                    .queryParam("lon", filtro.getLon())
-                    .build())
-            .retrieve()
-            .body(new ParameterizedTypeReference<List<EventoEntityDTO>>() {});
-}
-
-    public EventoEntityDTO obtenerEventoPorId(String idEvento) {
+    // Busca los eventos publicados con su precio desde el servicio Evento
+    public List<EventoEntityDTO> buscarEventos() {
         return restClientEvento.get()
-                .uri("/evento/{id}", idEvento)
+                .uri("/evento/buscar")
                 .retrieve()
-                .body(EventoEntityDTO.class);
+                .body(new ParameterizedTypeReference<List<EventoEntityDTO>>() {});
     }
 
-    public ParticipanteEntityDTO obtenerParticipantePorId(String idParticipante) {
+    // El filtro por participante ya existe en Evento
+    public List<EventoEntityDTO> buscarPorParticipante(String nombre) {
         return restClientEvento.get()
-                .uri("/participante/{id}", idParticipante)
+                .uri(uri -> uri.path("/evento/buscar")
+                        .queryParam("participante", nombre)
+                        .build())
                 .retrieve()
-                .body(ParticipanteEntityDTO.class);
+                .body(new ParameterizedTypeReference<List<EventoEntityDTO>>() {});
     }
 
-    public LugarEntityDTO obtenerLugarPorId(String idLugar) {
+    public List<ParticipanteEntityDTO> listarParticipantes() {
+        return restClientEvento.get()
+                .uri("/evento/participantes")
+                .retrieve()
+                .body(new ParameterizedTypeReference<List<ParticipanteEntityDTO>>() {});
+    }
+
+    public List<LugarEntityDTO> listarLugares() {
         return restClientLugar.get()
-                .uri("/lugar/{id}", idLugar)
+                .uri("/lugares")
                 .retrieve()
-                .body(LugarEntityDTO.class);
+                .body(new ParameterizedTypeReference<List<LugarEntityDTO>>() {});
     }
-
-
-     
-
-
-
-
-
-
-
 }
-
-
-

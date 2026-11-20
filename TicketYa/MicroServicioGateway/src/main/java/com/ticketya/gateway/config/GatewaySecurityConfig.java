@@ -15,29 +15,23 @@ public class GatewaySecurityConfig {
     public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http) {
         return http
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
-                .authorizeExchange(exchanges -> exchanges
-                        // 1. Monitoreo y salud del sistema
-                        .pathMatchers("/actuator/**", "/actuator", "/health", "/info").permitAll()
-                        
-                        // 2. Registro de nuevos clientes y endpoints de Login
-                        .pathMatchers(HttpMethod.POST, "/clientes").permitAll()
-                        .pathMatchers("/clientes/login", "/evento/login", "/ticket/login").permitAll()
-                        
-                        // 3. AJUSTE CLAVE: Consultas publicas (solo GET) para ver eventos y lugares sin iniciar sesion
+                .authorizeExchange(reglas -> reglas
+                        // Nadie puede entrar a las rutas internas por el Gateway
+                        .pathMatchers(
+                                "/clientes/interno", "/clientes/interno/**",
+                                "/evento/interno", "/evento/interno/**",
+                                "/lugares/interno", "/lugares/interno/**",
+                                "/ticket/interno", "/ticket/interno/**"
+                        ).denyAll()
+                        .pathMatchers("/actuator/health", "/actuator/info").permitAll()
+                        .pathMatchers(HttpMethod.POST, "/clientes", "/clientes/login").permitAll()
                         .pathMatchers(HttpMethod.GET, "/evento", "/evento/**").permitAll()
-                        .pathMatchers(HttpMethod.GET, "/lugares", "/lugares/buscarPorCiudad", "/lugares/buscarPorUbicacion").permitAll()
-                        
-                        // 4. Seguridad extra: Nadie desde afuera (Internet) puede llamar a endpoints internos
-                        .pathMatchers("/**/interno/**").denyAll()
-                        
-                        // 5. Todo lo demas (comprar, reservar, crear eventos, ver perfil) exige token JWT
-                        .pathMatchers("/ticket/**", "/evento/**", "/lugares/**", "/clientes/**").authenticated()
+                        .pathMatchers(HttpMethod.GET, "/lugares", "/lugares/buscarPorCiudad", "/lugares/buscarPorUbicacion", "/lugares/sectores/*/disponibilidad").permitAll()
+                        // Todas las escrituras y datos privados exigen JWT
                         .anyExchange().authenticated())
-                .oauth2ResourceServer(o -> o.jwt(j -> { }))
+                .oauth2ResourceServer(oauth -> oauth.jwt(jwt -> {}))
                 .httpBasic(ServerHttpSecurity.HttpBasicSpec::disable)
                 .formLogin(ServerHttpSecurity.FormLoginSpec::disable)
                 .build();
     }
 }
-
-

@@ -15,7 +15,8 @@ import java.util.UUID;
 @NoArgsConstructor
 @Entity
 @Table(name = "evento")
-public class EventoEntity {
+public class EventoEntity implements java.io.Serializable {
+    private static final long serialVersionUID = 1L;
     @Id
     @Column(name = "id", length = 64, nullable = false)
     private String id;
@@ -31,6 +32,10 @@ public class EventoEntity {
     // BORRADOR, PUBLICADO, SUSPENDIDO, AGOTADO, CANCELADO, FINALIZADO
     private String estado;
     private String demanda;
+
+    // Avisos pendientes, para poder reintentar si Cliente o Ticket no responden
+    @Column(name = "publicacion_avisada", nullable = false)
+    private boolean publicacionAvisada = true;
 
     @PrePersist
     public void generarId() {

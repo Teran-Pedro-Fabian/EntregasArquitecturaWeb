@@ -4,19 +4,13 @@ server:
 spring:
   application:
     name: ticketya-gateway
-  security:
-    oauth2:
-      resourceserver:
-        jwt:
-          # Se usara firma HMAC simetrica (HS256) para el JWT del Gateway
-          secret: ticketya_gateway_jwt_secret_phase1_2026_abcdefg
 
   cloud:
     gateway:
       # El Gateway agrega esta cabecera para comprobar que la peticion paso por 8080.
       default-filters:
         - AddResponseHeader=X-TicketYa-Gateway, TicketYa
-        - name: jwtPropagation
+        - DedupeResponseHeader=X-Trace-Id RETAIN_FIRST
 
       # Conservar las rutas originales, sin reescribir prefijos ni parametros.
       # Los otros cuatro microservicios siguen ejecutandose en IntelliJ.
@@ -50,3 +44,8 @@ management:
 logging:
   level:
     org.springframework.cloud.gateway: INFO
+
+# Misma firma HS256 que los cuatro microservicios (solo para desarrollo local)
+ticketya:
+  jwt:
+    secret: ${TICKETYA_JWT_SECRET:ticketya-dev-only-change-this-jwt-secret-2026}

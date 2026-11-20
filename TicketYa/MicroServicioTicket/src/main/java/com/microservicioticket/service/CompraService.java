@@ -3,7 +3,6 @@ package com.microservicioticket.service;
 import com.microservicioticket.Repository.CompraRepository;
 import com.microservicioticket.Repository.TicketRepository;
 import com.microservicioticket.dto.CompraRequest;
-import com.microservicioticket.dto.ColaResponse;
 import com.microservicioticket.dto.CompraResponse;
 import com.microservicioticket.dto.CompraGeneralRequest;
 import com.microservicioticket.entity.CompraEntity;
@@ -33,6 +32,10 @@ import java.util.UUID;
 
 @Service
 public class CompraService {
+    private static final String URL_LUGAR = System.getenv().getOrDefault("TICKETYA_LUGAR_URL", "http://localhost:8083");
+
+    private static final String URL_EVENTO = System.getenv().getOrDefault("TICKETYA_EVENTO_URL", "http://localhost:8082");
+
 
     @Autowired
     private EntityManager entityManager;
@@ -88,13 +91,12 @@ public class CompraService {
         }
 
         // 2) Comprobar que el evento esta publicado
-        String urlEvento = "http://localhost:8082/evento/" + idEvento;
+        String urlEvento = URL_EVENTO + "/evento/" + idEvento;
         Map<String, Object> evento = restTemplate.getForObject(urlEvento, Map.class);
         if (evento == null || !"PUBLICADO".equals(evento.get("estado"))) {
             throw new IllegalStateException("El evento no esta publicado");
         }
-        // Punto nuevo: eventos de alta demanda exigen entrada a la fila virtual
-        verificarFilaVirtual(idEvento, idCliente, evento);
+        colaService.validarTurno(idEvento, idCliente, String.valueOf(evento.get("demanda")));
 
         // 3) Verificar que el cliente no supere el limite
         long activos = ticketRepository.contarActivos(idCliente, idEvento);
@@ -104,7 +106,7 @@ public class CompraService {
 
         // 4) Consultar el precio oficial de Lugar
         String urlPrecio = UriComponentsBuilder
-                .fromHttpUrl("http://localhost:8083/lugares/interno/sectores/" + idSector + "/precio")
+                .fromHttpUrl(URL_LUGAR + "/lugares/interno/sectores/" + idSector + "/precio")
                 .queryParam("idEvento", idEvento).toUriString();
         Map<String, Object> datosPrecio = restTemplate.getForObject(urlPrecio, Map.class);
         if (datosPrecio == null || !(datosPrecio.get("precio") instanceof Number)) {
@@ -123,7 +125,7 @@ public class CompraService {
                     "idSector", idSector,
                     "idEvento", idEvento);
             restTemplate.postForEntity(
-                    "http://localhost:8083/lugares/interno/reservas/validar",
+                    URL_LUGAR + "/lugares/interno/reservas/validar",
                     datosReserva, String.class);
         }
 
@@ -206,12 +208,11 @@ public class CompraService {
 
         // 1) Comprobar que el evento esta publicado
         Map<String, Object> evento = restTemplate.getForObject(
-                "http://localhost:8082/evento/" + idEvento, Map.class);
+                URL_EVENTO + "/evento/" + idEvento, Map.class);
         if (evento == null || !"PUBLICADO".equals(evento.get("estado"))) {
             throw new IllegalStateException("El evento no esta publicado");
         }
-        // Punto nuevo: eventos de alta demanda exigen entrada a la fila virtual
-        verificarFilaVirtual(idEvento, idCliente, evento);
+        colaService.validarTurno(idEvento, idCliente, String.valueOf(evento.get("demanda")));
 
         // 2) Verificar el limite de entradas del cliente
         long activos = ticketRepository.contarActivos(idCliente, idEvento);
@@ -221,7 +222,7 @@ public class CompraService {
 
         // 3) Consultar precio desde Lugar, nunca desde el cliente
         String urlPrecio = UriComponentsBuilder.fromHttpUrl(
-                "http://localhost:8083/lugares/interno/sectores/" + idSector + "/precio")
+                URL_LUGAR + "/lugares/interno/sectores/" + idSector + "/precio")
                 .queryParam("idEvento", idEvento).toUriString();
         Map<String, Object> datosPrecio = restTemplate.getForObject(urlPrecio, Map.class);
         if (datosPrecio == null || !(datosPrecio.get("precio") instanceof Number)) {
@@ -237,7 +238,7 @@ public class CompraService {
                 "idSector", idSector, "idReserva", idReserva,
                 "idCliente", idCliente, "idEvento", idEvento, "cantidad", cantidad);
         restTemplate.postForEntity(
-                "http://localhost:8083/lugares/interno/sectores/generales/reservas/validar",
+                URL_LUGAR + "/lugares/interno/sectores/generales/reservas/validar",
                 datosReserva, String.class);
 
         double total = Math.round(precioUnitario * cantidad * 100.0) / 100.0;
@@ -317,20 +318,6 @@ public class CompraService {
         return reintentarCompra(compra);
     }
 
-    /**
-     * Eventos de alta demanda: la compra debe pasar por la fila virtual
-     * El cliente habilitado (primer lugar de la fila) puede comprar en orden
-     */
-    private void verificarFilaVirtual(String idEvento, String idCliente, Map<String, Object> evento) {
-        if (evento == null || !"ALTA".equals(evento.get("demanda"))) {
-            return;
-        }
-        ColaResponse posicion = colaService.consultarPosicion(idEvento, idCliente);
-        if (!Boolean.TRUE.equals(posicion.getHabilitado())) {
-            throw new IllegalStateException("Evento de alta demanda: la compra debe hacerse en orden desde la fila virtual");
-        }
-    }
-
     private CompraResponse reintentarCompra(CompraEntity compra) {
         List<TicketEntity> tickets = ticketRepository.findByIdCompra(compra.getId());
         if ("CONFIRMADA".equals(compra.getEstado())) return respuesta(compra, tickets);
@@ -351,7 +338,7 @@ public class CompraService {
     private CompraResponse completarCompraNumerada(CompraEntity compra, List<TicketEntity> tickets) {
         try {
             for (TicketEntity ticket : tickets) {
-                restTemplate.postForEntity("http://localhost:8083/lugares/asiento/confirmar",
+                restTemplate.postForEntity(URL_LUGAR + "/lugares/asiento/confirmar",
                         Map.of("idAsiento", ticket.getIdAsiento(),
                                "idCliente", compra.getIdCliente(),
                                "idTicket", ticket.getId()), String.class);
@@ -375,7 +362,7 @@ public class CompraService {
         try {
             List<Long> idsTickets = tickets.stream().map(TicketEntity::getId).toList();
             restTemplate.postForEntity(
-                    "http://localhost:8083/lugares/interno/sectores/generales/confirmar",
+                    URL_LUGAR + "/lugares/interno/sectores/generales/confirmar",
                     Map.of("idSector", compra.getIdSector(),
                            "idReserva", compra.getIdReservaGeneral(),
                            "idCliente", compra.getIdCliente(),
@@ -481,7 +468,7 @@ public class CompraService {
     private void cancelarReservaGeneral(Long idReserva, Long idSector, String idCliente) {
         try {
             String url = UriComponentsBuilder.fromHttpUrl(
-                    "http://localhost:8083/lugares/sectores/generales/reservas/" + idReserva)
+                    URL_LUGAR + "/lugares/sectores/generales/reservas/" + idReserva)
                     .queryParam("idSector", idSector)
                     .queryParam("idCliente", idCliente).toUriString();
             restTemplate.exchange(url, HttpMethod.DELETE, null, String.class);
@@ -538,7 +525,7 @@ public class CompraService {
         for (Long idAsiento : ids) {
             try {
                 String url = UriComponentsBuilder.fromHttpUrl(
-                        "http://localhost:8083/lugares/reservas/" + idAsiento)
+                        URL_LUGAR + "/lugares/reservas/" + idAsiento)
                         .queryParam("idCliente", idCliente).toUriString();
                 restTemplate.exchange(url, HttpMethod.DELETE, null, String.class);
             } catch (RuntimeException e) {

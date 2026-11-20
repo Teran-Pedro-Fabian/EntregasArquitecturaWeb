@@ -20,7 +20,7 @@ public class PreferenciasService {
      * @return lista de preferencias del cliente
      */
     public List<PreferenciasEntity> findByidCliente(String idCliente) {
-        return preferenciasRepository.findByidCliente(idCliente);
+        return preferenciasRepository.findByIdCliente(idCliente);
     }
 
     /**
@@ -30,6 +30,7 @@ public class PreferenciasService {
      * @return preferencias guardadas
      */
     public PreferenciasEntity savePreferencia(PreferenciasEntity preferenciasEntity) {
+        preferenciasEntity.generarId();
         return preferenciasRepository.save(preferenciasEntity);
     }
 }
