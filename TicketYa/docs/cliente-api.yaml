@@ -1,9 +1,8 @@
 openapi: 3.0.3
 info:
   title: TicketYa - MicroServicioCliente
-  version: 1.0.0
-  description: 'Registro de clientes, preferencias y avisos internos por cancelacion'
-
+  version: 2.0.0
+  description: Clientes, autenticacion JWT, preferencias MongoDB, recomendaciones y notificaciones
 servers:
 - url: http://localhost:8080
   description: API Gateway - entrada externa recomendada
@@ -42,6 +41,7 @@ paths:
               schema:
                 type: string
               example: Operacion no permitida
+      description: Registro publico de cliente
   /clientes/{id}:
     get:
       tags:
@@ -68,6 +68,16 @@ paths:
               schema:
                 type: string
               example: Operacion no permitida
+        '401':
+          description: JWT faltante o invalido
+        '403':
+          description: Usuario autenticado pero sin permisos para esta operacion
+      security:
+      - bearerAuth: []
+      x-roles:
+      - CLIENTE
+      - ADMINISTRADOR
+      description: CLIENTE solo puede consultar su propia cuenta
   /clientes/preferencias:
     post:
       tags:
@@ -98,12 +108,23 @@ paths:
               schema:
                 type: string
               example: Operacion no permitida
+        '401':
+          description: JWT faltante o invalido
+        '403':
+          description: Usuario autenticado pero sin permisos para esta operacion
+      security:
+      - bearerAuth: []
+      x-roles:
+      - CLIENTE
+      - ADMINISTRADOR
+      description: CLIENTE solo puede guardar sus propias preferencias. Se almacenan en MongoDB
   /clientes/{id}/notificaciones:
     get:
       tags:
       - Cliente
       summary: Consultar bandeja de avisos
-      description: Devuelve lista vacia cuando no hay avisos, no envia email ni push
+      description: Devuelve lista vacia cuando no hay avisos, no envia email ni push. CLIENTE solo puede consultar su propia
+        bandeja
       parameters:
       - name: id
         in: path
@@ -120,12 +141,22 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Notificacion'
+        '401':
+          description: JWT faltante o invalido
+        '403':
+          description: Usuario autenticado pero sin permisos para esta operacion
+      security:
+      - bearerAuth: []
+      x-roles:
+      - CLIENTE
+      - ADMINISTRADOR
   /clientes/interno/notificaciones/cancelacion:
     post:
       tags:
       - Interno
       summary: Recibir aviso enviado desde Ticket
-      description: Crea una notificacion interna, se evita duplicar aviso por cliente y evento
+      description: Crea una notificacion interna, se evita duplicar aviso por cliente y evento. Operacion interna entre microservicios
+        no destinada al usuario final
       requestBody:
         required: true
         content:
@@ -146,7 +177,162 @@ paths:
               schema:
                 type: string
               example: Operacion no permitida
+      x-internal: true
+  /clientes/login:
+    post:
+      tags:
+      - Cliente
+      summary: Iniciar sesion
+      description: Genera un JWT para CLIENTE ORGANIZADOR ADMINISTRADOR o PERSONAL_ACCESO
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Login correcto
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '400':
+          description: Datos incompletos
+        '401':
+          description: Credenciales invalidas
+  /clientes/{id}/email:
+    patch:
+      tags:
+      - Cliente
+      summary: Registrar o actualizar email
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+              description: Datos necesarios para actualizar el email
+      responses:
+        '200':
+          description: Email actualizado
+        '400':
+          description: Datos invalidos
+        '404':
+          description: Cliente no encontrado
+        '401':
+          description: JWT faltante o invalido
+        '403':
+          description: Usuario autenticado pero sin permisos para esta operacion
+      security:
+      - bearerAuth: []
+      x-roles:
+      - CLIENTE
+      - ADMINISTRADOR
+      description: CLIENTE solo puede modificar su propio email
+  /clientes/{id}/recomendaciones:
+    get:
+      tags:
+      - Cliente
+      summary: Obtener recomendaciones
+      description: Recomendaciones simplificadas generadas a partir de las preferencias del cliente. CLIENTE solo puede consultar
+        sus propias recomendaciones
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Lista de eventos recomendados
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  additionalProperties: true
+        '401':
+          description: JWT faltante o invalido
+        '403':
+          description: Usuario autenticado pero sin permisos para esta operacion
+      security:
+      - bearerAuth: []
+      x-roles:
+      - CLIENTE
+      - ADMINISTRADOR
+  /clientes/interno/notificaciones/compra:
+    post:
+      tags:
+      - Interno
+      summary: Registrar notificacion por compra
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Notificacion procesada
+        '400':
+          description: Datos invalidos
+      x-internal: true
+      description: Operacion interna entre microservicios no destinada al usuario final
+  /clientes/interno/notificaciones/cambio:
+    post:
+      tags:
+      - Interno
+      summary: Registrar notificacion por cambio de evento
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Notificacion procesada
+        '400':
+          description: Datos invalidos
+      x-internal: true
+      description: Operacion interna entre microservicios no destinada al usuario final
+  /clientes/interno/notificaciones/publicacion:
+    post:
+      tags:
+      - Interno
+      summary: Registrar notificacion por publicacion relacionada
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Notificacion procesada
+        '400':
+          description: Datos invalidos
+      x-internal: true
+      description: Operacion interna entre microservicios no destinada al usuario final
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT obtenido mediante POST /clientes/login
   schemas:
     Cliente:
       type: object
@@ -154,6 +340,14 @@ components:
         id: &id001
           type: string
         nombre: *id001
+        email:
+          type: string
+          format: email
+          nullable: true
+        password:
+          type: string
+          format: password
+          writeOnly: true
       example:
         id: cliente-01
         nombre: Juan Perez
@@ -165,6 +359,12 @@ components:
         idEvento: *id001
         idParticipante: *id001
         idLugar: *id001
+        ciudad:
+          type: string
+          nullable: true
+        tipo:
+          type: string
+          nullable: true
       example:
         id: preferencia-01
         idCliente: cliente-01
@@ -203,3 +403,31 @@ components:
         idCliente: cliente-01
         mensaje: El evento fue cancelado
         fechaCreacion: '2026-11-10T19:00:00Z'
+    LoginRequest:
+      type: object
+      required:
+      - idUsuario
+      - password
+      properties:
+        idUsuario:
+          type: string
+        password:
+          type: string
+          format: password
+      example:
+        idUsuario: cliente-01
+        password: clave-ejemplo
+    LoginResponse:
+      type: object
+      properties:
+        idUsuario:
+          type: string
+        rol:
+          type: string
+          enum:
+          - CLIENTE
+          - ORGANIZADOR
+          - ADMINISTRADOR
+          - PERSONAL_ACCESO
+        token:
+          type: string

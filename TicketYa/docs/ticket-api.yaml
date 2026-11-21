@@ -1,9 +1,8 @@
 openapi: 3.0.3
 info:
   title: TicketYa - MicroServicioTicket
-  version: 1.0.0
-  description: 'Compras, pagos mock, QR, devoluciones, reintegros y avisos'
-
+  version: 2.0.0
+  description: Compras, fila virtual, pagos mock, QR, devoluciones, reportes, reintegros y seguridad JWT
 servers:
 - url: http://localhost:8080
   description: API Gateway - entrada externa recomendada
@@ -14,6 +13,12 @@ tags:
   description: Operaciones del microservicio Ticket
 - name: Interno
   description: Comunicacion HTTP entre microservicios; no destinada al usuario final
+- name: Fila virtual
+  description: Control de acceso a compras de alta demanda
+- name: Acceso
+  description: Validacion de entradas mediante QR
+- name: Reportes
+  description: Reportes para organizadores
 paths:
   /ticket/comprar:
     post:
@@ -69,6 +74,15 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CompraResponse'
+        '401':
+          description: JWT faltante o invalido
+        '403':
+          description: Usuario autenticado pero sin permisos para esta operacion
+      security:
+      - bearerAuth: []
+      x-roles:
+      - CLIENTE
+      - ADMINISTRADOR
   /ticket/emitir:
     post:
       tags:
@@ -123,6 +137,15 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CompraResponse'
+        '401':
+          description: JWT faltante o invalido
+        '403':
+          description: Usuario autenticado pero sin permisos para esta operacion
+      security:
+      - bearerAuth: []
+      x-roles:
+      - CLIENTE
+      - ADMINISTRADOR
   /ticket/comprar-general:
     post:
       tags:
@@ -177,6 +200,15 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CompraResponse'
+        '401':
+          description: JWT faltante o invalido
+        '403':
+          description: Usuario autenticado pero sin permisos para esta operacion
+      security:
+      - bearerAuth: []
+      x-roles:
+      - CLIENTE
+      - ADMINISTRADOR
   /ticket/compras/{idCompra}:
     get:
       tags:
@@ -204,6 +236,15 @@ paths:
               schema:
                 type: string
               example: Operacion no permitida
+        '401':
+          description: JWT faltante o invalido
+        '403':
+          description: Usuario autenticado pero sin permisos para esta operacion
+      security:
+      - bearerAuth: []
+      x-roles:
+      - CLIENTE
+      - ADMINISTRADOR
   /ticket/compras/{idCompra}/reintentar:
     post:
       tags:
@@ -245,6 +286,15 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CompraResponse'
+        '401':
+          description: JWT faltante o invalido
+        '403':
+          description: Usuario autenticado pero sin permisos para esta operacion
+      security:
+      - bearerAuth: []
+      x-roles:
+      - CLIENTE
+      - ADMINISTRADOR
   /ticket/{id}:
     get:
       tags:
@@ -272,6 +322,15 @@ paths:
               schema:
                 type: string
               example: Operacion no permitida
+        '401':
+          description: JWT faltante o invalido
+        '403':
+          description: Usuario autenticado pero sin permisos para esta operacion
+      security:
+      - bearerAuth: []
+      x-roles:
+      - CLIENTE
+      - ADMINISTRADOR
   /ticket/{id}/solicitar-devolucion:
     post:
       tags:
@@ -305,6 +364,15 @@ paths:
               schema:
                 type: string
               example: Operacion no permitida
+        '401':
+          description: JWT faltante o invalido
+        '403':
+          description: Usuario autenticado pero sin permisos para esta operacion
+      security:
+      - bearerAuth: []
+      x-roles:
+      - CLIENTE
+      - ADMINISTRADOR
   /ticket/{id}/revisar-devolucion:
     patch:
       tags:
@@ -345,6 +413,14 @@ paths:
               schema:
                 type: string
               example: Operacion no permitida
+        '401':
+          description: JWT faltante o invalido
+        '403':
+          description: Usuario autenticado pero sin permisos para esta operacion
+      security:
+      - bearerAuth: []
+      x-roles:
+      - ADMINISTRADOR
   /ticket/{id}/procesar-reintegro:
     patch:
       tags:
@@ -372,6 +448,14 @@ paths:
               schema:
                 type: string
               example: Operacion no permitida
+        '401':
+          description: JWT faltante o invalido
+        '403':
+          description: Usuario autenticado pero sin permisos para esta operacion
+      security:
+      - bearerAuth: []
+      x-roles:
+      - ADMINISTRADOR
   /ticket/{id}/finalizar-devolucion:
     patch:
       tags:
@@ -399,6 +483,14 @@ paths:
               schema:
                 type: string
               example: Operacion no permitida
+        '401':
+          description: JWT faltante o invalido
+        '403':
+          description: Usuario autenticado pero sin permisos para esta operacion
+      security:
+      - bearerAuth: []
+      x-roles:
+      - ADMINISTRADOR
   /ticket/eventos/{idEvento}/estado-cancelacion:
     get:
       tags:
@@ -418,6 +510,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/EstadoCancelacion'
+        '401':
+          description: JWT faltante o invalido
+        '403':
+          description: Usuario autenticado pero sin permisos para esta operacion
+      security:
+      - bearerAuth: []
+      x-roles:
+      - ADMINISTRADOR
   /ticket/avisos-cancelacion:
     get:
       tags:
@@ -439,6 +539,15 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/AvisoCancelacion'
+        '401':
+          description: JWT faltante o invalido
+        '403':
+          description: Usuario autenticado pero sin permisos para esta operacion
+      security:
+      - bearerAuth: []
+      x-roles:
+      - CLIENTE
+      - ADMINISTRADOR
   /ticket/interno/eventos/{idEvento}/bloquear-ventas:
     post:
       tags:
@@ -465,6 +574,8 @@ paths:
               schema:
                 type: string
               example: Operacion no permitida
+      x-internal: true
+      description: Operacion interna entre microservicios no destinada al usuario final
   /ticket/interno/eventos/{idEvento}/procesar-cancelacion:
     post:
       tags:
@@ -504,7 +615,158 @@ paths:
               schema:
                 type: string
               example: Operacion no permitida
+      x-internal: true
+      description: Operacion interna entre microservicios no destinada al usuario final
+  /ticket/cola/{idEvento}/entrar:
+    post:
+      tags:
+      - Fila virtual
+      summary: Ingresar a la fila virtual
+      description: Se usa en eventos de alta demanda. CLIENTE solo puede ingresar con su propio id
+      parameters:
+      - name: idEvento
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ColaRequest'
+      responses:
+        '200':
+          description: Estado dentro de la fila
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ColaResponse'
+        '400':
+          description: Datos invalidos
+        '409':
+          description: No se pudo ingresar a la fila
+        '401':
+          description: JWT faltante o invalido
+        '403':
+          description: Usuario autenticado pero sin permisos para esta operacion
+      security:
+      - bearerAuth: []
+      x-roles:
+      - CLIENTE
+      - ADMINISTRADOR
+  /ticket/cola/{idEvento}/posicion:
+    get:
+      tags:
+      - Fila virtual
+      summary: Consultar posicion en la fila virtual
+      parameters:
+      - name: idEvento
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: idCliente
+        in: query
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Posicion y estado del cliente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ColaResponse'
+        '404':
+          description: Cliente no encontrado en la fila
+        '401':
+          description: JWT faltante o invalido
+        '403':
+          description: Usuario autenticado pero sin permisos para esta operacion
+      security:
+      - bearerAuth: []
+      x-roles:
+      - CLIENTE
+      - ADMINISTRADOR
+      description: CLIENTE solo puede consultar su propia posicion
+  /ticket/escanearQrcode:
+    post:
+      tags:
+      - Acceso
+      summary: Validar ingreso mediante QR
+      description: Operacion de control de acceso. Un QR valido queda marcado como utilizado
+      parameters:
+      - name: qrCode
+        in: query
+        required: true
+        schema:
+          type: string
+      - name: idEvento
+        in: query
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Entrada validada
+        '400':
+          description: Debe indicar QR y evento
+        '404':
+          description: Ticket no encontrado
+        '409':
+          description: QR ya utilizado o no valido para el evento
+        '401':
+          description: JWT faltante o invalido
+        '403':
+          description: Usuario autenticado pero sin permisos para esta operacion
+      security:
+      - bearerAuth: []
+      x-roles:
+      - PERSONAL_ACCESO
+      - ADMINISTRADOR
+  /ticket/reportes/eventos/{idEvento}:
+    get:
+      tags:
+      - Reportes
+      summary: Consultar reporte de un evento
+      description: Muestra ventas devoluciones ocupacion y recaudacion por sector y total. Solo el organizador correspondiente
+        puede consultar el reporte
+      parameters:
+      - name: idEvento
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: idOrganizador
+        in: query
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Reporte generado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReporteEvento'
+        '404':
+          description: Evento no encontrado
+        '401':
+          description: JWT faltante o invalido
+        '403':
+          description: Usuario autenticado pero sin permisos para esta operacion
+      security:
+      - bearerAuth: []
+      x-roles:
+      - ORGANIZADOR
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT obtenido mediante POST /clientes/login
   schemas:
     CompraNumeradaRequest:
       type: object
@@ -675,3 +937,85 @@ components:
         avisosRegistrados: 2
         avisosEntregados: 2
         errores: []
+    ColaRequest:
+      type: object
+      required:
+      - idCliente
+      properties:
+        idCliente:
+          type: string
+      example:
+        idCliente: cliente-01
+    ColaResponse:
+      type: object
+      properties:
+        idEvento:
+          type: string
+        idCliente:
+          type: string
+        posicion:
+          type: integer
+          format: int32
+        habilitado:
+          type: boolean
+    ReporteEvento:
+      type: object
+      properties:
+        idEvento:
+          type: string
+        nombreEvento:
+          type: string
+        organizador:
+          type: string
+        sectores:
+          type: array
+          items:
+            type: object
+            properties:
+              idSector:
+                type: integer
+                format: int64
+              nombre:
+                type: string
+              tipo:
+                type: string
+              capacidad:
+                type: integer
+              entradasVendidas:
+                type: integer
+              entradasDevueltas:
+                type: integer
+              entradasActivas:
+                type: integer
+              ocupacionPorcentaje:
+                type: number
+                format: double
+              recaudacionBruta:
+                type: number
+                format: double
+              reintegrosRealizados:
+                type: number
+                format: double
+              recaudacionNeta:
+                type: number
+                format: double
+        capacidadTotal:
+          type: integer
+        entradasVendidas:
+          type: integer
+        entradasDevueltas:
+          type: integer
+        entradasActivas:
+          type: integer
+        ocupacionPorcentaje:
+          type: number
+          format: double
+        recaudacionBruta:
+          type: number
+          format: double
+        reintegrosRealizados:
+          type: number
+          format: double
+        recaudacionNeta:
+          type: number
+          format: double
