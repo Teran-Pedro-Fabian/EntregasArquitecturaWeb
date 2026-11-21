@@ -1,5 +1,5 @@
 export const environment = {
   production: true,
   apiUrl: '',
-  mailpitUrl: ''
+  mailpitUrl: 'http://localhost:8025'
 };

@@ -277,6 +277,16 @@ services:
         condition: service_completed_successfully
     restart: unless-stopped
 
+  frontend:
+      profiles: [ apps ]
+      build: ./ticketya-frontend
+      ports:
+        - "4200:80"
+      depends_on:
+        gateway:
+          condition: service_started
+      restart: unless-stopped
+
 volumes:
   postgres_lugar_data:
   postgres_ticket_data:
