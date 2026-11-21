@@ -278,6 +278,31 @@ paths:
       x-roles:
       - ORGANIZADOR
       - ADMINISTRADOR
+  /lugares/sectores/{idSector}/asientos:
+    get:
+      tags:
+      - Lugar
+      summary: Listar asientos publicos de un sector numerado
+      parameters:
+      - name: idSector
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        '200':
+          description: Operacion correcta
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AsientoPublico'
+        '400':
+          description: Sector inexistente o invalido
+        '409':
+          description: El sector no es numerado
   /lugares/reservar:
     post:
       tags:
@@ -843,6 +868,29 @@ components:
         precio: 9000.0
         cuposReservados: 0
         cuposVendidos: 0
+    AsientoPublico:
+      type: object
+      properties:
+        idAsiento:
+          type: integer
+          format: int64
+        idSector:
+          type: integer
+          format: int64
+        fila:
+          type: string
+        columna:
+          type: integer
+          format: int32
+        estado:
+          type: string
+          example: DISPONIBLE
+      example:
+        idAsiento: 20
+        idSector: 2
+        fila: A
+        columna: 5
+        estado: DISPONIBLE
     Asiento:
       type: object
       properties:

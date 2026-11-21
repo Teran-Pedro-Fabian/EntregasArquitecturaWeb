@@ -209,6 +209,37 @@ paths:
       x-roles:
       - CLIENTE
       - ADMINISTRADOR
+  /ticket/clientes/{idCliente}:
+    get:
+      tags:
+      - Ticket
+      summary: Consultar entradas del cliente
+      description: Devuelve las entradas del cliente autenticado ordenadas desde la mas nueva
+      parameters:
+      - name: idCliente
+        in: path
+        required: true
+        schema:
+          type: string
+        example: cliente-01
+      responses:
+        '200':
+          description: Operacion correcta
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Ticket'
+        '401':
+          description: JWT faltante o invalido
+        '403':
+          description: Usuario autenticado pero sin permisos para esta operacion
+      security:
+      - bearerAuth: []
+      x-roles:
+      - CLIENTE
+      - ADMINISTRADOR
   /ticket/compras/{idCompra}:
     get:
       tags:

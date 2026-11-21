@@ -198,6 +198,17 @@ public class LugarController {
     }
 
 
+    @GetMapping("/sectores/{idSector}/asientos")
+    public ResponseEntity<?> listarAsientosPublicos(@PathVariable Long idSector) {
+        try {
+            return ResponseEntity.ok(lugarService.listarAsientosPublicos(idSector));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
+        }
+    }
+
     /**
      * Crear un asiento dentro de un sector
      *

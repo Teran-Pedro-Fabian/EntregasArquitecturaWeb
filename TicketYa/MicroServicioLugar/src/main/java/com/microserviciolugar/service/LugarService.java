@@ -1,5 +1,7 @@
 package com.microserviciolugar.service;
 
+import com.microserviciolugar.dto.AsientoPublicoDTO;
+
 import com.microserviciolugar.entity.AsientoEntity;
 import com.microserviciolugar.entity.LugarEntity;
 import com.microserviciolugar.entity.SectorEntity;
@@ -327,6 +329,29 @@ public class LugarService {
         asiento.setEstado("DISPONIBLE");
         // 4) Guardar el asiento en PostgreSQL
         return asientoRepository.save(asiento);
+    }
+
+    @Transactional(readOnly = true)
+    public List<AsientoPublicoDTO> listarAsientosPublicos(Long idSector) {
+        if (idSector == null || idSector <= 0) {
+            throw new IllegalArgumentException("Sector no valido");
+        }
+
+        SectorEntity sector = sectorRepository.findById(idSector)
+                .orElseThrow(() -> new IllegalArgumentException("Sector no encontrado"));
+
+        if ("NO_NUMERADO".equals(sector.getTipo())) {
+            throw new IllegalStateException("El sector no numerado no tiene asientos");
+        }
+
+        return asientoRepository.findBySector_IdOrderByFilaAscColumnaAsc(idSector).stream()
+                .map(asiento -> new AsientoPublicoDTO(
+                        asiento.getId(),
+                        idSector,
+                        asiento.getFila(),
+                        asiento.getColumna(),
+                        asiento.getEstado()))
+                .toList();
     }
 
     /**

@@ -22,6 +22,7 @@ public interface AsientoRepository extends JpaRepository<AsientoEntity, Long> {
     @Query("SELECT a FROM AsientoEntity a WHERE a.id = :id")
     Optional<AsientoEntity> findByIdWithLugar(@Param("id") Long id);
     long countBySector_Id(Long idSector);
+    List<AsientoEntity> findBySector_IdOrderByFilaAscColumnaAsc(Long idSector);
 
     // Comprobacion previa. El indice unico en PostgreSQL protege las carreras.
     @Query("SELECT COUNT(a) FROM AsientoEntity a " +

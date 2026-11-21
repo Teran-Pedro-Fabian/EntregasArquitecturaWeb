@@ -11,6 +11,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.Map;
+import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.UUID;
 
@@ -99,6 +100,10 @@ public class TicketService {
 
     public TicketEntity obtenerTicket(Long id) {
         return ticketRepository.findById(id).orElse(null);
+    }
+
+    public List<TicketEntity> obtenerTicketsCliente(String idCliente) {
+        return ticketRepository.findByIdClienteOrderByIdDesc(idCliente);
     }
 
     /**
