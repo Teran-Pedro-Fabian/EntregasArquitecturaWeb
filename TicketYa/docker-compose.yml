@@ -201,6 +201,55 @@ services:
       redis: {condition: service_healthy}
     restart: unless-stopped
 
+  migrate-ticket:
+    profiles: [apps]
+    image: postgres:16-alpine
+    environment:
+      PGPASSWORD: admin
+    volumes:
+      - ./db/migrations:/migrations:ro
+    depends_on:
+      postgres-ticket:
+        condition: service_healthy
+      ticket:
+        condition: service_started
+    command:
+      - /bin/sh
+      - -c
+      - |
+        echo "Esperando que Hibernate cree las tablas de Ticket..."
+        
+        until [ "$$(psql \
+          -h postgres-ticket \
+          -U postgres \
+          -d ticketya_tickets \
+          -tAc "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='public' AND table_name IN ('compra','ticket','aviso_cancelacion')")" = "3" ]
+        do
+          sleep 2
+        done
+
+        echo "Tablas base creadas"
+
+        for archivo in \
+          001_ticket_asiento_activo.sql \
+          002_idempotencia_p5.sql \
+          003_bloqueo_cancelacion_eventos.sql \
+          004_aviso_entrega_ticket.sql \
+          005_p11_ticket.sql
+        do
+          echo "Aplicando $$archivo"
+
+          psql \
+            -X \
+            -v ON_ERROR_STOP=1 \
+            -h postgres-ticket \
+            -U postgres \
+            -d ticketya_tickets \
+            -f "/migrations/$$archivo" || exit 1
+        done
+
+        echo "Migraciones de Ticket completadas"
+
   gateway:
     profiles: [apps]
     build: ./MicroServicioGateway
@@ -216,10 +265,16 @@ services:
     volumes:
       - ./logs-centralizados:/logs
     depends_on:
-      - cliente
-      - evento
-      - lugar
-      - ticket
+      cliente:
+        condition: service_started
+      evento:
+        condition: service_started
+      lugar:
+        condition: service_started
+      ticket:
+        condition: service_started
+      migrate-ticket:
+        condition: service_completed_successfully
     restart: unless-stopped
 
 volumes:
