@@ -791,6 +791,27 @@ paths:
       - bearerAuth: []
       x-roles:
       - ORGANIZADOR
+  /ticket/devoluciones:
+    get:
+      tags: [Ticket]
+      summary: Listar devoluciones para administracion
+      parameters:
+      - name: estado
+        in: query
+        required: false
+        schema: { type: string }
+      responses:
+        '200':
+          description: Tickets con solicitud de devolucion
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Ticket' }
+        '401': { description: JWT faltante o invalido }
+        '403': { description: Sin permisos }
+      security: [ { bearerAuth: [] } ]
+      x-roles: [ADMINISTRADOR]
 components:
   securitySchemes:
     bearerAuth:

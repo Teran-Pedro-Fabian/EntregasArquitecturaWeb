@@ -53,6 +53,12 @@ public class TicketController {
         return ResponseEntity.ok(ticketService.obtenerTicketsCliente(idCliente));
     }
 
+    @GetMapping("/devoluciones")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
+    public ResponseEntity<?> listarDevoluciones(@RequestParam(required = false) String estado) {
+        return ResponseEntity.ok(ticketService.listarDevoluciones(estado));
+    }
+
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('ADMINISTRADOR') or @permisosTicket.esDuenioTicket(#id, authentication.name)")
     public ResponseEntity<TicketEntity> obtener(@PathVariable Long id) {

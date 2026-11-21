@@ -53,6 +53,7 @@ public class SecurityConfig {
                         // Estas rutas solo aceptan la clave privada entre microservicios
                         .requestMatchers("/evento/interno/**")
                         .access((usuario, contexto) -> new AuthorizationDecision(esInterna(contexto.getRequest().getHeader("X-TicketYa-Internal"))))
+                        .requestMatchers(HttpMethod.GET, "/evento/organizador/**", "/evento/admin/**").authenticated()
                         .requestMatchers(HttpMethod.GET, "/evento", "/evento/**").permitAll()
                         .requestMatchers("/actuator/health", "/actuator/info").permitAll()
                         .anyRequest().authenticated())

@@ -106,6 +106,13 @@ public class TicketService {
         return ticketRepository.findByIdClienteOrderByIdDesc(idCliente);
     }
 
+    public List<TicketEntity> listarDevoluciones(String estado) {
+        if (estado == null || estado.isBlank()) {
+            return ticketRepository.findByEstadoDevolucionNotOrderByIdDesc("SIN_SOLICITUD");
+        }
+        return ticketRepository.findByEstadoDevolucionOrderByIdDesc(estado.trim().toUpperCase());
+    }
+
     /**
      * Solicitar la devolucion de una entrada
      * Verificar el cliente y el limite de 72 horas
