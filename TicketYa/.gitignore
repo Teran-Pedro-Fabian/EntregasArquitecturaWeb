@@ -4,3 +4,4 @@ migracion/backups/
 .env
 
 /logs/
+/logs-centralizados/

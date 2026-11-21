@@ -126,6 +126,9 @@ services:
       TICKETYA_ORGANIZADOR_PASSWORD: ${TICKETYA_ORGANIZADOR_PASSWORD:-}
       TICKETYA_ACCESO_ID: ${TICKETYA_ACCESO_ID:-}
       TICKETYA_ACCESO_PASSWORD: ${TICKETYA_ACCESO_PASSWORD:-}
+      LOGGING_FILE_NAME: /logs/cliente.log
+    volumes:
+      - ./logs-centralizados:/logs
     depends_on:
       postgres-cliente: {condition: service_healthy}
       mongodb: {condition: service_healthy}
@@ -146,6 +149,9 @@ services:
       TICKETYA_LUGAR_URL: http://lugar:8083
       TICKETYA_JWT_SECRET: ${TICKETYA_JWT_SECRET:-ticketya-dev-only-change-this-jwt-secret-2026}
       TICKETYA_INTERNAL_KEY: ${TICKETYA_INTERNAL_KEY:-ticketya-dev-only-change-this-internal-key-2026}
+      LOGGING_FILE_NAME: /logs/evento.log
+    volumes:
+      - ./logs-centralizados:/logs
     depends_on:
       postgres-evento: {condition: service_healthy}
       redis: {condition: service_healthy}
@@ -161,6 +167,9 @@ services:
       SPRING_DATA_REDIS_HOST: redis
       TICKETYA_JWT_SECRET: ${TICKETYA_JWT_SECRET:-ticketya-dev-only-change-this-jwt-secret-2026}
       TICKETYA_INTERNAL_KEY: ${TICKETYA_INTERNAL_KEY:-ticketya-dev-only-change-this-internal-key-2026}
+      LOGGING_FILE_NAME: /logs/lugar.log
+    volumes:
+      - ./logs-centralizados:/logs
     depends_on:
       postgres-lugar: {condition: service_healthy}
       redis: {condition: service_healthy}
@@ -180,6 +189,9 @@ services:
       TICKETYA_JWT_SECRET: ${TICKETYA_JWT_SECRET:-ticketya-dev-only-change-this-jwt-secret-2026}
       TICKETYA_INTERNAL_KEY: ${TICKETYA_INTERNAL_KEY:-ticketya-dev-only-change-this-internal-key-2026}
       TICKETYA_PAGOS_MOCK_PAGO_APROBADO: "true"
+      LOGGING_FILE_NAME: /logs/ticket.log
+    volumes:
+      - ./logs-centralizados:/logs
     depends_on:
       postgres-ticket: {condition: service_healthy}
       redis: {condition: service_healthy}
@@ -196,6 +208,9 @@ services:
       TICKETYA_LUGAR_URL: http://lugar:8083
       TICKETYA_TICKET_URL: http://ticket:8084
       TICKETYA_JWT_SECRET: ${TICKETYA_JWT_SECRET:-ticketya-dev-only-change-this-jwt-secret-2026}
+      LOGGING_FILE_NAME: /logs/gateway.log
+    volumes:
+      - ./logs-centralizados:/logs
     depends_on:
       - cliente
       - evento
