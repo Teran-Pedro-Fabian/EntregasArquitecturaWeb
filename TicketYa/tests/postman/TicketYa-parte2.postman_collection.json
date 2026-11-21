@@ -1,6 +1,6 @@
 {
   "info": {
-    "_postman_id": "010599c8-4549-42fe-83fe-392fcf532e18",
+    "_postman_id": "6ee5182e-0cef-48c5-8a3e-1aaa1d459c05",
     "name": "TicketYa Parte 2 (JWT, fila, compra y QR)",
     "description": " ",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
@@ -28,7 +28,8 @@
                   "language": "json"
                 }
               }
-            }
+            },
+            "description": ""
           },
           "event": [
             {
@@ -43,7 +44,8 @@
                 ]
               }
             }
-          ]
+          ],
+          "response": []
         },
         {
           "name": "Login ORGANIZADOR",
@@ -64,7 +66,8 @@
                   "language": "json"
                 }
               }
-            }
+            },
+            "description": ""
           },
           "event": [
             {
@@ -79,7 +82,8 @@
                 ]
               }
             }
-          ]
+          ],
+          "response": []
         },
         {
           "name": "Login ADMINISTRADOR",
@@ -100,7 +104,8 @@
                   "language": "json"
                 }
               }
-            }
+            },
+            "description": ""
           },
           "event": [
             {
@@ -115,7 +120,8 @@
                 ]
               }
             }
-          ]
+          ],
+          "response": []
         },
         {
           "name": "Login PERSONAL_ACCESO",
@@ -136,7 +142,8 @@
                   "language": "json"
                 }
               }
-            }
+            },
+            "description": ""
           },
           "event": [
             {
@@ -151,7 +158,8 @@
                 ]
               }
             }
-          ]
+          ],
+          "response": []
         }
       ]
     },
@@ -189,7 +197,8 @@
                 }
               ]
             }
-          }
+          },
+          "response": []
         },
         {
           "name": "Consultar posición",
@@ -206,8 +215,10 @@
                   "type": "string"
                 }
               ]
-            }
-          }
+            },
+            "description": ""
+          },
+          "response": []
         }
       ]
     },
@@ -259,7 +270,8 @@
                 ]
               }
             }
-          ]
+          ],
+          "response": []
         },
         {
           "name": "Comprar entrada general",
@@ -299,7 +311,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"Compra confirmada (201)\", () => pm.response.to.have.status(201));",
+                  "pm.test(\"Compra confirmada (201)\", function () { pm.response.to.have.status(201); });",
                   "if (pm.response.code === 201) {",
                   "  const datos = pm.response.json();",
                   "  pm.collectionVariables.set(\"idCompra\", datos.idCompra);",
@@ -307,7 +319,8 @@
                 ]
               }
             }
-          ]
+          ],
+          "response": []
         },
         {
           "name": "Consultar compra",
@@ -324,8 +337,10 @@
                   "type": "string"
                 }
               ]
-            }
-          }
+            },
+            "description": ""
+          },
+          "response": []
         },
         {
           "name": "Reintentar confirmación de compra pendiente",
@@ -344,7 +359,8 @@
                 }
               ]
             }
-          }
+          },
+          "response": []
         }
       ]
     },
@@ -368,7 +384,8 @@
                 }
               ]
             }
-          }
+          },
+          "response": []
         },
         {
           "name": "Reporte organizador",
@@ -385,8 +402,10 @@
                   "type": "string"
                 }
               ]
-            }
-          }
+            },
+            "description": ""
+          },
+          "response": []
         },
         {
           "name": "Recomendaciones cliente",
@@ -403,8 +422,10 @@
                   "type": "string"
                 }
               ]
-            }
-          }
+            },
+            "description": ""
+          },
+          "response": []
         },
         {
           "name": "Notificaciones cliente",
@@ -421,8 +442,10 @@
                   "type": "string"
                 }
               ]
-            }
-          }
+            },
+            "description": ""
+          },
+          "response": []
         }
       ]
     },
@@ -448,7 +471,8 @@
             },
             "auth": {
               "type": "noauth"
-            }
+            },
+            "description": ""
           },
           "event": [
             {
@@ -456,11 +480,12 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"Debe responder 401\", () => pm.response.to.have.status(401));"
+                  "pm.test(\"Debe responder 401\", function () { pm.response.to.have.status(401); });"
                 ]
               }
             }
-          ]
+          ],
+          "response": []
         },
         {
           "name": "Sin JWT: reporte de organizador -> 401",
@@ -481,7 +506,8 @@
             },
             "auth": {
               "type": "noauth"
-            }
+            },
+            "description": ""
           },
           "event": [
             {
@@ -489,11 +515,12 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"Debe responder 401\", () => pm.response.to.have.status(401));"
+                  "pm.test(\"Debe responder 401\", function () { pm.response.to.have.status(401); });"
                 ]
               }
             }
-          ]
+          ],
+          "response": []
         },
         {
           "name": "CLIENTE: notificaciones de otra cuenta -> 403",
@@ -520,7 +547,8 @@
                   "type": "string"
                 }
               ]
-            }
+            },
+            "description": ""
           },
           "event": [
             {
@@ -528,11 +556,12 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"Debe responder 403\", () => pm.response.to.have.status(403));"
+                  "pm.test(\"Debe responder 403\", function () { pm.response.to.have.status(403); });"
                 ]
               }
             }
-          ]
+          ],
+          "response": []
         },
         {
           "name": "CLIENTE: reporte de organizador -> 403",
@@ -560,7 +589,8 @@
                   "type": "string"
                 }
               ]
-            }
+            },
+            "description": ""
           },
           "event": [
             {
@@ -568,11 +598,12 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"Debe responder 403\", () => pm.response.to.have.status(403));"
+                  "pm.test(\"Debe responder 403\", function () { pm.response.to.have.status(403); });"
                 ]
               }
             }
-          ]
+          ],
+          "response": []
         },
         {
           "name": "PERSONAL_ACCESO: reporte de organizador -> 403",
@@ -600,7 +631,8 @@
                   "type": "string"
                 }
               ]
-            }
+            },
+            "description": ""
           },
           "event": [
             {
@@ -608,11 +640,12 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"Debe responder 403\", () => pm.response.to.have.status(403));"
+                  "pm.test(\"Debe responder 403\", function () { pm.response.to.have.status(403); });"
                 ]
               }
             }
-          ]
+          ],
+          "response": []
         },
         {
           "name": "CLIENTE: QR ajeno -> 403",
@@ -638,7 +671,8 @@
                   "type": "string"
                 }
               ]
-            }
+            },
+            "description": ""
           },
           "event": [
             {
@@ -646,11 +680,12 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"Debe responder 403\", () => pm.response.to.have.status(403));"
+                  "pm.test(\"Debe responder 403\", function () { pm.response.to.have.status(403); });"
                 ]
               }
             }
-          ]
+          ],
+          "response": []
         }
       ]
     }

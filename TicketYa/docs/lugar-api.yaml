@@ -1,9 +1,8 @@
 openapi: 3.0.3
 info:
   title: TicketYa - MicroServicioLugar
-  version: 1.0.0
-  description: 'Recintos, sectores, asientos y reservas numeradas y generales'
-
+  version: 2.0.0
+  description: Recintos, sectores, asientos, reservas, concurrencia y seguridad JWT
 servers:
 - url: http://localhost:8080
   description: API Gateway - entrada externa recomendada
@@ -46,6 +45,15 @@ paths:
               schema:
                 type: string
               example: Operacion no permitida
+        '401':
+          description: JWT faltante o invalido
+        '403':
+          description: Usuario autenticado pero sin permisos para esta operacion
+      security:
+      - bearerAuth: []
+      x-roles:
+      - ORGANIZADOR
+      - ADMINISTRADOR
     get:
       tags:
       - Lugar
@@ -92,6 +100,15 @@ paths:
               schema:
                 type: string
               example: Operacion no permitida
+        '401':
+          description: JWT faltante o invalido
+        '403':
+          description: Usuario autenticado pero sin permisos para esta operacion
+      security:
+      - bearerAuth: []
+      x-roles:
+      - ORGANIZADOR
+      - ADMINISTRADOR
   /lugares/buscarPorCiudad:
     get:
       tags:
@@ -182,6 +199,15 @@ paths:
               schema:
                 type: string
               example: Operacion no permitida
+        '401':
+          description: JWT faltante o invalido
+        '403':
+          description: Usuario autenticado pero sin permisos para esta operacion
+      security:
+      - bearerAuth: []
+      x-roles:
+      - ORGANIZADOR
+      - ADMINISTRADOR
   /lugares/asientos:
     post:
       tags:
@@ -214,6 +240,15 @@ paths:
               schema:
                 type: string
               example: Operacion no permitida
+        '401':
+          description: JWT faltante o invalido
+        '403':
+          description: Usuario autenticado pero sin permisos para esta operacion
+      security:
+      - bearerAuth: []
+      x-roles:
+      - ORGANIZADOR
+      - ADMINISTRADOR
   /lugares/reservar:
     post:
       tags:
@@ -239,12 +274,23 @@ paths:
               schema:
                 type: string
               example: Operacion no permitida
+        '401':
+          description: JWT faltante o invalido
+        '403':
+          description: Usuario autenticado pero sin permisos para esta operacion
+      security:
+      - bearerAuth: []
+      x-roles:
+      - CLIENTE
+      - ADMINISTRADOR
+      description: CLIENTE solo puede reservar para su propio id
   /lugares/asiento/confirmar:
     post:
       tags:
       - Lugar
       summary: Confirmar venta de asiento
-      description: Invocado desde Ticket para completar la venta de un asiento reservado
+      description: Invocado desde Ticket para completar la venta de un asiento reservado. Operacion interna entre microservicios
+        no destinada al usuario final
       requestBody:
         required: true
         content:
@@ -266,6 +312,7 @@ paths:
               schema:
                 type: string
               example: Operacion no permitida
+      x-internal: true
   /lugares/reservas/{idAsiento}:
     delete:
       tags:
@@ -299,6 +346,16 @@ paths:
               schema:
                 type: string
               example: Operacion no permitida
+        '401':
+          description: JWT faltante o invalido
+        '403':
+          description: Usuario autenticado pero sin permisos para esta operacion
+      security:
+      - bearerAuth: []
+      x-roles:
+      - CLIENTE
+      - ADMINISTRADOR
+      description: CLIENTE solo puede cancelar su propia reserva
   /lugares/sectores/{idSector}/disponibilidad:
     get:
       tags:
@@ -351,6 +408,16 @@ paths:
               schema:
                 type: string
               example: Operacion no permitida
+        '401':
+          description: JWT faltante o invalido
+        '403':
+          description: Usuario autenticado pero sin permisos para esta operacion
+      security:
+      - bearerAuth: []
+      x-roles:
+      - CLIENTE
+      - ADMINISTRADOR
+      description: CLIENTE solo puede reservar para su propio id
   /lugares/sectores/generales/reservas/{idReserva}:
     delete:
       tags:
@@ -391,6 +458,16 @@ paths:
               schema:
                 type: string
               example: Operacion no permitida
+        '401':
+          description: JWT faltante o invalido
+        '403':
+          description: Usuario autenticado pero sin permisos para esta operacion
+      security:
+      - bearerAuth: []
+      x-roles:
+      - CLIENTE
+      - ADMINISTRADOR
+      description: CLIENTE solo puede cancelar su propia reserva
   /lugares/interno/eventos/precios-minimos:
     post:
       tags:
@@ -419,6 +496,8 @@ paths:
               example:
                 evento-01: 9000.0
                 evento-02: 12000.0
+      x-internal: true
+      description: Operacion interna entre microservicios no destinada al usuario final
   /lugares/interno/sectores/{idSector}/precio:
     get:
       tags:
@@ -459,6 +538,8 @@ paths:
               schema:
                 type: string
               example: Operacion no permitida
+      x-internal: true
+      description: Operacion interna entre microservicios no destinada al usuario final
   /lugares/interno/asientos/{idAsiento}/liberar-venta:
     post:
       tags:
@@ -492,6 +573,8 @@ paths:
               schema:
                 type: string
               example: Operacion no permitida
+      x-internal: true
+      description: Operacion interna entre microservicios no destinada al usuario final
   /lugares/interno/reservas/validar:
     post:
       tags:
@@ -517,6 +600,8 @@ paths:
               schema:
                 type: string
               example: Operacion no permitida
+      x-internal: true
+      description: Operacion interna entre microservicios no destinada al usuario final
   /lugares/interno/eventos/{idEvento}/configuracion:
     get:
       tags:
@@ -551,6 +636,8 @@ paths:
               schema:
                 type: string
               example: Operacion no permitida
+      x-internal: true
+      description: Operacion interna entre microservicios no destinada al usuario final
   /lugares/interno/sectores/generales/reservas/validar:
     post:
       tags:
@@ -576,6 +663,8 @@ paths:
               schema:
                 type: string
               example: Operacion no permitida
+      x-internal: true
+      description: Operacion interna entre microservicios no destinada al usuario final
   /lugares/interno/sectores/generales/confirmar:
     post:
       tags:
@@ -608,6 +697,8 @@ paths:
               schema:
                 type: string
               example: Operacion no permitida
+      x-internal: true
+      description: Operacion interna entre microservicios no destinada al usuario final
   /lugares/interno/sectores/generales/{idSector}/liberar-venta:
     post:
       tags:
@@ -641,7 +732,15 @@ paths:
               schema:
                 type: string
               example: Operacion no permitida
+      x-internal: true
+      description: Operacion interna entre microservicios no destinada al usuario final
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT obtenido mediante POST /clientes/login
   schemas:
     Lugar:
       type: object

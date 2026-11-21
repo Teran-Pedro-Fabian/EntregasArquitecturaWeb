@@ -1,0 +1,312 @@
+{
+  "info": {
+    "_postman_id": "75a27495-87cc-44bb-a8e3-7ece75f0dfde",
+    "name": "TicketYa - Integración entre microservicios",
+    "description": " ",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Integración - flujo de compra",
+      "item": [
+        {
+          "name": "Login CLIENTE",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/clientes/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"idUsuario\": \"{{clienteId}}\",\n  \"password\": \"{{clientePassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.expect([200]).to.include(pm.response.code); });",
+                  "pm.test(\"Gateway devuelve X-Trace-Id\", function () { pm.expect(pm.response.headers.has(\"X-Trace-Id\")).to.equal(true); });",
+                  "if (pm.response.code === 200) {",
+                  "  var datos = pm.response.json();",
+                  "  pm.test(\"Login devuelve JWT\", function () { pm.expect(datos.token).to.be.a(\"string\"); });",
+                  "  pm.collectionVariables.set(\"tokenCliente\", datos.token);",
+                  "  pm.collectionVariables.set(\"traceLogin\", pm.response.headers.get(\"X-Trace-Id\"));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Ingresar a fila virtual",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/ticket/cola/{{idEvento}}/entrar",
+            "description": "Devuelve posición y habilitado; las compras solo pueden seguir si habilitado es true.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"idCliente\": \"{{clienteId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenCliente}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 2xx\", function () { pm.expect(pm.response.code).to.be.within(200, 299); });",
+                  "pm.test(\"Gateway devuelve X-Trace-Id\", function () { pm.expect(pm.response.headers.has(\"X-Trace-Id\")).to.equal(true); });",
+                  "pm.collectionVariables.set(\"traceFila\", pm.response.headers.get(\"X-Trace-Id\"));"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Reservar entrada general",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/lugares/sectores/generales/reservar",
+            "description": "IMPORTANTE: reemplazar variable idSectorGeneral por el número del sector válido; el JSON requiere valor numérico. Editar el Body si Postman tratara el valor como cadena.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"idSector\": {{idSectorGeneral}},\n  \"idCliente\": \"{{clienteId}}\",\n  \"cantidad\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenCliente}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 2xx\", function () { pm.expect(pm.response.code).to.be.within(200, 299); });",
+                  "pm.test(\"Gateway devuelve X-Trace-Id\", function () { pm.expect(pm.response.headers.has(\"X-Trace-Id\")).to.equal(true); });",
+                  "if (pm.response.code >= 200 && pm.response.code < 300) {",
+                  "  var datos = pm.response.json();",
+                  "  pm.test(\"Se obtuvo idReserva\", function () { pm.expect(datos.idReserva).to.not.be.oneOf([null, undefined, \"\"]); });",
+                  "  if (datos.idReserva !== null && datos.idReserva !== undefined) pm.collectionVariables.set(\"idReserva\", String(datos.idReserva));",
+                  "  pm.collectionVariables.set(\"traceReserva\", pm.response.headers.get(\"X-Trace-Id\"));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Comprar entrada general",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/ticket/comprar-general",
+            "description": "IMPORTANTE: idSector e idReserva deben ser números en el JSON. No repetir compras sin comprobar cupos; no usar el mismo guid para reintento deliberado.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"idCliente\": \"{{clienteId}}\",\n  \"idEvento\": \"{{idEvento}}\",\n  \"idSector\": {{idSectorGeneral}},\n  \"idReserva\": {{idReserva}},\n  \"cantidad\": 1,\n  \"medioPago\": \"TARJETA\",\n  \"claveIdempotencia\": \"{{$guid}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenCliente}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201\", function () { pm.expect([201]).to.include(pm.response.code); });",
+                  "pm.test(\"Gateway devuelve X-Trace-Id\", function () { pm.expect(pm.response.headers.has(\"X-Trace-Id\")).to.equal(true); });",
+                  "if (pm.response.code === 201) {",
+                  "  var datos = pm.response.json();",
+                  "  pm.test(\"Se obtuvo idCompra\", function () { pm.expect(datos.idCompra).to.not.be.oneOf([null, undefined, \"\"]); });",
+                  "  if (datos.idCompra !== null && datos.idCompra !== undefined) pm.collectionVariables.set(\"idCompra\", String(datos.idCompra));",
+                  "  pm.collectionVariables.set(\"traceCompra\", pm.response.headers.get(\"X-Trace-Id\"));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Consultar compra",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/ticket/compras/{{idCompra}}",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenCliente}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.expect([200]).to.include(pm.response.code); });",
+                  "pm.test(\"Gateway devuelve X-Trace-Id\", function () { pm.expect(pm.response.headers.has(\"X-Trace-Id\")).to.equal(true); });",
+                  "if (pm.response.code === 200) {",
+                  "  var datos = pm.response.json();",
+                  "  pm.test(\"La compra consultada existe\", function () { pm.expect(datos).to.be.an(\"object\"); });",
+                  "  pm.collectionVariables.set(\"traceConsultaCompra\", pm.response.headers.get(\"X-Trace-Id\"));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080",
+      "type": "string"
+    },
+    {
+      "key": "clienteId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "clientePassword",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "idEvento",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "idSectorGeneral",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "idReserva",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "idCompra",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "tokenCliente",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "traceLogin",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "traceFila",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "traceReserva",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "traceCompra",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "traceConsultaCompra",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}
