@@ -1,4 +1,6 @@
 import com.microserviciolugar.dto.ReporteSectorLugarDTO;
+import com.microserviciolugar.dto.SectorPublicoDTO;
+import com.microserviciolugar.entity.LugarEntity;
 import com.microserviciolugar.entity.SectorEntity;
 import com.microserviciolugar.repository.AsientoRepository;
 import com.microserviciolugar.repository.SectorRepository;
@@ -55,4 +57,43 @@ class ReporteSectorLugarServiceTest {
                 sectorRepository, asientoRepository);
         assertTrue(service.obtenerSectores("evento-vacio").isEmpty());
     }
+    @Test
+    void sectoresPublicosDevuelvenPrecioLugarYCapacidad() {
+        LugarEntity lugar = new LugarEntity();
+        lugar.setId(7L);
+
+        SectorEntity numerado = new SectorEntity();
+        numerado.setId(10L);
+        numerado.setLugar(lugar);
+        numerado.setIdEvento("evento-1");
+        numerado.setNombre("Platea Norte");
+        numerado.setTipo("NUMERADO");
+        numerado.setPrecio(15000.0);
+
+        SectorEntity general = new SectorEntity();
+        general.setId(11L);
+        general.setLugar(lugar);
+        general.setIdEvento("evento-1");
+        general.setNombre("Campo");
+        general.setTipo("NO_NUMERADO");
+        general.setCupos(300);
+        general.setPrecio(9000.0);
+
+        when(sectorRepository.findByIdEvento("evento-1")).thenReturn(
+                new java.util.ArrayList<>(List.of(general, numerado)));
+        when(asientoRepository.countBySector_Id(10L)).thenReturn(40L);
+
+        ReporteSectorLugarService service = new ReporteSectorLugarService(
+                sectorRepository, asientoRepository);
+        List<SectorPublicoDTO> resultado = service.obtenerSectoresPublicos("evento-1");
+
+        assertEquals(2, resultado.size());
+        assertEquals(10L, resultado.get(0).getIdSector());
+        assertEquals(7L, resultado.get(0).getIdLugar());
+        assertEquals("evento-1", resultado.get(0).getIdEvento());
+        assertEquals(15000.0, resultado.get(0).getPrecio());
+        assertEquals(40L, resultado.get(0).getCapacidad());
+        assertEquals(300L, resultado.get(1).getCapacidad());
+    }
+
 }

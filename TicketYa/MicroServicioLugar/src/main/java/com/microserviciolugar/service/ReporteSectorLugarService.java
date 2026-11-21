@@ -1,6 +1,7 @@
 package com.microserviciolugar.service;
 
 import com.microserviciolugar.dto.ReporteSectorLugarDTO;
+import com.microserviciolugar.dto.SectorPublicoDTO;
 import com.microserviciolugar.entity.SectorEntity;
 import com.microserviciolugar.repository.AsientoRepository;
 import com.microserviciolugar.repository.SectorRepository;
@@ -30,28 +31,71 @@ public class ReporteSectorLugarService {
      */
     @Transactional(readOnly = true)
     public List<ReporteSectorLugarDTO> obtenerSectores(String idEvento) {
+        validarEvento(idEvento);
+
+        List<ReporteSectorLugarDTO> resultado = new ArrayList<>();
+        List<SectorEntity> sectores = sectoresOrdenados(idEvento);
+
+        for (SectorEntity sector : sectores) {
+            String tipo = tipoSector(sector);
+            resultado.add(new ReporteSectorLugarDTO(
+                    sector.getId(),
+                    sector.getNombre(),
+                    tipo,
+                    capacidadSector(sector, tipo)));
+        }
+        return resultado;
+    }
+
+    // sectores que puede ver el cliente antes de reservar
+    // no mandamos reservas ni ventas internas
+    @Transactional(readOnly = true)
+    public List<SectorPublicoDTO> obtenerSectoresPublicos(String idEvento) {
+        validarEvento(idEvento);
+
+        List<SectorPublicoDTO> resultado = new ArrayList<>();
+        List<SectorEntity> sectores = sectoresOrdenados(idEvento);
+
+        for (SectorEntity sector : sectores) {
+            String tipo = tipoSector(sector);
+            Long idLugar = sector.getLugar() == null ? null : sector.getLugar().getId();
+
+            resultado.add(new SectorPublicoDTO(
+                    sector.getId(),
+                    idLugar,
+                    sector.getIdEvento(),
+                    sector.getNombre(),
+                    tipo,
+                    sector.getPrecio(),
+                    capacidadSector(sector, tipo)));
+        }
+        return resultado;
+    }
+
+    private void validarEvento(String idEvento) {
         if (idEvento == null || idEvento.isBlank()) {
             throw new IllegalArgumentException("Evento no valido");
         }
+    }
 
-        List<ReporteSectorLugarDTO> resultado = new ArrayList<>();
+    private List<SectorEntity> sectoresOrdenados(String idEvento) {
         List<SectorEntity> sectores = sectorRepository.findByIdEvento(idEvento);
         sectores.sort(Comparator.comparing(SectorEntity::getId));
+        return sectores;
+    }
 
-        for (SectorEntity sector : sectores) {
-            String tipo = sector.getTipo() == null || sector.getTipo().isBlank()
-                    ? "NUMERADO" : sector.getTipo();
-            long capacidad;
-            if ("NO_NUMERADO".equals(tipo)) {
-                capacidad = sector.getCupos() == null ? 0 : sector.getCupos();
-            } else if ("NUMERADO".equals(tipo)) {
-                capacidad = asientoRepository.countBySector_Id(sector.getId());
-            } else {
-                throw new IllegalStateException("Tipo de sector no reconocido: " + tipo);
-            }
-            resultado.add(new ReporteSectorLugarDTO(sector.getId(), sector.getNombre(),
-                    tipo, capacidad));
+    private String tipoSector(SectorEntity sector) {
+        return sector.getTipo() == null || sector.getTipo().isBlank()
+                ? "NUMERADO" : sector.getTipo();
+    }
+
+    private long capacidadSector(SectorEntity sector, String tipo) {
+        if ("NO_NUMERADO".equals(tipo)) {
+            return sector.getCupos() == null ? 0 : sector.getCupos();
         }
-        return resultado;
+        if ("NUMERADO".equals(tipo)) {
+            return asientoRepository.countBySector_Id(sector.getId());
+        }
+        throw new IllegalStateException("Tipo de sector no reconocido: " + tipo);
     }
 }

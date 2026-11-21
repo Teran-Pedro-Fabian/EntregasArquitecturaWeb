@@ -62,7 +62,7 @@ public class SecurityConfig {
                         .access((usuario, contexto) -> new AuthorizationDecision(
                                 esInterna(contexto.getRequest().getHeader("X-TicketYa-Internal"))
                                         || usuario.get() instanceof JwtAuthenticationToken))
-                        .requestMatchers(HttpMethod.GET, "/lugares", "/lugares/buscarPorCiudad", "/lugares/buscarPorUbicacion", "/lugares/sectores/*/disponibilidad").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/lugares", "/lugares/buscarPorCiudad", "/lugares/buscarPorUbicacion", "/lugares/sectores/*/disponibilidad", "/lugares/eventos/*/sectores").permitAll()
                         .requestMatchers("/actuator/health", "/actuator/info").permitAll()
                         .anyRequest().authenticated())
                 .oauth2ResourceServer(o -> o.jwt(jwt -> jwt.jwtAuthenticationConverter(converter)))
