@@ -1,5 +1,5 @@
 
-# ENTREGA 1 TICKETYA
+# TICKETYA
 
 ## Tabla de contenidos
 
@@ -18,111 +18,121 @@
 ## Requisitos
 
 - Java 17 o superior
-- IntelliJ IDEA con Maven
+- Maven
 - Docker Desktop
 - PowerShell
+- Postman
+- JMeter para repetir las pruebas de carga
 
-## Levantar las bases de datos
+## Configuracion
+
+El proyecto utiliza variables de entorno para JWT seguridad interna y usuarios especiales
+
+Crear un archivo `.env` en la carpeta `TicketYa`
+
+Ejemplo
+
+```env
+TICKETYA_JWT_SECRET=clave-jwt-local
+TICKETYA_INTERNAL_KEY=clave-interna-local
+
+TICKETYA_ADMIN_ID=admin-prueba
+TICKETYA_ADMIN_PASSWORD=clave-admin
+
+TICKETYA_ORGANIZADOR_ID=TicketYa
+TICKETYA_ORGANIZADOR_PASSWORD=clave-organizador
+
+TICKETYA_ACCESO_ID=acceso-prueba
+TICKETYA_ACCESO_PASSWORD=clave-acceso
+```
+
+## Levantar el sistema completo
 
 Desde la carpeta `TicketYa`
 
 ```powershell
-docker compose up -d postgres-lugar postgres-ticket postgres-cliente postgres-evento redis
+docker compose --profile apps up -d --build
 ```
+> [!NOTE]
+> levanta la infraestructura y los microservicios
 
-Se utilizan cuatro bases PostgreSQL y Redis para las reservas temporales
+- PostgreSQL Cliente
+- PostgreSQL Evento
+- PostgreSQL Lugar
+- PostgreSQL Ticket
+- MongoDB
+- Redis
+- Mailpit
+- MicroServicioCliente
+- MicroServicioEvento
+- MicroServicioLugar
+- MicroServicioTicket
+- API Gateway
 
-Si es la primera vez que se ejecuta hay que crear las tablas de Cliente y Evento antes de iniciar los microservicios porque utilizan `ddl-auto=validate`
+## Puertos
 
-Estos pasos se realizan solamente la primera vez, cuando las bases estan vacias
-Ejecutar desde la carpeta TicketYa
-```powershell
-$cliente = Get-Content -Raw -Encoding UTF8 .\migracion\sql\postgres-cliente.sql
-($cliente + "`nCOMMIT;") | docker exec -i ticketya-postgres-cliente psql -X -v ON_ERROR_STOP=1 -U postgres -d ticketya_clientes
-
-$evento = Get-Content -Raw -Encoding UTF8 .\migracion\sql\postgres-evento.sql
-($evento + "`nCOMMIT;") | docker exec -i ticketya-postgres-evento psql -X -v ON_ERROR_STOP=1 -U postgres -d ticketya_eventos
-```
-Tabla de notificaciones
-```powershell
-Get-Content -Raw -Encoding UTF8 .\db\migrations\004_notificaciones_cliente.sql |
-docker exec -i ticketya-postgres-cliente psql -X -v ON_ERROR_STOP=1 -U postgres -d ticketya_clientes
-```
-### Crear las tablas de Lugar y Ticket
-
-Iniciar los microservicios Lugar y Ticket desde IntelliJ para que Hibernate cree las tablas automaticamente
-Una vez creadas detener ambos servicios y aplicar las restricciones SQL
-
-Aplicar restricciones de la base
-```powershell
-Get-Content -Raw -Encoding UTF8 .\db\migrations\003_asiento_fisico_unico.sql |
-docker exec -i ticketya-postgres-lugar psql -X -v ON_ERROR_STOP=1 -U postgres -d ticketya_lugares
-```
-
-```powershell
-$archivos = @(
-    "001_ticket_asiento_activo.sql",
-    "002_idempotencia_p5.sql",
-    "003_bloqueo_cancelacion_eventos.sql",
-    "004_aviso_entrega_ticket.sql"
-)
-
-foreach ($archivo in $archivos) {
-    Get-Content -Raw -Encoding UTF8 ".\db\migrations\$archivo" |
-    docker exec -i ticketya-postgres-ticket psql -X -v ON_ERROR_STOP=1 -U postgres -d ticketya_tickets
-
-    if ($LASTEXITCODE -ne 0) {
-        throw "Error aplicando $archivo"
-    }
-}
-```
-Despues volver a iniciar los microservicios
-
-> [NOTE]
-> 
-> Aclaracion sobre la instalacion
-> 
-> Durante el desarrollo tuvimos una confusion con los requisitos de persistencia entre la Entrega 1 y la Entrega 2
-> 
-> Inicialmente trabajamos con MongoDB y posteriormente migramos los microservicios a PostgreSQL para cumplir con el ennunciado de la entrega 1
-> 
-> Debido a que le error fue detectado en etapas tardias del proyecto no pudimos verificar completamente la instalacion del proyecto desde cero en otro equipo
-> 
-> aunque los microservicios y las pruebas funcionan correctamente en nuestro entorno de desarrollo
-> 
-> Dejamos documentados los pasos necesarios para ejecutar el sistema
-> 
-> Pedimos disculpas por cualquier inconveniente que pueda surgir durante la instalacion y agradecemos la comprension
-
-## Ejecutar el proyecto
-
-Abrir los proyectos Maven en IntelliJ y ejecutar las aplicaciones Spring Boot
-
-| Aplicacion | Puerto |
-|---|---|
+| Servicio | Puerto |
+|---|---:|
+| API Gateway | 8080 |
 | Cliente | 8081 |
 | Evento | 8082 |
 | Lugar | 8083 |
 | Ticket | 8084 |
-| API Gateway | 8080 |
+| MongoDB | 27017 |
+| Redis | 6379 |
+| Mailpit SMTP | 1025 |
+| Mailpit Web | 8025 |
 
-El Gateway es el punto de entrada para las peticiones externas
+Las peticiones externas se realizan mediante `http://localhost:8080`
 
-Para comprobar que funciona
 
-```powershell
-Invoke-WebRequest "http://localhost:8080/evento" -UseBasicParsing
+## Bases de datos
+
+Cada microservicio tiene su propia PostgreSQL
+
+- Cliente `ticketya_clientes`
+- Evento `ticketya_eventos`
+- Lugar `ticketya_lugares`
+- Ticket `ticketya_tickets`
+
+Cliente utiliza ademas MongoDB con la base
+
+`ticketya_preferencias`
+
+Redis se utiliza para reservas temporales fila virtual y cache
+
+## Logs
+
+Los microservicios escriben automaticamente sus logs en
+
+```text
+logs-centralizados/
 ```
 
-## Pruebas
+Se generan archivos separados
 
-Los tests se ejecutan desde Maven en IntelliJ con `test`
+```text
+gateway.log
+cliente.log
+evento.log
+lugar.log
+ticket.log
+```
 
+Cada request puede seguirse entre varios servicios utilizando el mismo `X-Trace-Id`
+
+## Mailpit
+
+Las notificaciones por email se prueban mediante Mailpit
+
+La interfaz web se encuentra en `http://localhost:8025`
+
+Los emails enviados por el sistema quedan visibles desde esa interfaz
 
 
 # Features y User Stories
 
-Puntos 1, 2, 3, 4, 5, 7 y 9 del enunciado
+Puntos 1 al 12
 
 Las historias siguen el formato **Como [rol] quiero [acción] para [beneficio]**
 
@@ -139,6 +149,11 @@ Los criterios de aceptación describen qué tiene que pasar para considerar term
 | F05 | Evitar la doble venta | Impedir ventas duplicadas ante concurrencia o reintentos | 5 |
 | F06 | Gestionar devoluciones y cancelaciones | Solicitar devoluciones y procesar reintegros individuales o masivos | 7 |
 | F07 | Buscar eventos | Buscar por varios criterios y ordenar los resultados | 9 |
+| F08 | Gestionar fila virtual | Ordenar el acceso a la compra en eventos de alta demanda | 6 |
+| F09 | Validar ingreso al evento | Escanear el QR y evitar que una entrada se use mas de una vez | 8 |
+| F10 | Preferencias y recomendaciones | Guardar gustos del cliente y sugerir eventos relacionados | 10 |
+| F11 | Enviar notificaciones | Avisar compras cancelaciones cambios y eventos de interes | 11 |
+| F12 | Consultar reportes | Mostrar ventas devoluciones ocupacion y recaudación por evento | 12 |
 
 ---
 
@@ -412,36 +427,172 @@ Los criterios de aceptación describen qué tiene que pasar para considerar term
 - Se debe permitir ordenar por relevancia según la búsqueda
 - El ordenamiento debe funcionar también cuando se usan varios filtros
 
+## F08 — Gestionar fila virtual
+
+### US24 — Ingresar a la fila virtual
+
+**Como** cliente **quiero** ingresar a una fila virtual **para** esperar mi turno cuando un evento tiene mucha demanda
+
+**Criterios de aceptación**
+
+- La fila se utiliza para eventos marcados como de alta demanda
+- Cada cliente debe tener una posicion dentro de la fila
+- El sistema debe informar la posición actual
+- Un cliente no debe poder ingresar varias veces a la misma fila
+
+### US25 — Habilitar clientes por tandas
+
+**Como** cliente **quiero** ser habilitado cuando llega mi turno **para** poder realizar la compra
+
+**Criterios de aceptación**
+
+- Los clientes deben habilitarse respetando el orden de llegada
+- La habilitación se realiza por tandas
+- Un cliente no habilitado no debe poder continuar con la compra
+- La fila debe avanzar cuando los clientes habilitados completan su proceso
+
+## F09 — Validar ingreso al evento
+
+### US26 — Escanear entrada
+
+**Como** personal de acceso **quiero** escanear el QR de una entrada **para** verificar que sea valida para el evento
+
+**Criterios de aceptación**
+
+- El QR debe corresponder a una entrada existente
+- La entrada debe pertenecer al evento indicado
+- La entrada no debe haber sido utilizada anteriormente
+- Solo PERSONAL_ACCESO o ADMINISTRADOR pueden realizar esta operación
+
+### US27 — Evitar reutilizar una entrada
+
+**Como** personal de acceso **quiero** marcar una entrada como utilizada **para** impedir que el mismo QR ingrese dos veces
+
+**Criterios de aceptación**
+
+- Una entrada válida se debe marcar como utilizada luego del ingreso
+- Un QR utilizado anteriormente debe ser rechazado
+- La validación debe conservar el estado de uso de la entrada
+
+## F10 — Preferencias y recomendaciones
+
+### US28 — Guardar preferencias
+
+**Como** cliente **quiero** guardar mis preferencias **para** que el sistema conozca los eventos que me interesan
+
+**Criterios de aceptación**
+
+- Se deben poder guardar tipos de evento artistas favoritos y ciudad
+- Las preferencias deben quedar asociadas al cliente
+- Las preferencias se guardan en MongoDB
+- El cliente debe poder actualizar sus gustos
+
+### US29 — Obtener recomendaciones
+
+**Como** cliente **quiero** recibir recomendaciones de eventos **para** encontrar opciones relacionadas con mis gustos
+
+**Criterios de aceptación**
+
+- Las recomendaciones deben utilizar las preferencias guardadas
+- Se deben priorizar eventos relacionados con tipos artistas o ciudad del cliente
+- Si no existen coincidencias se puede devolver una lista vacia
+- La implementación utiliza una recomendación simplificada basada en preferencias
+
+## F11 — Enviar notificaciones
+
+### US30 — Notificar una compra
+
+**Como** cliente **quiero** recibir una notificacion cuando confirmo una compra **para** saber que mis entradas fueron emitidas
+
+**Criterios de aceptación**
+
+- Una compra confirmada debe generar una notificación
+- La notificación debe identificar el evento y la compra
+- Se intenta enviar el aviso por email
+- Si el cliente no tiene email el aviso interno igualmente debe quedar registrado
+
+### US31 — Notificar cambios y cancelaciones
+
+**Como** cliente **quiero** recibir avisos sobre cambios o cancelaciones **para** conocer el estado de mis eventos
+
+**Criterios de aceptación**
+
+- Una cancelación debe generar un aviso para los compradores afectados
+- Los avisos deben quedar registrados
+- Si una entrega falla se debe poder reintentar
+- Un reintento no debe generar notificaciones duplicadas
+
+### US32 — Avisar por artistas favoritos
+
+**Como** cliente **quiero** recibir un aviso cuando se publica un evento de un artista que sigo **para** enterarme de nuevos eventos en mi ciudad
+
+**Criterios de aceptación**
+
+- Se deben consultar las preferencias del cliente
+- El artista debe estar entre sus favoritos
+- El evento debe corresponder a la ciudad configurada
+- El aviso se genera cuando el evento es publicado
+
+## F12 — Consultar reportes
+
+### US33 — Consultar reporte de evento
+
+**Como** organizador **quiero** consultar un reporte de mis eventos **para** conocer como vienen las ventas
+
+**Criterios de aceptación**
+
+- Solo el organizador correspondiente puede consultar el reporte de su evento
+- El reporte debe mostrar entradas vendidas y devueltas por sector
+- Debe mostrar la ocupacion de cada sector
+- Debe mostrar recaudacion bruta reintegros y recaudación neta
+- También debe mostrar los totales generales del evento
+
 # Arquitectura de microservicios
 
 Desarrollo con microservicios Spring Boot independientes
 
-Cada microservicio tiene su propio proyecto Maven su API REST y su base PostgreSQL
+Cada microservicio tiene su propio proyecto Maven su API REST y su persistencia
 
-El acceso externo se realiza mediante el API Gateway
+El acceso externo se realiza mediante el API Gateway en el puerto 8080
+
+Las operaciones privadas utilizan JWT con los roles CLIENTE ORGANIZADOR ADMINISTRADOR y PERSONAL_ACCESO
 
 ## 1. Microservicios y responsabilidades
 
 | Microservicio | Puerto | Responsabilidad |
 |---|---|---|
-| API Gateway | 8080 | Recibir las peticiones externas y dirigirlas al microservicio correspondiente |
-| Cliente | 8081 | Registrar clientes guardar preferencias y mostrar avisos internos de cancelación |
-| Evento | 8082 | Crear y modificar eventos administrar participantes publicar suspender cancelar y buscar eventos |
-| Lugar | 8083 | Registrar lugares y sectores manejar precios asientos reservas numeradas y cupos generales |
-| Ticket | 8084 | Procesar compras pagos simulados emisión de entradas QR devoluciones reintegros y avisos de cancelación |
+| API Gateway | 8080 | Recibir las peticiones externas validar y propagar la seguridad y dirigir cada request al servicio correspondiente |
+| Cliente | 8081 | Gestionar clientes autenticacion preferencias recomendaciones y notificaciones |
+| Evento | 8082 | Gestionar eventos participantes publicación estados busquedas y cache del catalogo |
+| Lugar | 8083 | Gestionar lugares sectores precios asientos reservas y disponibilidad |
+| Ticket | 8084 | Gestionar compras pagos QR devoluciones fila virtual reportes y cancelaciones |
 
 **Persistencia**
 
-| Microservicio | Base de datos | Puerto PostgreSQL |
-|---|---|---|
-| Cliente | `ticketya_clientes` | 5434 |
-| Evento | `ticketya_eventos` | 5435 |
-| Lugar | `ticketya_lugares` | 5432 |
-| Ticket | `ticketya_tickets` | 5433 |
+| Servicio | Persistencia |
+|---|---|
+| Cliente | PostgreSQL `ticketya_clientes` y MongoDB `ticketya_preferencias` |
+| Evento | PostgreSQL `ticketya_eventos` y Redis para cache |
+| Lugar | PostgreSQL `ticketya_lugares` y Redis para reservas temporales |
+| Ticket | PostgreSQL `ticketya_tickets` y Redis para fila virtual |
 
-Lugar también utiliza **Redis en el puerto 6379** para las reservas temporales de asientos numerados con TTL de 10 minutos
+Las cuatro bases PostgreSQL son independientes y cada una pertenece a su microservicio
 
-Los pagos es un mock dentro de Ticket que no consume un proveedor de pagos real
+MongoDB se utiliza para las preferencias de los clientes en la base `ticketya_preferencias` y la coleccion `preferencias`
+
+Redis es compartido entre los servicios que necesitan datos temporales
+
+Lugar guarda reservas de asientos con un TTL de 10 minutos
+
+Ticket utiliza Redis para mantener el orden y la habilitacion de la fila virtual
+
+Tambien se utiliza Redis para cachear el catalogo y resultados de busqueda con un TTL de 5 minutos
+
+Los datos de disponibilidad no se guardan en cache para evitar mostrar stock viejo
+
+Los pagos utilizan un mock dentro de Ticket
+
+Las notificaciones por email utilizan Mailpit durante la ejecución local
 
 ## 2. API pública
 
@@ -455,6 +606,9 @@ Las siguientes rutas muestran las operaciones principales de cada microservicio
 | GET | `/clientes/{id}` | Consultar cliente |
 | POST | `/clientes/preferencias` | Guardar preferencias |
 | GET | `/clientes/{id}/notificaciones` | Consultar avisos del cliente |
+| POST | `/clientes/login` | Iniciar sesion y obtener JWT |
+| PATCH | `/clientes/{id}/email` | Registrar o actualizar email |
+| GET | `/clientes/{id}/recomendaciones` | Obtener recomendaciones del cliente |
 
 ### Evento
 
@@ -511,41 +665,75 @@ Las siguientes rutas muestran las operaciones principales de cada microservicio
 | PATCH | `/ticket/{id}/finalizar-devolucion` | Completar devolución y liberar lugar |
 | GET | `/ticket/eventos/{idEvento}/estado-cancelacion` | Consultar avance de reintegros y avisos |
 | GET | `/ticket/avisos-cancelacion?idCliente=...` | Consultar avisos registrados en Ticket |
+| POST | `/ticket/cola/{idEvento}/entrar` | Ingresar a la fila virtual |
+| GET | `/ticket/cola/{idEvento}/posicion?idCliente=...` | Consultar posicion en la fila |
+| POST | `/ticket/escanearQrcode?qrCode=...&idEvento=...` | Validar ingreso mediante QR |
+| GET | `/ticket/reportes/eventos/{idEvento}?idOrganizador=...` | Consultar reporte del evento |
 
 Las rutas `/interno/` se usan para la comunicación entre microservicios
 
-**Seguridad de Entrega 1:** no se utiliza JWT. Se identifica al cliente organizador o administrador mediante ID enviados en el cuerpo o como parámetros según el endpoint
+**Seguridad**
+
+Las operaciones privadas utilizan JWT
+
+Cada token identifica al usuario y su rol
+
+Los roles utilizados son CLIENTE ORGANIZADOR ADMINISTRADOR y PERSONAL_ACCESO
+
+El Gateway recibe las peticiones y los servicios verifican los permisos necesarios para cada operacion
 
 ## 3. Diagrama de módulos
 
 ```mermaid
 flowchart LR
-    U["Clientes organizadores y administradores"] --> G["API Gateway :8080"]
+    U["Clientes Organizadores Administradores Personal de acceso"] -->|"HTTP + JWT"| G["API Gateway :8080"]
 
     G --> C["Cliente :8081"]
     G --> E["Evento :8082"]
     G --> L["Lugar :8083"]
     G --> T["Ticket :8084"]
 
-    E -->|"Configuracion de sectores y busquedas"| L
-    E -->|"Bloqueo de ventas y cancelaciones"| T
-    T -->|"Consultar evento y estado"| E
+    E -->|"Sectores precios y busquedas"| L
+    E -->|"Cancelaciones y bloqueo de ventas"| T
+
+    T -->|"Consultar evento"| E
     T -->|"Reservas precio confirmacion y liberacion"| L
-    T -->|"Entregar avisos de cancelacion"| C
+    T -->|"Notificaciones"| C
 
     C --- DBC[("PostgreSQL Cliente :5434")]
+    C --- M[("MongoDB preferencias :27017")]
+
     E --- DBE[("PostgreSQL Evento :5435")]
     L --- DBL[("PostgreSQL Lugar :5432")]
     T --- DBT[("PostgreSQL Ticket :5433")]
-    L --- R[("Redis :6379")]
-    T --- P["Pago mock interno"]
+
+    E --- R[("Redis :6379")]
+    L --- R
+    T --- R
+
+    C --> MAIL["Mailpit"]
+    T --> P["Pago mock"]
+
+    G --> LOG["logs-centralizados"]
+    C --> LOG
+    E --> LOG
+    L --> LOG
+    T --> LOG
 ```
 
-Las peticiones externas ingresan por el Gateway y mantienen sus rutas originales
+Las peticiones externas ingresan por el Gateway
 
-Los servicios se comunican entre sí mediante HTTP REST síncrono. En la ejecución local actual las llamadas internas utilizan `localhost` y el puerto del microservicio destino
+Los servicios se comunican principalmente mediante HTTP REST
 
-Cada base pertenece a un único microservicio. Entre bases se utilizan identificadores como `idEvento` `idCliente` `idSector` e `idTicket` sin claves foráneas compartidas
+Cada microservicio mantiene sus propios datos y cuando necesita informacion de otro servicio realiza una llamada REST
+
+Los ID de eventos clientes sectores lugares compras y tickets se comparten como referencias pero no se utilizan FK entre bases de distintos microservicios
+
+Todas las solicitudes generan un X-Trace-Id
+
+El mismo identificador se propaga entre los servicios y permite seguir una operación completa en los logs
+
+Los logs se escriben automaticamente en la carpeta logs-centralizados
 
 ## 4. Diagrama de secuencia — Compra de entrada numerada
 
@@ -626,71 +814,196 @@ Reserva vencida antes del pago: Lugar rechaza la validación y no se procesa el 
 
 Error después de aprobar el pago: Ticket conserva la compra como `PENDIENTE_CONFIRMACION` porque Lugar podría haber confirmado la venta aunque su respuesta se perdiera. La confirmación se puede revisar y reintentar sin repetir el pago
 
-## 5. Concurrencia y consistencia
+## 5. Concurrencia consistencia y fallos parciales
 
-- Lugar controla el estado de los asientos mediante bloqueos de base de datos y validaciones de propietario y vencimiento
-- Las reservas numeradas se registran en PostgreSQL y Redis con vencimiento de 10 minutos
-- Las reservas generales y sus cupos se controlan en PostgreSQL
-- Ticket utiliza bloqueos transaccionales de PostgreSQL por cliente y evento para evitar que compras simultáneas superen el límite de entradas
-- Ticket registra claves de idempotencia para reconocer reintentos de una misma compra
-- Un asiento vendido queda asociado a un ticket y no puede confirmarse para otro
-- Si el pago se rechaza se intenta liberar la reserva
-- Una cancelación bloquea nuevas ventas y procesa reintegros y avisos por comprador
-- Si un reintegro o aviso falla se conserva el estado para permitir reintentos
+### Consistencia fuerte
 
+Se utiliza consistencia fuerte en las operaciones donde no se pueden aceptar datos desactualizados
 
-## 6. Ejecución local
+Lugar controla reservas cupos y ventas mediante PostgreSQL
 
-Las cuatro bases PostgreSQL y Redis se levantan con `TicketYa/docker-compose.yml`
+Los bloqueos y restricciones de la base evitan que dos clientes puedan vender el mismo asiento o superar la capacidad de un sector
 
-Los cuatro microservicios y el Gateway se ejecutan por separado
+Ticket utiliza claves de idempotencia para reconocer reintentos y evitar compras o cobros duplicados
 
-| Aplicación | Puerto |
-|---|---|
-| Gateway | 8080 |
-| Cliente | 8081 |
-| Evento | 8082 |
-| Lugar | 8083 |
-| Ticket | 8084 |
+La prueba con dos instancias de Lugar compartiendo la misma PostgreSQL verificó que al intentar reservar el ultimo cupo solamente una instancia pudo obtenerlo
+
+### Consistencia eventual
+
+Algunas operaciones no necesitan completarse en la misma transaccion
+
+Las notificaciones pueden enviarse despues de completar una compra o cancelacion
+
+Si el email falla la notificación queda guardada y puede volver a intentarse
+
+Los logs y datos de seguimiento tambien se generan de forma independiente de la operacion principal
+
+Esto permite que una falla secundaria no invalide una compra que ya fue confirmada correctamente
+
+### Fallos durante una compra
+
+Una compra utiliza Ticket Evento y Lugar por lo que no existe una unica transaccion que abarque todo el proceso
+
+Si la reserva no es válida o esta vencida la compra se rechaza antes de realizar el pago
+
+Si el pago es rechazado Ticket solicita liberar la reserva
+
+Si el pago fue aprobado pero Lugar no puede confirmar la venta la compra queda en estado `PENDIENTE_CONFIRMACION`
+
+En ese estado el cliente puede consultar o reintentar la confirmacion sin volver a realizar el pago ni generar nuevos tickets
+
+Si Lugar habia confirmado pero la respuesta se perdió el reintento puede recuperar el resultado sin duplicar la venta
+
+Las cancelaciones siguen una estrategia similar
+
+Primero se bloquean nuevas ventas y despues se procesan reintegros liberaciones y notificaciones
+
+Si alguno de estos pasos falla se conserva su estado para poder reintentarlo sin repetir los pasos que ya fueron completados
+
+## 6. Decisiones tecnologicas y patrones
+
+### PostgreSQL
+
+Se utiliza PostgreSQL para los datos principales de Cliente Evento Lugar y Ticket
+
+Estos datos necesitan transacciones restricciones y consistencia fuerte
+
+Cada microservicio tiene su propia base y no accede directamente a la base de otro servicio
+
+### MongoDB
+
+MongoDB se utiliza para guardar las preferencias de los clientes
+
+Se eligio porque las preferencias pueden cambiar y no necesitan la misma estructura relacional que una compra o una entrada
+
+Permite guardar estos datos como documentos y mantenerlos separados de la informacion principal del cliente
+
+### Redis
+
+Redis se utiliza para informacion temporal y de acceso rapido
+
+Se usa para las reservas con vencimiento la fila virtual y el cache
+
+Las reservas tienen TTL para que desaparezcan luego del tiempo definido
+
+Tambien permite mantener el orden de la fila sin guardar esos datos como informacion permanente
+
+### API Gateway
+
+Se utiliza un API Gateway como unico punto de entrada al sistema
+
+El cliente no necesita conocer los puertos ni la ubicacion de cada microservicio
+
+El Gateway recibe la petición y la dirige al servicio correspondiente
+
+Tambien permite mantener en un solo punto tareas comunes como el JWT y del X-Trace-Id
+
+### Circuit Breaker
+
+Las comunicaciones entre servicios pueden fallar o tardar demasiado
+
+Por eso se utilizan timeouts reintentos y Circuit Breaker
+
+Si un servicio deja de responder se evita continuar haciendo llamadas que probablemente fallen
+
+Cuando no se puede completar una llamada el sistema devuelve un error controlado como 503 en lugar de quedar esperando indefinidamente
+
+### Saga y compensaciones
+
+No existe una sola transaccion que incluya las bases de todos los microservicios
+
+Por eso las operaciones distribuidas se manejan como una secuencia de pasos
+
+Si uno falla se realiza una operacion de compensacion cuando corresponde
+
+Por ejemplo si el pago es rechazado se libera la reserva
+
+Si el pago fue aprobado pero no se puede confirmar con Lugar la compra queda PENDIENTE_CONFIRMACION y se puede reintentar sin volver a cobrar
+
+Este comportamiento sigue una idea similar al patron Saga mediante compensaciones
+
+## 7. Ejecución local
+
+La infraestructura los cuatro microservicios y el API Gateway se levantan mediante Docker Compose
+
+Desde la carpeta `TicketYa`
+
+```powershell
+docker compose --profile apps up -d --build
+```
+
+El detalle completo de configuracion puertos y servicios se encuentra en la sección Instalacion y ejecucion
 
 # Modelo de datos
 
 ## 1. Microservicio Cliente
 
-Guarda los clientes sus preferencias y los avisos internos que reciben cuando se cancela un evento
+Cliente utiliza PostgreSQL para los clientes y notificaciones
+
+Las preferencias se almacenan aparte en MongoDB
+
+### PostgreSQL
 
 ```mermaid
 erDiagram
     cliente {
         string id PK
         string nombre
-    }
-
-    preferencias {
-        string id PK
-        string id_cliente
-        string id_evento
-        string id_participante
-        string id_lugar
+        string email
+        string password_hash
     }
 
     notificacion_cliente {
         long id PK
         string id_evento
         string id_cliente
+        string tipo
+        string referencia
         string mensaje
+        double importe
+        string estado_email
+        int intentos_email
+        string ultimo_error
         datetime fecha_creacion
     }
 
-    cliente ||..o{ preferencias : "id_cliente"
     cliente ||..o{ notificacion_cliente : "id_cliente"
 ```
 
-- `cliente.id` String
-- `preferencias` guarda ID de Cliente Evento Participante y Lugar sin copiar esas entidades
-- `notificacion_cliente` guarda un aviso por cliente y evento cancelado
-- `id_evento` e `id_cliente` es unica en `notificacion_cliente`
-- Las relaciones de `preferencias` y `notificacion_cliente` con `cliente` son referencias por ID y no tienen FK declarada
+`cliente` guarda los datos necesarios para identificar y autenticar al usuario
+
+La contraseña no se guarda directamente se almacena su hash
+
+`notificacion_cliente` guarda los avisos generados para cada cliente
+
+Tambien mantiene el estado del envio por email los intentos y el ultimo error para poder reintentar
+
+### Preferencias MongoDB
+
+Base de datos `ticketya_preferencias`
+
+Coleccion `preferencias`
+
+```mermaid
+erDiagram
+    preferencia {
+        string id PK
+        string idCliente
+        string idEvento
+        string idParticipante
+        string idLugar
+        string ciudad
+        string tipo
+    }
+```
+
+Las preferencias se guardan como documentos y no como tablas
+
+`idCliente` referencia al cliente dueño de la preferencia pero no existe una FK entre MongoDB y PostgreSQL
+
+Los campos pueden guardar eventos participantes lugares ciudad y tipo de evento
+
+Estos datos se utilizan para generar recomendaciones y detectar eventos relacionados con los gustos del cliente
 
 ## 2. Microservicio Evento
 
@@ -898,6 +1211,21 @@ Cada servicio guarda los ID necesarios y consulta por REST cuando necesita datos
 | `preferencias.id_lugar` | `lugar.id` | Lugar |
 | `aviso_cancelacion.id_cliente` y `notificacion_cliente.id_cliente` | `cliente.id` | Cliente |
 
+## Datos temporales en Redis
+
+Redis no reemplaza las bases principales
+
+Se utiliza solamente para informacion temporal y cache
+
+- Reservas numeradas con vencimiento de 10 minutos
+- Fila virtual de eventos de alta demanda
+- Posicion y habilitacion de clientes dentro de la fila
+- Cache del catalogo y resultados de busqueda con TTL de 5 minutos
+
+Los datos de compras entradas eventos y disponibilidad siguen guardados en PostgreSQL
+
+No se guarda la disponibilidad de sectores en cache porque puede cambiar durante una compra
+
 ## 6. Datos solapados entre bases
 
 No se duplican tablas completas de Cliente Evento o Lugar en otros microservicios, se repiten algunos ID para poder realizar las operaciones
@@ -919,6 +1247,9 @@ Gestiona los clientes sus preferencias y las notificaciones internas por cancela
 | GET | `/clientes/{id}` | `id` String por ruta | Cliente encontrado | 200, 404 |
 | POST | `/clientes/preferencias` | JSON con `idCliente` `idEvento` `idParticipante` `idLugar` | Preferencia guardada | 201 |
 | GET | `/clientes/{id}/notificaciones` | `id` String por ruta | Lista de notificaciones | 200 |
+| POST | `/clientes/login` | JSON con `idUsuario` y `password` | JWT y rol | 200, 401 |
+| PATCH | `/clientes/{id}/email` | `id` String y JSON con `email` | Cliente actualizado | 200, 400, 401, 403 |
+| GET | `/clientes/{id}/recomendaciones` | `id` String por ruta | Lista de eventos recomendados | 200, 400, 401, 403, 404, 503 |
 
 ### Ejemplos
 
@@ -1325,6 +1656,10 @@ Procesa las compras con pago simulado emite las entradas y gestiona devoluciones
 | PATCH | `/ticket/{id}/finalizar-devolucion` | `id` Long por ruta | Ticket devuelto y lugar liberado | 200, 409 |
 | GET | `/ticket/eventos/{idEvento}/estado-cancelacion` | `idEvento` String por ruta | Estado de reintegros y avisos | 200 |
 | GET | `/ticket/avisos-cancelacion` | `idCliente` query | Avisos registrados en Ticket | 200 |
+| POST | `/ticket/cola/{idEvento}/entrar` | `idEvento` String y JSON con `idCliente` | Estado dentro de la fila | 201, 400, 401, 403, 409, 503 |
+| GET | `/ticket/cola/{idEvento}/posicion` | `idEvento` String e `idCliente` query | Posicion y habilitacion | 200, 400, 401, 403 |
+| POST | `/ticket/escanearQrcode` | `qrCode` e `idEvento` query | Entrada validada | 200, 400, 401, 403, 404, 409, 503 |
+| GET | `/ticket/reportes/eventos/{idEvento}` | `idEvento` String e `idOrganizador` query | Reporte del evento | 200, 400, 401, 403, 404, 409, 502, 503 |
 
 
 ### Ejemplos
@@ -1468,7 +1803,13 @@ Response `200`, ejemplo de un elemento
 
 ## 5. Endpoints internos
 
-Estos endpoints se usan para la comunicacion entre los microservicios, el prefijo `/interno` no agrega seguridad
+Los endpoints se usan para la comunicacion entre los microservicios
+
+Las rutas internas estan protegidas mediante la clave configurada en `TICKETYA_INTERNAL_KEY`
+
+Los servicios envian esta clave mediante el header `X-TicketYa-Internal`
+
+Si la clave recibida no coincide con la configurada el acceso al endpoint interno es rechazado
 
 | Servicio | Metodo | Ruta | Parametros o body | Respuesta | Codigos |
 |---|---|---|---|---|---|
@@ -1554,7 +1895,8 @@ Response `200`, texto `Venta general confirmada`
 | `202` | Compra aceptada pero con confirmacion pendiente |
 | `204` | Operacion correcta sin contenido |
 | `400` | Parametros o datos invalidos |
-| `403` | Organizador no autorizado para modificar ese evento |
+| `401` | Falta el JWT o el token no es valido |
+| `403` | El usuario esta autenticado pero no tiene permisos para realizar la operacion |
 | `404` | Recurso no encontrado |
 | `409` | Conflicto de estado reserva vencida pago rechazado o lugar ocupado |
 | `502` | Error al recibir respuesta de otro servicio |
@@ -1564,39 +1906,56 @@ Response `200`, texto `Venta general confirmada`
 
 ## 1. Contratos OpenAPI
 
-| Microservicio | Archivo | Operaciones |
-|---|---|---:|
-| Cliente | [`docs/cliente-api.yaml`](docs/cliente-api.yaml) | 5 |
-| Evento | [`docs/evento-api.yaml`](docs/evento-api.yaml) | 17 |
-| Lugar | [`docs/lugar-api.yaml`](docs/lugar-api.yaml) | 21 |
-| Ticket | [`docs/ticket-api.yaml`](docs/ticket-api.yaml) | 14 |
+El proyecto mantiene un contrato OpenAPI separado para cada microservicio
 
-## 2. Acceso a las API
+| Microservicio | Archivo |
+|---|---|
+| Cliente | `docs/cliente-api.yaml` |
+| Evento | `docs/evento-api.yaml` |
+| Lugar | `docs/lugar-api.yaml` |
+| Ticket | `docs/ticket-api.yaml` |
 
-Las peticiones externas se realizan a traves del API Gateway en `http://localhost:8080`
 
-Cada YAML tiene configurado el Gateway como servidor principal y el puerto directo del microservicio como alternativa
+## 2. Seguridad en OpenAPI
 
-## 3. Visualizar con Swagger
+Las operaciones privadas utilizan autenticacion Bearer mediante JWT
 
-Los archivos YAML se pueden abrir desde [Swagger Editor](https://editor.swagger.io/)
+```yaml
+securitySchemes:
+  bearerAuth:
+    type: http
+    scheme: bearer
+    bearerFormat: JWT
+```
 
-1. Entrar a Swagger Editor
-2. Seleccionar `File > Import File`
-3. Elegir uno de los archivos de `docs/`
-4. Revisar las rutas los parametros los ejemplos y los posibles errores
+El JWT se obtiene mediante
 
-Swagger permite visualizar la documentacion a partir de OpenAPI sin tener que escribirla nuevamente
+`POST /clientes/login`
 
-Los YAML son contratos estaticos versionados en el repositorio, no significa que los microservicios tengan Swagger UI integrado 
+Los roles utilizados son
+
+- CLIENTE
+- ORGANIZADOR
+- ADMINISTRADOR
+- PERSONAL_ACCESO
+
+Los endpoints publicos como busqueda y consulta de eventos no necesitan token
+
+Las operaciones privadas incluyen `security: bearerAuth` y documentan los posibles errores `401` y `403`
+
+`401` indica que falta el JWT o que el token no es valido
+
+`403` indica que el usuario esta autenticado pero no tiene permisos para realizar la operacion
+
+Las peticiones externas se realizan mediante el API Gateway en `http://localhost:8080`
 
 ## 4. Mantenimiento
 
 Cuando se modifica una ruta o cambia el cuerpo de una solicitud o respuesta tambien se debe actualizar su contrato YAML
 
-## Testing
+# Testing
 
-Las pruebas se realizaron con JUnit y Mockito usando Maven desde IntelliJ IDEA
+Se realizaron pruebas unitarias de concurrencia integración seguridad y carga
 
 ### Pruebas unitarias
 
@@ -1608,26 +1967,111 @@ Las pruebas se realizaron con JUnit y Mockito usando Maven desde IntelliJ IDEA
 | Ticket | 64 |
 | Total | 95 |
 
-Los cinco terminaron con `BUILD SUCCESS` sin fallos
+Los cuatro microservicios terminaron con `BUILD SUCCESS` sin fallos
 
 Gateway compila correctamente pero no tiene pruebas unitarias propias
 
 ### Pruebas de concurrencia
 
-Se realizaron 3 pruebas adicionales contra una base PostgreSQL aislada
+Se probaron distintos casos donde varios clientes intentan modificar el mismo recurso al mismo tiempo
 
-- Varios clientes intentando reservar el mismo asiento, solo uno puede reservarlo
-- Dos confirmaciones simultaneas del mismo asiento, no se permite la doble venta
-- Varios clientes intentando reservar el ultimo cupo general, no se supera la capacidad
+- Varios clientes intentando reservar el mismo asiento y solo uno puede obtenerlo
+- Dos confirmaciones simultaneas del mismo asiento sin permitir doble venta
+- Varios clientes intentando reservar el ultimo cupo general sin superar la capacidad
+
+Tambien se realizó una prueba con dos instancias independientes de MicroServicioLugar conectadas a la misma PostgreSQL
+
+Las dos intentaron reservar al mismo tiempo el ultimo cupo disponible
+
+El resultado fue una reserva exitosa y una rechazada por falta de cupos
+
+En PostgreSQL quedó una unica reserva por lo que no hubo sobreventa
+
+### Prueba de integración entre microservicios
+
+Se realizó un flujo completo con el sistema levantado mediante Docker Compose
+
+El flujo utilizado fue
+
+`Login CLIENTE -> reserva general -> compra -> consulta de compra`
+
+La compra general respondió `201 Created`
+
+Para comprobar la comunicación entre servicios se utilizó el `X-Trace-Id`
+
+La compra utilizó el trace
+
+`7da81020-f6cf-400b-8c43-d8a7356a3186`
+
+El mismo apareció en
+
+`Gateway -> Ticket -> Evento -> Lugar`
+
+Durante la operación Ticket consultó el evento obtuvo el precio del sector validó la reserva y confirmó la venta
+
+Esto permite comprobar que los microservicios participan correctamente en una misma operación distribuida
+
+### Pruebas de seguridad
+
+Se probaron los cuatro roles del sistema
+
+| Prueba | Resultado |
+|---|---|
+| Sin JWT en endpoint privado | 401 |
+| CLIENTE accediendo a datos de otro cliente | 403 |
+| CLIENTE intentando consultar reporte de organizador | 403 |
+| CLIENTE intentando escanear QR | 403 |
+| CLIENTE usando sus endpoints | Permitido |
+| ORGANIZADOR consultando el reporte de su evento | Permitido |
+| PERSONAL_ACCESO escaneando QR | Permitido |
+| ADMINISTRADOR escaneando QR | Permitido |
+
+En las pruebas positivas de QR se utilizó un codigo inexistente
+
+El sistema respondió `404 Ticket no encontrado`
+
+Esto indica que el JWT y el rol fueron aceptados y la solicitud llegó hasta la logica de negocio
+
+### Prueba de carga con JMeter
+
+La prueba de carga se realizó utilizando Apache JMeter contra el sistema completo levantado en Docker Compose
+
+`tests/rendimiento/Login Cliente.jmx`
+
+Se simularon 5 clientes concurrentes realizando el flujo principal de compra
+
+`Login -> fila virtual -> reserva -> compra`
+
+Resultados obtenidos
+
+| Operación | Tiempo promedio |
+|---|---:|
+| Login | 85 ms |
+| Fila virtual | 46 ms |
+| Reserva | 66 ms |
+| Compra | 203 ms |
+
+La prueba terminó con `0%` de errores
+
+La compra fue la operación con mayor tiempo de respuesta porque necesita comunicarse con Evento y Lugar ademas de persistir la compra y los tickets
+
+Con 5 usuarios concurrentes el sistema pudo completar el flujo sin errores y con tiempos de respuesta menores a un segundo
+
+Los resultados se encuentran en
+
+`tests/rendimiento/resultados-5usuarios.csv`
 
 ### Ejecucion
 
-Desde IntelliJ abrir cada microservicio y ejecutar Maven > Lifecycle > test
+Las pruebas unitarias se pueden ejecutar desde IntelliJ mediante
 
-Las pruebas de concurrencia se ejecutan por separado con la base de pruebas para no modificar los datos del sistema
+`Maven -> Lifecycle -> test`
 
+Para las pruebas de integración seguridad y roles se utiliza la colección Postman de Entrega 2 con el sistema levantado en Docker Compose
 
-## Metodologia de desarrollo
+Las pruebas de rendimiento se pueden abrir directamente desde JMeter utilizando el archivo `.jmx`
+
+# Metodologia de desarrollo
 
 Durante el desarrollo tomamos como referencia algunas practicas de Spec-Driven Development
 
@@ -1653,27 +2097,94 @@ El agente se utilizo como apoyo durante el desarrollo y no como reemplazo de las
 
 Las soluciones propuestas fueron revisadas y comprobadas mediante pruebas sobre el proyecto
 
-## Postman y datos de prueba
+# Postman y datos de prueba
 
-El proyecto incluye una coleccion Postman para probar las funcionalidades
+El proyecto incluye colecciones Postman para probar el sistema mediante el API Gateway
 
-`docs/TicketYa-Entrega1.postman_collection.json`
+Las peticiones se realizan `http://localhost:8080`
 
-La coleccion contiene 41 solicitudes organizadas por funcionalidad
+### Coleccion principal
 
-- Creacion y publicacion de eventos
-- Configuracion de lugares sectores y precios
-- Busqueda de eventos
-- Reservas y compras numeradas y generales
-- Devoluciones cancelaciones y notificaciones
+`tests/postman/TicketYa-parte2.postman_collection.json`
+
+Incluye
+
+- Login con CLIENTE
+- Login con ORGANIZADOR
+- Login con ADMINISTRADOR
+- Login con PERSONAL_ACCESO
+- Fila virtual
+- Reserva general
+- Compra general
+- Consulta de compra
+- Reintento de una compra pendiente
+- Escaneo de QR
+- Reporte de organizador
+- Recomendaciones
+- Notificaciones
+- Pruebas de seguridad 401 y 403
+
+Los login guardan automaticamente el JWT del usuario dentro de las variables de la coleccion
+
+### Coleccion de integración
+
+`tests/postman/TicketYa-integraciona.postman_collection.json`
+
+Esta coleccion se utilizó para comprobar un flujo entre varios microservicios
+
+`Login -> reserva -> compra -> consulta de compra`
+
+Durante la prueba se verificó que el mismo `X-Trace-Id` fuera propagado entre Gateway Ticket Evento y Lugar
+
+### Variables
+
+Antes de ejecutar las colecciones se deben completar las variables correspondientes
+
+```text
+baseUrl
+clienteId
+clientePassword
+organizadorId
+organizadorPassword
+adminId
+adminPassword
+personalId
+personalPassword
+idEvento
+idSectorGeneral
+```
+
+Los tokens no se cargan manualmente
+
+Se obtienen mediante los requests de login y quedan guardados como
+
+```text
+tokenCliente
+tokenOrganizador
+tokenAdmin
+tokenPersonal
+```
+
+Los valores de organizador administrador y personal de acceso estan confirgurados en el `.env`
+
+### Pruebas de seguridad
+
+La coleccion contiene casos donde se verifica la diferencia entre autenticacion y autorizacion
+
+Sin JWT un endpoint privado devuelve `401 Unauthorized`
+
+Con un JWT valido pero con un rol incorrecto devuelve `403 Forbidden`
+
+Tambien se probaron accesos correctos para los cuatro roles
 
 ### Ejecucion
 
-1. Iniciar los microservicios y las bases de datos
-2. Abrir Postman y seleccionar Import
-3. Importar el archivo JSON de la carpeta docs
-4. Ejecutar las solicitudes en el orden indicado
+1. Levantar el sistema con Docker Compose
+2. Importar la coleccion en Postman
+3. Completar las variables de prueba
+4. Ejecutar primero los login necesarios
+5. Ejecutar los requests de la funcionalidad que se quiere probar
 
-Las peticiones utilizan el API Gateway en `http://localhost:8080`
+Algunas operaciones modifican la base como reservas compras devoluciones y escaneo de QR
 
-La coleccion genera datos de prueba y guarda automaticamente los ID necesarios para las siguientes operaciones
+Para repetirlas se deben utilizar datos validos y nuevas reservas cuando corresponda
