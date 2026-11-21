@@ -36,15 +36,18 @@ Ejemplo
 TICKETYA_JWT_SECRET=ticketya-dev-only-change-this-jwt-secret-2026
 TICKETYA_INTERNAL_KEY=ticketya-dev-only-change-this-internal-key-2026
 
-TICKETYA_ADMIN_ID=admin-prueba
-TICKETYA_ADMIN_PASSWORD=AdminPrueba2026!
+TICKETYA_ADMIN_ID=admin
+TICKETYA_ADMIN_PASSWORD=AdminDemo2026!
 
-TICKETYA_ORGANIZADOR_ID=TicketYa
-TICKETYA_ORGANIZADOR_PASSWORD=OrganizadorPrueba2026!
+TICKETYA_ORGANIZADOR_ID="Tandil Producciones"
+TICKETYA_ORGANIZADOR_PASSWORD=OrganizadorDemo2026!
 
-TICKETYA_ACCESO_ID=acceso-prueba
-TICKETYA_ACCESO_PASSWORD=AccesoPrueba2026!
+TICKETYA_ACCESO_ID=acceso
+TICKETYA_ACCESO_PASSWORD=AccesoDemo2026!
 ```
+CLIENTE DEMO
+Usuario: cliente-demo
+Password: ClienteDemo2026!
 
 ## Levantar el sistema completo
 
