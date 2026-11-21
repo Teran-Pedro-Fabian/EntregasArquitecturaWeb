@@ -12,6 +12,7 @@
 7. [Testing](#testing)
 8. [Metodologia de desarrollo](#metodologia-de-desarrollo)
 9. [Postman y datos de prueba](#postman-y-datos-de-prueba)
+10. [Frontend](#frontend)
 
 # Instalacion y ejecucion
 
@@ -57,7 +58,7 @@ Desde la carpeta `TicketYa`
 docker compose --profile apps up -d --build
 ```
 > [!NOTE]
-> levanta la infraestructura y los microservicios
+> levanta la infraestructura los microservicios y el frontend
 
 - PostgreSQL Cliente
 - PostgreSQL Evento
@@ -71,11 +72,13 @@ docker compose --profile apps up -d --build
 - MicroServicioLugar
 - MicroServicioTicket
 - API Gateway
+- Front-End Angular
 
 ## Puertos
 
 | Servicio | Puerto |
 |---|---:|
+|Front-End | 4200 |
 | API Gateway | 8080 |
 | Cliente | 8081 |
 | Evento | 8082 |
@@ -86,6 +89,7 @@ docker compose --profile apps up -d --build
 | Mailpit SMTP | 1025 |
 | Mailpit Web | 8025 |
 
+La interfaz web se encuentra en http://localhost:4200
 Las peticiones externas se realizan mediante `http://localhost:8080`
 
 
@@ -2191,3 +2195,217 @@ Tambien se probaron accesos correctos para los cuatro roles
 Algunas operaciones modifican la base como reservas compras devoluciones y escaneo de QR
 
 Para repetirlas se deben utilizar datos validos y nuevas reservas cuando corresponda
+
+# Frontend
+
+El proyecto incluye una interfaz web desarrollada en Angular para permitir utilizar las principales funcionalidades de TicketYa
+
+El frontend se encuentra en
+
+```text
+ticketya-frontend/
+```
+
+La interfaz se comunica con los microservicios exclusivamente mediante el API Gateway
+
+El usuario no necesita conocer ni acceder directamente a los puertos internos de Cliente Evento Lugar o Ticket
+
+## Tecnologias
+
+El frontend utiliza
+
+- Angular para la interfaz y navegación de la aplicación
+- TypeScript
+- SCSS para estilos y diseño responsive
+- Bootstrap para estilos y diseño responsive
+- Angular Router para navegar entre las distintas pantallas sin recargar completamente la aplicación
+- HttpClient para realiza las peticiones HTTP hacia el backend
+- Nginx
+- Docker
+
+## Funcionalidades
+
+La interfaz permite utilizar las principales operaciones del sistema
+
+### Cliente
+
+- Iniciar sesión
+- Consultar eventos publicados
+- Ver el detalle de un evento
+- Consultar sectores precios y disponibilidad
+- Ingresar a la fila virtual en eventos de alta demanda
+- Reservar entradas
+- Comprar entradas generales
+- Comprar entradas numeradas
+- Consultar las entradas adquiridas
+- Visualizar el código QR de cada entrada
+- Configurar preferencias
+- Consultar recomendaciones
+- Consultar notificaciones
+
+### Organizador
+
+- Iniciar sesión con rol ORGANIZADOR
+- Consultar información de sus eventos
+- Consultar ventas
+- Consultar ocupación
+- Consultar recaudación mediante los reportes
+
+### Personal de acceso
+
+- Iniciar sesión con rol PERSONAL_ACCESO
+- Ingresar el código QR de una entrada
+- Validar el ingreso
+- Detectar entradas inexistentes o ya utilizadas
+
+### Administrador
+
+- Iniciar sesión con rol ADMINISTRADOR
+- Acceder a las funcionalidades permitidas para administración
+- Validar entradas mediante QR
+
+## Autenticacion
+
+El frontend utiliza el login provisto por MicroServicioCliente
+
+```text
+POST /clientes/login
+```
+
+Luego del login se recibe un JWT junto con el rol correspondiente
+
+El token se utiliza automáticamente en las peticiones que requieren autenticación
+
+Los roles utilizados son
+
+- CLIENTE
+- ORGANIZADOR
+- ADMINISTRADOR
+- PERSONAL_ACCESO
+
+La navegación y las operaciones disponibles cambian según el rol del usuario autenticado
+
+## Comunicacion con el backend
+
+El frontend no se comunica directamente con cada microservicio
+
+Las solicitudes pasan por el API Gateway
+
+```text
+Frontend -> Nginx -> API Gateway -> Microservicios
+```
+
+En ejecución mediante Docker Nginx recibe las peticiones realizadas por Angular y las redirige internamente hacia
+
+```text
+gateway:8080
+```
+
+El Gateway luego determina qué microservicio debe procesar cada operación
+
+Esto mantiene un único punto de entrada para la aplicación
+
+## Docker
+
+El frontend tiene su propio `Dockerfile`
+
+La imagen se construye utilizando dos etapas
+
+### Etapa de build
+
+Se utiliza Node.js para
+
+- instalar las dependencias
+- compilar Angular
+- generar el build de producción
+
+El resultado se genera en
+
+```text
+dist/ticketya-frontend/browser
+```
+
+### Etapa de ejecución
+
+Se utiliza Nginx para servir los archivos generados por Angular
+
+Nginx también funciona como proxy hacia el API Gateway
+
+La configuración se encuentra en
+
+```text
+ticketya-frontend/nginx.conf
+```
+
+El servicio frontend está incluido dentro de `docker-compose.yml`
+
+Por lo tanto forma parte del mismo despliegue que los microservicios y la infraestructura
+
+```powershell
+docker compose --profile apps up -d --build
+```
+
+Una vez iniciado se puede acceder desde
+
+```text
+http://localhost:4200
+```
+
+No es necesario instalar Node.js Angular CLI ni ejecutar `npm start` para utilizar la aplicación mediante Docker
+
+## SPA
+
+El frontend funciona como una Single Page Application
+
+Nginx está configurado para devolver `index.html` cuando se accede directamente a una ruta de Angular
+
+Esto permite utilizar y recargar rutas como
+
+```text
+/eventos
+/mis-entradas
+/preferencias
+/recomendaciones
+```
+
+sin obtener errores 404 del servidor web
+
+##  Datos de demostracion
+
+El sistema incluye usuarios y datos preparados para demostrar las funcionalidades principales
+
+### Cliente
+
+```text
+Usuario: cliente-demo
+Password: ClienteDemo2026!
+```
+
+### Organizador
+
+```text
+Usuario: Tandil Producciones
+Password: OrganizadorDemo2026!
+```
+
+### Personal de acceso
+
+```text
+Usuario: acceso
+Password: AccesoDemo2026!
+```
+
+### Administrador
+
+```text
+Usuario: admin
+Password: AdminDemo2026!
+```
+
+También se cargan eventos lugares sectores precios y entradas de demostración para poder utilizar la interfaz inmediatamente después de levantar el sistema
+
+Los emails generados por compras y otras operaciones pueden consultarse desde Mailpit
+
+```text
+http://localhost:8025
+```
