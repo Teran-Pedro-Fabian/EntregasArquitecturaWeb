@@ -1,0 +1,64 @@
+<section class="admin-page">
+  <p class="eyebrow">ADMINISTRADOR</p>
+  <h1>Administracion</h1>
+  @if (error()) {
+    <div class="alert error">{{ error() }}</div>
+  }
+  @if (message()) {
+    <div class="alert ok">{{ message() }}</div>
+  }
+  <div class="panel">
+    <h2>Eventos</h2>
+    @for (e of events(); track e.id) {
+      <div class="row">
+        <div>
+          <strong>{{ e.nombre }}</strong><small
+            >{{ e.organizador }} · {{ e.fechaHora | date: 'dd/MM/yyyy HH:mm' }} ·
+            {{ e.estado }}</small
+          >
+        </div>
+        <div class="actions">
+          @if (e.estado === 'PUBLICADO' || e.estado === 'AGOTADO') {
+            <button (click)="eventAction(e, 'suspend')">Suspender</button>
+          }
+          @if (e.estado === 'SUSPENDIDO') {
+            <button (click)="eventAction(e, 'reactivate')">Reactivar</button>
+          }
+          @if (e.estado !== 'CANCELADO' && e.estado !== 'FINALIZADO') {
+            <button class="danger" (click)="eventAction(e, 'cancel')">Cancelar</button>
+          }
+        </div>
+      </div>
+    }
+  </div>
+  <div class="panel">
+    <h2>Devoluciones</h2>
+    @for (t of refunds(); track t.id) {
+      <div class="row">
+        <div>
+          <strong
+            >Ticket #{{ t.id }} ·
+            {{ t.precio | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</strong
+          ><small>{{ t.idCliente }} · {{ t.estadoDevolucion }}</small>
+        </div>
+        <div class="actions">
+          @if (t.estadoDevolucion === 'PENDIENTE') {
+            <button (click)="refundAction(t, 'approve')">Aprobar</button
+            ><button class="danger" (click)="refundAction(t, 'reject')">Rechazar</button>
+          }
+          @if (
+            t.estadoDevolucion === 'APROBADA_PENDIENTE_REINTEGRO' ||
+            t.estadoDevolucion === 'CANCELACION_PENDIENTE_REINTEGRO'
+          ) {
+            <button (click)="refundAction(t, 'refund')">Procesar reintegro</button>
+          }
+          @if (t.estadoDevolucion === 'REINTEGRADA_PENDIENTE_LIBERACION') {
+            <button (click)="refundAction(t, 'finish')">Finalizar</button>
+          }
+        </div>
+      </div>
+    } @empty {
+      <p>No hay devoluciones para revisar</p>
+    }
+  </div>
+</section>

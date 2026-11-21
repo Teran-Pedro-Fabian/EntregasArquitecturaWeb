@@ -1,0 +1,94 @@
+<section class="role-page">
+  <header>
+    <p class="eyebrow">ORGANIZADOR</p>
+    <h1>Gestion de eventos</h1>
+  </header>
+  @if (error()) {
+    <div class="alert error">{{ error() }}</div>
+  }
+  @if (message()) {
+    <div class="alert ok">{{ message() }}</div>
+  }
+  <div class="role-grid">
+    <aside class="panel">
+      <h2>Mis eventos</h2>
+      @for (e of events(); track e.id) {
+        <button class="event-row" (click)="loadForEdit(e)">
+          <strong>{{ e.nombre }}</strong><span
+            >{{ e.estado }} · {{ e.fechaHora | date: 'dd/MM/yyyy HH:mm' }}</span
+          >
+        </button>
+      } @empty {
+        <p>No tenes eventos todavia</p>
+      }
+    </aside>
+    <main class="panel">
+      <h2>{{ selected() ? 'Editar evento' : 'Crear evento' }}</h2>
+      <div class="form-grid">
+        <label>Nombre<input [(ngModel)]="nombre" /></label
+        ><label>Tipo<input [(ngModel)]="tipo" /></label
+        ><label class="full">Descripcion<textarea [(ngModel)]="descripcion"></textarea></label
+        ><label>Fecha<input type="datetime-local" [(ngModel)]="fechaHora" /></label
+        ><label
+          >Lugar<select [(ngModel)]="idLugar">
+            <option [ngValue]="null">Elegir</option>
+            @for (p of places(); track p.id) {
+              <option [ngValue]="p.id">{{ p.nombre }} · {{ p.ciudad }}</option>
+            }
+          </select></label
+        ><label
+          >Demanda<select [(ngModel)]="demanda">
+            <option>BAJA</option>
+            <option>ALTA</option>
+          </select></label
+        >
+      </div>
+      <div class="actions">
+        <button (click)="create()">Crear borrador</button>
+        @if (selected()?.estado === 'BORRADOR') {
+          <button (click)="update()">Guardar cambios</button
+          ><button (click)="publish()">Publicar</button>
+        }
+      </div>
+      @if (selected()) {
+        <hr />
+        <h2>Participantes</h2>
+        <div class="inline">
+          <select [(ngModel)]="selectedParticipant">
+            <option value="">Elegir participante</option>
+            @for (p of participants(); track p.id) {
+              <option [value]="p.id">{{ p.nombre }}</option>
+            }</select
+          ><button (click)="addParticipant()">Agregar</button>
+        </div>
+        <div class="inline">
+          <input placeholder="Nuevo participante" [(ngModel)]="participantName" /><button
+            (click)="createParticipant()"
+          >
+            Crear participante
+          </button>
+        </div>
+        <h2>Sectores y precios</h2>
+        @for (s of sectors(); track s.idSector) {
+          <div class="sector-row">
+            <span>{{ s.nombre }} · {{ s.tipo }}</span
+            ><strong>{{ s.precio | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</strong>
+          </div>
+        } @empty {
+          <p>No hay sectores configurados para este evento</p>
+        }
+        <button (click)="loadReport()">Ver reporte</button>
+        @if (report()) {
+          <div class="report">
+            <strong>Vendidas {{ report()!.entradasVendidas }}</strong
+            ><span>Ocupacion {{ report()!.ocupacionPorcentaje }}%</span
+            ><span
+              >Neto
+              {{ report()!.recaudacionNeta | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</span
+            >
+          </div>
+        }
+      }
+    </main>
+  </div>
+</section>

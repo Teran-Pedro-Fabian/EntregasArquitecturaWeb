@@ -1,0 +1,18 @@
+{
+  "/clientes/**": {
+    "target": "http://127.0.0.1:8080",
+    "secure": false
+  },
+  "/evento/**": {
+    "target": "http://127.0.0.1:8080",
+    "secure": false
+  },
+  "/lugares/**": {
+    "target": "http://127.0.0.1:8080",
+    "secure": false
+  },
+  "/ticket/**": {
+    "target": "http://127.0.0.1:8080",
+    "secure": false
+  }
+}

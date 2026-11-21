@@ -1,0 +1,226 @@
+.login-page {
+  min-height: min(720px, calc(100vh - 130px));
+  display: grid;
+  grid-template-columns: minmax(0, 0.92fr) minmax(340px, 0.78fr);
+  overflow: hidden;
+  border: 1px solid var(--ty-line);
+  border-radius: var(--ty-radius-xl);
+  background: var(--ty-surface);
+  box-shadow: var(--ty-shadow);
+}
+
+.login-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: clamp(34px, 6vw, 78px);
+}
+
+.login-brand {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.login-brand .brand-icon {
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px 14px 14px 5px;
+  color: #120d08;
+  background: linear-gradient(145deg, #ffd18e, var(--ty-amber) 45%, var(--ty-violet) 100%);
+  font-size: 1.35rem;
+  font-weight: 900;
+}
+
+.login-brand h1 {
+  margin: 2px 0 0;
+  color: var(--ty-text);
+  font-size: clamp(2rem, 4vw, 3rem);
+  letter-spacing: -0.045em;
+}
+
+.login-intro {
+  max-width: 470px;
+  margin: 24px 0 30px;
+  color: var(--ty-muted);
+  line-height: 1.65;
+}
+
+.login-form {
+  display: grid;
+  gap: 20px;
+}
+
+.field-group {
+  display: grid;
+  gap: 8px;
+}
+
+.field-group label {
+  color: var(--ty-text-soft);
+  font-size: 0.82rem;
+  font-weight: 750;
+}
+
+.ticket-input {
+  min-height: 50px;
+  border-radius: 12px;
+  background: #0e0c0a;
+}
+
+.field-error,
+.login-error {
+  color: #ffaaa4;
+  font-size: 0.8rem;
+}
+
+.login-error {
+  padding: 12px 14px;
+  border: 1px solid rgba(237, 111, 103, 0.24);
+  border-radius: 12px;
+  background: rgba(237, 111, 103, 0.08);
+}
+
+.btn-login {
+  min-height: 52px;
+  border: 0;
+  border-radius: 12px;
+  color: #120d08;
+  background: linear-gradient(135deg, var(--ty-amber), var(--ty-amber-strong));
+  font-weight: 850;
+  box-shadow: 0 14px 32px rgba(245, 158, 66, 0.16);
+}
+
+.btn-login:disabled {
+  opacity: 0.58;
+}
+
+.back-link {
+  width: max-content;
+  margin-top: 24px;
+  color: var(--ty-muted);
+  text-decoration: none;
+}
+
+.back-link:hover {
+  color: var(--ty-text);
+}
+
+.login-side {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: clamp(32px, 5vw, 64px);
+  background: linear-gradient(
+    160deg,
+    rgba(245, 158, 66, 0.98),
+    rgba(224, 103, 53, 0.9) 45%,
+    rgba(108, 67, 216, 0.98) 100%
+  );
+  color: #160f09;
+}
+
+.login-side::before {
+  content: '';
+  position: absolute;
+  inset: -30% -40% 25% 15%;
+  border-radius: 50%;
+  background: rgba(255, 246, 226, 0.38);
+  filter: blur(4px);
+  transform: rotate(-18deg);
+}
+
+.login-side > * {
+  position: relative;
+}
+
+.side-tag {
+  width: max-content;
+  margin-bottom: 18px;
+  padding: 7px 10px;
+  border: 1px solid rgba(22, 15, 9, 0.28);
+  border-radius: 999px;
+  font-size: 0.67rem;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+}
+
+.login-side h2 {
+  max-width: 480px;
+  margin: 0;
+  font-size: clamp(2.3rem, 5vw, 4.6rem);
+  font-weight: 900;
+  line-height: 0.92;
+  letter-spacing: -0.06em;
+}
+
+.login-side > p {
+  max-width: 460px;
+  margin: 18px 0 30px;
+  font-weight: 600;
+  line-height: 1.55;
+}
+
+.ticket-preview {
+  display: flex;
+  gap: 18px;
+  align-items: center;
+  padding: 18px;
+  border: 1px solid rgba(22, 15, 9, 0.25);
+  border-radius: 16px;
+  background: rgba(255, 247, 232, 0.72);
+  backdrop-filter: blur(8px);
+}
+
+.ticket-date {
+  display: grid;
+  justify-items: center;
+  min-width: 62px;
+  padding-right: 16px;
+  border-right: 1px dashed rgba(22, 15, 9, 0.34);
+}
+
+.ticket-date strong {
+  font-size: 1.7rem;
+  line-height: 1;
+}
+
+.ticket-date span,
+.ticket-label,
+.ticket-place {
+  font-size: 0.67rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.ticket-title {
+  display: block;
+  margin: 3px 0;
+  font-size: 1.2rem;
+}
+
+.ticket-place {
+  display: block;
+  opacity: 0.66;
+}
+
+@media (max-width: 900px) {
+  .login-page {
+    grid-template-columns: 1fr;
+  }
+
+  .login-side {
+    min-height: 360px;
+  }
+}
+
+@media (max-width: 576px) {
+  .login-card,
+  .login-side {
+    padding: 30px 24px;
+  }
+}

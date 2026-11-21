@@ -1,0 +1,87 @@
+<section class="login-page">
+  <div class="login-card">
+    <div class="login-brand">
+      <span class="brand-icon">T</span>
+      <div>
+        <span class="eyebrow">TICKETYÁ</span>
+        <h1>Iniciar sesión</h1>
+      </div>
+    </div>
+
+    <p class="login-intro">Ingresá para comprar entradas y administrar tus compras</p>
+
+    <form [formRoot]="loginForm" class="login-form">
+      <div class="field-group">
+        <label for="idUsuario">Usuario</label>
+        <input
+          id="idUsuario"
+          type="text"
+          class="form-control ticket-input"
+          autocomplete="username"
+          placeholder="Tu usuario"
+          [formField]="loginForm.idUsuario"
+          [class.is-invalid]="loginForm.idUsuario().touched() && loginForm.idUsuario().invalid()"
+        />
+
+        @if (loginForm.idUsuario().touched() && loginForm.idUsuario().invalid()) {
+          <div class="field-error">
+            {{ loginForm.idUsuario().errors()[0].message }}
+          </div>
+        }
+      </div>
+
+      <div class="field-group">
+        <label for="password">Contraseña</label>
+        <input
+          id="password"
+          type="password"
+          class="form-control ticket-input"
+          autocomplete="current-password"
+          placeholder="Tu contraseña"
+          [formField]="loginForm.password"
+          [class.is-invalid]="loginForm.password().touched() && loginForm.password().invalid()"
+        />
+
+        @if (loginForm.password().touched() && loginForm.password().invalid()) {
+          <div class="field-error">
+            {{ loginForm.password().errors()[0].message }}
+          </div>
+        }
+      </div>
+
+      @if (serverError(); as error) {
+        <div class="login-error" role="alert" aria-live="polite">
+          {{ error }}
+        </div>
+      }
+
+      <button type="submit" class="btn-login" [disabled]="loginForm().submitting()">
+        @if (loginForm().submitting()) {
+          Ingresando...
+        } @else {
+          Ingresar
+        }
+      </button>
+    </form>
+
+    <a routerLink="/" class="back-link">Volver al inicio</a>
+  </div>
+
+  <aside class="login-side" aria-hidden="true">
+    <span class="side-tag">TU PRÓXIMA EXPERIENCIA</span>
+    <h2>Tu entrada empieza acá</h2>
+    <p>Descubrí eventos, reservá tu lugar y llevá tus entradas siempre con vos</p>
+
+    <div class="ticket-preview">
+      <div class="ticket-date">
+        <strong>21</strong>
+        <span>NOV</span>
+      </div>
+      <div>
+        <span class="ticket-label">PRÓXIMO EVENTO</span>
+        <strong class="ticket-title">TicketYa</strong>
+        <span class="ticket-place">Una experiencia para recordar</span>
+      </div>
+    </div>
+  </aside>
+</section>

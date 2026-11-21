@@ -120,12 +120,13 @@ services:
       TICKETYA_LUGAR_URL: http://lugar:8083
       TICKETYA_JWT_SECRET: ${TICKETYA_JWT_SECRET:-ticketya-dev-only-change-this-jwt-secret-2026}
       TICKETYA_INTERNAL_KEY: ${TICKETYA_INTERNAL_KEY:-ticketya-dev-only-change-this-internal-key-2026}
-      TICKETYA_ADMIN_ID: ${TICKETYA_ADMIN_ID:-}
-      TICKETYA_ADMIN_PASSWORD: ${TICKETYA_ADMIN_PASSWORD:-}
-      TICKETYA_ORGANIZADOR_ID: ${TICKETYA_ORGANIZADOR_ID:-}
-      TICKETYA_ORGANIZADOR_PASSWORD: ${TICKETYA_ORGANIZADOR_PASSWORD:-}
-      TICKETYA_ACCESO_ID: ${TICKETYA_ACCESO_ID:-}
-      TICKETYA_ACCESO_PASSWORD: ${TICKETYA_ACCESO_PASSWORD:-}
+      TICKETYA_DEMO_SEED: "true"
+      TICKETYA_ADMIN_ID: ${TICKETYA_ADMIN_ID:-admin}
+      TICKETYA_ADMIN_PASSWORD: ${TICKETYA_ADMIN_PASSWORD:-AdminDemo2026!}
+      TICKETYA_ORGANIZADOR_ID: ${TICKETYA_ORGANIZADOR_ID:-Tandil Producciones}
+      TICKETYA_ORGANIZADOR_PASSWORD: ${TICKETYA_ORGANIZADOR_PASSWORD:-OrganizadorDemo2026!}
+      TICKETYA_ACCESO_ID: ${TICKETYA_ACCESO_ID:-acceso}
+      TICKETYA_ACCESO_PASSWORD: ${TICKETYA_ACCESO_PASSWORD:-AccesoDemo2026!}
       LOGGING_FILE_NAME: /logs/cliente.log
     volumes:
       - ./logs-centralizados:/logs
@@ -149,6 +150,7 @@ services:
       TICKETYA_LUGAR_URL: http://lugar:8083
       TICKETYA_JWT_SECRET: ${TICKETYA_JWT_SECRET:-ticketya-dev-only-change-this-jwt-secret-2026}
       TICKETYA_INTERNAL_KEY: ${TICKETYA_INTERNAL_KEY:-ticketya-dev-only-change-this-internal-key-2026}
+      TICKETYA_DEMO_SEED: "true"
       LOGGING_FILE_NAME: /logs/evento.log
     volumes:
       - ./logs-centralizados:/logs
@@ -167,6 +169,7 @@ services:
       SPRING_DATA_REDIS_HOST: redis
       TICKETYA_JWT_SECRET: ${TICKETYA_JWT_SECRET:-ticketya-dev-only-change-this-jwt-secret-2026}
       TICKETYA_INTERNAL_KEY: ${TICKETYA_INTERNAL_KEY:-ticketya-dev-only-change-this-internal-key-2026}
+      TICKETYA_DEMO_SEED: "true"
       LOGGING_FILE_NAME: /logs/lugar.log
     volumes:
       - ./logs-centralizados:/logs
@@ -188,6 +191,7 @@ services:
       TICKETYA_LUGAR_URL: http://lugar:8083
       TICKETYA_JWT_SECRET: ${TICKETYA_JWT_SECRET:-ticketya-dev-only-change-this-jwt-secret-2026}
       TICKETYA_INTERNAL_KEY: ${TICKETYA_INTERNAL_KEY:-ticketya-dev-only-change-this-internal-key-2026}
+      TICKETYA_DEMO_SEED: "true"
       TICKETYA_PAGOS_MOCK_PAGO_APROBADO: "true"
       LOGGING_FILE_NAME: /logs/ticket.log
     volumes:
@@ -224,5 +228,3 @@ volumes:
   postgres_cliente_data:
   postgres_evento_data:
   mongo_data:
-    external: true
-    name: ticketya_mongo_data
