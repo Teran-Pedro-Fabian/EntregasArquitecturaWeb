@@ -284,6 +284,15 @@ public class EventoService {
         return eventoRepository.findById(id).orElse(null);
     }
 
+    public List<EventoEntity> eventosDelOrganizador(String idOrganizador) {
+        if (vacio(idOrganizador)) throw new IllegalArgumentException("Organizador no valido");
+        return eventoRepository.findByOrganizadorOrderByFechaHoraAsc(idOrganizador);
+    }
+
+    public List<EventoEntity> listarTodosParaAdmin() {
+        return eventoRepository.findAllByOrderByFechaHoraAsc();
+    }
+
     /**
      * Listar publicados y agotados para que sigan apareciendo en el catalogo
      * Los compradores solo pueden adquirir tickets de PUBLICADO

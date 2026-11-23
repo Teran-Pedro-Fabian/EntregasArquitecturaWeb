@@ -1,0 +1,19 @@
+<section class="access-page">
+  <p class="eyebrow">PERSONAL DE ACCESO</p>
+  <h1>Validar entrada</h1>
+  <div class="scanner-card">
+    <label>ID del evento<input [(ngModel)]="idEvento" placeholder="evento..." /></label
+    ><label>Codigo QR<input [(ngModel)]="qrCode" placeholder="TICKETYA-..." /></label
+    ><button (click)="validate()" [disabled]="!idEvento.trim() || !qrCode.trim()">
+      Validar QR
+    </button>
+    @if (status() !== 'idle') {
+      <div class="result" [class.ok]="status() === 'ok'" [class.error]="status() === 'error'">
+        <strong>{{ message() }}</strong>
+        @if (result()) {
+          <span>Ticket #{{ result()!.id }} · {{ result()!.idCliente }}</span>
+        }
+      </div>
+    }
+  </div>
+</section>

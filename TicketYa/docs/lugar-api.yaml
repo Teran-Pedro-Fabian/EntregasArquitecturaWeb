@@ -166,6 +166,35 @@ paths:
               schema:
                 type: array
                 items: *id001
+  /lugares/eventos/{idEvento}/sectores:
+    get:
+      tags:
+      - Lugar
+      summary: Listar sectores publicos de un evento
+      description: Devuelve los sectores necesarios para iniciar el flujo de compra sin exponer datos internos de reservas o ventas
+      parameters:
+      - name: idEvento
+        in: path
+        required: true
+        schema:
+          type: string
+        example: evento-01
+      responses:
+        '200':
+          description: Operacion correcta
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SectorPublico'
+        '400':
+          description: Evento invalido
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Evento no valido
   /lugares/sectores:
     post:
       tags:
@@ -249,6 +278,31 @@ paths:
       x-roles:
       - ORGANIZADOR
       - ADMINISTRADOR
+  /lugares/sectores/{idSector}/asientos:
+    get:
+      tags:
+      - Lugar
+      summary: Listar asientos publicos de un sector numerado
+      parameters:
+      - name: idSector
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        '200':
+          description: Operacion correcta
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AsientoPublico'
+        '400':
+          description: Sector inexistente o invalido
+        '409':
+          description: El sector no es numerado
   /lugares/reservar:
     post:
       tags:
@@ -758,6 +812,30 @@ components:
         ciudad: Tandil
         latitud: -37.32
         longitud: -59.13
+    SectorPublico:
+      type: object
+      properties:
+        idSector: *id001
+        idLugar: *id001
+        idEvento: *id002
+        nombre: *id002
+        tipo:
+          type: string
+          enum:
+          - NUMERADO
+          - NO_NUMERADO
+        precio: *id003
+        capacidad:
+          type: integer
+          format: int64
+      example:
+        idSector: 2
+        idLugar: 1
+        idEvento: evento-01
+        nombre: Campo
+        tipo: NO_NUMERADO
+        precio: 9000.0
+        capacidad: 100
     Sector:
       type: object
       properties:
@@ -790,6 +868,29 @@ components:
         precio: 9000.0
         cuposReservados: 0
         cuposVendidos: 0
+    AsientoPublico:
+      type: object
+      properties:
+        idAsiento:
+          type: integer
+          format: int64
+        idSector:
+          type: integer
+          format: int64
+        fila:
+          type: string
+        columna:
+          type: integer
+          format: int32
+        estado:
+          type: string
+          example: DISPONIBLE
+      example:
+        idAsiento: 20
+        idSector: 2
+        fila: A
+        columna: 5
+        estado: DISPONIBLE
     Asiento:
       type: object
       properties:

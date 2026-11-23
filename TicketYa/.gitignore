@@ -5,3 +5,9 @@ migracion/backups/
 
 /logs/
 /logs-centralizados/
+# Archivos generados por Maven
+**/target/
+
+# Archivos de IntelliJ
+*.iml
+.idea/

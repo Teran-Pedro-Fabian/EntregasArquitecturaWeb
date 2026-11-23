@@ -14,6 +14,11 @@ public interface TicketRepository extends JpaRepository<TicketEntity, Long> {
 
     List<TicketEntity> findByIdCompra(Long idCompra);
 
+    // entradas del cliente ordenadas desde la mas nueva
+    List<TicketEntity> findByIdClienteOrderByIdDesc(String idCliente);
+    List<TicketEntity> findByEstadoDevolucionOrderByIdDesc(String estadoDevolucion);
+    List<TicketEntity> findByEstadoDevolucionNotOrderByIdDesc(String estadoDevolucion);
+
     // Recuperar todos los tickets de un evento para cancelacion masiva
     List<TicketEntity> findByIdEventoOrderByIdAsc(String idEvento);
 

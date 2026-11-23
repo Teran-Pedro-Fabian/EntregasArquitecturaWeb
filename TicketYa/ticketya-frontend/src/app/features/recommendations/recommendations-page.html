@@ -1,0 +1,46 @@
+<section class="recommendations-page">
+  <header class="page-header">
+    <span class="eyebrow">PARA VOS</span>
+    <h1>Eventos recomendados</h1>
+    <p>Se generan a partir de las preferencias guardadas en tu cuenta</p>
+  </header>
+
+  @if (loading()) {
+    <div class="state-card">Buscando recomendaciones...</div>
+  } @else if (error(); as message) {
+    <div class="state-card error-state">
+      <strong>{{ message }}</strong>
+      <button type="button" (click)="reload()">Reintentar</button>
+    </div>
+  } @else if (events().length === 0) {
+    <div class="state-card empty-state">
+      <h2>Todavia no tenemos recomendaciones</h2>
+      <p>Guardá algunas preferencias y volvé a consultar</p>
+      <a routerLink="/preferencias">Configurar preferencias</a>
+    </div>
+  } @else {
+    <div class="recommendations-grid">
+      @for (event of events(); track event.id) {
+        <article class="recommendation-card">
+          <div class="card-top">
+            <span class="event-type">{{ event.tipo }}</span>
+            <span class="event-state">{{ event.estado }}</span>
+          </div>
+
+          <h2>{{ event.nombre }}</h2>
+          <p class="description">{{ event.descripcion }}</p>
+
+          <div class="event-info">
+            <span>{{ event.fechaHora | date: 'dd/MM/yyyy · HH:mm' }}</span>
+            <span>{{ placeName(event) }}</span>
+            @if (event.precioDesde !== null) {
+              <strong>Desde ${{ event.precioDesde }}</strong>
+            }
+          </div>
+
+          <a class="detail-link" [routerLink]="['/eventos', event.id]">Ver evento</a>
+        </article>
+      }
+    </div>
+  }
+</section>

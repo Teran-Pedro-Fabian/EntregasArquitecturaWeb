@@ -107,6 +107,18 @@ public class EventoController {
         return evento != null ? ResponseEntity.ok(evento) : ResponseEntity.notFound().build();
     }
 
+    @GetMapping("/organizador/{idOrganizador}")
+    @PreAuthorize("hasRole('ADMINISTRADOR') or (hasRole('ORGANIZADOR') and #idOrganizador == authentication.name)")
+    public ResponseEntity<List<EventoEntity>> eventosDelOrganizador(@PathVariable String idOrganizador) {
+        return ResponseEntity.ok(eventoService.eventosDelOrganizador(idOrganizador));
+    }
+
+    @GetMapping("/admin/todos")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
+    public ResponseEntity<List<EventoEntity>> listarTodosParaAdmin() {
+        return ResponseEntity.ok(eventoService.listarTodosParaAdmin());
+    }
+
     /** Crear un participante reutilizable entre distintos eventos. */
     @PostMapping("/participantes")
     @PreAuthorize("hasAnyRole('ORGANIZADOR', 'ADMINISTRADOR')")

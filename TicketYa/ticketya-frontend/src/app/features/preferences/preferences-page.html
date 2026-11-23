@@ -1,0 +1,137 @@
+<section class="preferences-page">
+  <header class="page-header">
+    <span class="eyebrow">TU PERFIL</span>
+    <h1>Preferencias</h1>
+    <p>Guardá gustos para mejorar las recomendaciones y los avisos</p>
+  </header>
+
+  @if (loading()) {
+    <div class="state-card">Cargando preferencias...</div>
+  } @else {
+    @if (message(); as text) {
+      <div class="alert success" role="status">{{ text }}</div>
+    }
+
+    @if (error(); as text) {
+      <div class="alert error" role="alert">{{ text }}</div>
+    }
+
+    <div class="settings-grid">
+      <article class="settings-card">
+        <h2>Email para notificaciones</h2>
+        <p>Los correos de prueba llegan a Mailpit mientras trabajamos en local</p>
+
+        <label for="email">Email</label>
+        <input
+          #emailInput
+          id="email"
+          type="email"
+          class="form-control"
+          [value]="email()"
+          (input)="setEmail(emailInput.value)"
+          placeholder="cliente@ticketya.local"
+        />
+
+        <button
+          type="button"
+          class="primary-button"
+          [disabled]="savingEmail()"
+          (click)="saveEmail()"
+        >
+          {{ savingEmail() ? 'Guardando...' : 'Guardar email' }}
+        </button>
+      </article>
+
+      <article class="settings-card preference-card">
+        <h2>Nueva preferencia</h2>
+        <p>Podés completar uno o varios campos</p>
+
+        <div class="form-grid">
+          <label>
+            Tipo de evento
+            <select
+              #typeSelect
+              class="form-select"
+              [value]="draft().tipo"
+              (change)="setTipo(typeSelect.value)"
+            >
+              <option value="">Sin elegir</option>
+              @for (type of types(); track type) {
+                <option [value]="type">{{ type }}</option>
+              }
+            </select>
+          </label>
+
+          <label>
+            Ciudad
+            <select
+              #citySelect
+              class="form-select"
+              [value]="draft().ciudad"
+              (change)="setCiudad(citySelect.value)"
+            >
+              <option value="">Sin elegir</option>
+              @for (city of cities(); track city) {
+                <option [value]="city">{{ city }}</option>
+              }
+            </select>
+          </label>
+
+          <label>
+            Evento favorito
+            <select
+              #eventSelect
+              class="form-select"
+              [value]="draft().idEvento"
+              (change)="setEvento(eventSelect.value)"
+            >
+              <option value="">Sin elegir</option>
+              @for (event of events(); track event.id) {
+                <option [value]="event.id">{{ event.nombre }}</option>
+              }
+            </select>
+          </label>
+
+          <label>
+            Participante favorito
+            <select
+              #participantSelect
+              class="form-select"
+              [value]="draft().idParticipante"
+              (change)="setParticipante(participantSelect.value)"
+            >
+              <option value="">Sin elegir</option>
+              @for (participant of participants(); track participant.id) {
+                <option [value]="participant.id">{{ participant.nombre }}</option>
+              }
+            </select>
+          </label>
+
+          <label class="full-width">
+            Lugar favorito
+            <select
+              #placeSelect
+              class="form-select"
+              [value]="draft().idLugar"
+              (change)="setLugar(placeSelect.value)"
+            >
+              <option value="">Sin elegir</option>
+              @for (place of places(); track place.id) {
+                <option [value]="place.id">{{ place.nombre }} · {{ place.ciudad }}</option>
+              }
+            </select>
+          </label>
+        </div>
+
+        <button
+          type="button"
+          class="primary-button"
+          [disabled]="savingPreference()"
+          (click)="savePreference()"
+        >
+          {{ savingPreference() ? 'Guardando...' : 'Guardar preferencia' }}
+        </button>
+      </article>
+    </div>
+  }
+</section>

@@ -25,8 +25,9 @@ public class GatewaySecurityConfig {
                         ).denyAll()
                         .pathMatchers("/actuator/health", "/actuator/info").permitAll()
                         .pathMatchers(HttpMethod.POST, "/clientes", "/clientes/login").permitAll()
+                        .pathMatchers(HttpMethod.GET, "/evento/organizador/**", "/evento/admin/**").authenticated()
                         .pathMatchers(HttpMethod.GET, "/evento", "/evento/**").permitAll()
-                        .pathMatchers(HttpMethod.GET, "/lugares", "/lugares/buscarPorCiudad", "/lugares/buscarPorUbicacion", "/lugares/sectores/*/disponibilidad").permitAll()
+                        .pathMatchers(HttpMethod.GET, "/lugares", "/lugares/buscarPorCiudad", "/lugares/buscarPorUbicacion", "/lugares/sectores/*/disponibilidad", "/lugares/eventos/*/sectores", "/lugares/sectores/*/asientos").permitAll()
                         // Todas las escrituras y datos privados exigen JWT
                         .anyExchange().authenticated())
                 .oauth2ResourceServer(oauth -> oauth.jwt(jwt -> {}))

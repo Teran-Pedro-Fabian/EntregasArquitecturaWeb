@@ -10,4 +10,6 @@ public interface EventoRepository extends JpaRepository<EventoEntity, String>, J
     List<EventoEntity> findByEstado(String estado);
     List<EventoEntity> findByEstadoIn(Collection<String> estados);
     List<EventoEntity> findTop50ByEstadoAndPublicacionAvisadaFalseOrderByIdAsc(String estado);
+    List<EventoEntity> findByOrganizadorOrderByFechaHoraAsc(String organizador);
+    List<EventoEntity> findAllByOrderByFechaHoraAsc();
 }

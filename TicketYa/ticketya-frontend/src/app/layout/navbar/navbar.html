@@ -1,0 +1,43 @@
+<nav class="ticketya-navbar">
+  <div class="container nav-content">
+    <a class="brand" routerLink="/"
+      ><span class="brand-icon">T</span><span class="brand-name">Ticket<span>Ya</span></span></a
+    >
+    <div class="nav-links">
+      <a
+        routerLink="/"
+        routerLinkActive="active"
+        [routerLinkActiveOptions]="{ exact: true }"
+        class="nav-item"
+        >Inicio</a
+      >
+      <a routerLink="/eventos" routerLinkActive="active" class="nav-item">Eventos</a>
+      @if (authStore.isAuthenticated() && authStore.rol() === 'CLIENTE') {
+        <a routerLink="/recomendaciones" routerLinkActive="active" class="nav-item">Para vos</a>
+        <a routerLink="/mis-entradas" routerLinkActive="active" class="nav-item">Mis entradas</a>
+        <a routerLink="/preferencias" routerLinkActive="active" class="nav-item">Preferencias</a>
+        <a routerLink="/notificaciones" routerLinkActive="active" class="nav-item">Avisos</a>
+      }
+      @if (authStore.rol() === 'ORGANIZADOR') {
+        <a routerLink="/organizador" routerLinkActive="active" class="nav-item">Organizador</a>
+      }
+      @if (authStore.rol() === 'PERSONAL_ACCESO') {
+        <a routerLink="/acceso" routerLinkActive="active" class="nav-item">Control acceso</a>
+      }
+      @if (authStore.rol() === 'ADMINISTRADOR') {
+        <a routerLink="/admin" routerLinkActive="active" class="nav-item">Administracion</a>
+        <a routerLink="/acceso" routerLinkActive="active" class="nav-item">Control acceso</a>
+      }
+      @if (authStore.isAuthenticated()) {
+        <div class="session-info">
+          <span class="session-user">{{ authStore.idUsuario() }}</span><span class="session-role">{{
+            authStore.rol()
+          }}</span>
+        </div>
+        <button type="button" class="nav-login nav-logout" (click)="logout()">Salir</button>
+      } @else {
+        <a routerLink="/login" routerLinkActive="active" class="nav-login">Ingresar</a>
+      }
+    </div>
+  </div>
+</nav>

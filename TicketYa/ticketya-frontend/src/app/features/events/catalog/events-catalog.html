@@ -1,0 +1,131 @@
+<section class="catalog-header">
+  <div>
+    <span class="eyebrow">EVENTOS</span>
+    <h1>Encontrá tu próxima experiencia</h1>
+    <p>Buscá entre los eventos publicados en TicketYa</p>
+  </div>
+</section>
+
+<form [formRoot]="filterForm" class="filters" (submit)="$event.preventDefault(); search()">
+  <div class="filter-main">
+    <label for="texto">Buscar</label>
+    <input
+      id="texto"
+      type="search"
+      class="form-control"
+      placeholder="Nombre, descripción, organizador o participante"
+      [formField]="filterForm.texto"
+    />
+  </div>
+
+  <div>
+    <label for="tipo">Tipo</label>
+    <input
+      id="tipo"
+      type="text"
+      class="form-control"
+      placeholder="Ej RECITAL"
+      [formField]="filterForm.tipo"
+    />
+  </div>
+
+  <div>
+    <label for="ciudad">Ciudad</label>
+    <input
+      id="ciudad"
+      type="text"
+      class="form-control"
+      placeholder="Ej Tandil"
+      [formField]="filterForm.ciudad"
+    />
+  </div>
+
+  <div>
+    <label for="fechaDesde">Desde</label>
+    <input id="fechaDesde" type="date" class="form-control" [formField]="filterForm.fechaDesde" />
+  </div>
+
+  <div>
+    <label for="fechaHasta">Hasta</label>
+    <input id="fechaHasta" type="date" class="form-control" [formField]="filterForm.fechaHasta" />
+  </div>
+
+  <div>
+    <label for="ordenarPor">Ordenar</label>
+    <select id="ordenarPor" class="form-select" [formField]="filterForm.ordenarPor">
+      <option value="fecha">Fecha</option>
+      <option value="precio">Precio</option>
+      <option value="relevancia">Relevancia</option>
+    </select>
+  </div>
+
+  <div class="filter-actions">
+    <button type="submit" class="btn-search" [disabled]="store.loading()">Buscar</button>
+    <button type="button" class="btn-clear" (click)="clearFilters()" [disabled]="store.loading()">
+      Limpiar
+    </button>
+  </div>
+</form>
+
+@if (store.loading()) {
+  <section class="catalog-state" aria-live="polite">
+    <div class="spinner-border" role="status" aria-hidden="true"></div>
+    <strong>Cargando eventos...</strong>
+  </section>
+} @else if (store.error(); as error) {
+  <section class="catalog-state error-state" role="alert">
+    <strong>No pudimos cargar el catálogo</strong>
+    <span>{{ error }}</span>
+    <button type="button" class="btn-search" (click)="search()">Reintentar</button>
+  </section>
+} @else if (!store.hasEvents()) {
+  <section class="catalog-state">
+    <strong>No encontramos eventos</strong>
+    <span>Probá cambiando o limpiando los filtros</span>
+    <button type="button" class="btn-clear" (click)="clearFilters()">Limpiar filtros</button>
+  </section>
+} @else {
+  <div class="results-header">
+    <strong>{{ store.events().length }} eventos</strong>
+  </div>
+
+  <section class="events-grid">
+    @for (event of store.events(); track event.id) {
+      <article class="event-card">
+        <div class="event-visual">
+          <span class="event-type">{{ event.tipo }}</span>
+          @if (event.estado === 'AGOTADO') {
+            <span class="event-status sold-out">AGOTADO</span>
+          } @else {
+            <span class="event-status">{{ event.estado }}</span>
+          }
+        </div>
+
+        <div class="event-content">
+          <div class="event-date">{{ formatDate(event.fechaHora) }}</div>
+          <h2>{{ event.nombre }}</h2>
+          <p class="event-description">{{ event.descripcion }}</p>
+
+          @if (store.placeById(event.idLugar); as place) {
+            <div class="event-place">
+              <strong>{{ place.nombre }}</strong>
+              <span>{{ place.ciudad }} · {{ place.direccion }}</span>
+            </div>
+          } @else {
+            <div class="event-place">
+              <span>Lugar #{{ event.idLugar }}</span>
+            </div>
+          }
+
+          <div class="event-footer">
+            <div>
+              <span class="price-label">Entrada</span>
+              <strong class="event-price">{{ formatPrice(event.precioDesde) }}</strong>
+            </div>
+            <a class="event-detail-link" [routerLink]="['/eventos', event.id]">Ver evento</a>
+          </div>
+        </div>
+      </article>
+    }
+  </section>
+}

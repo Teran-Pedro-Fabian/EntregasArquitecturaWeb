@@ -1,0 +1,277 @@
+@if (store.loading()) {
+  <section class="flow-state" aria-live="polite">
+    <div class="spinner-border" role="status" aria-hidden="true"></div>
+    <strong>Preparando la compra...</strong>
+  </section>
+} @else if (store.event(); as event) {
+  <a [routerLink]="['/eventos', event.id]" class="back-link">← Volver al evento</a>
+
+  <header class="purchase-header">
+    <span class="eyebrow">COMPRA DE ENTRADAS</span>
+    <h1>{{ event.nombre }}</h1>
+    <p>Elegí sector, reserva tus lugares y confirma la compra</p>
+  </header>
+
+  @if (store.error(); as error) {
+    <div class="alert alert-danger" role="alert">{{ error }}</div>
+  }
+
+  @if (store.requiresQueue() && store.queueEnabled()) {
+    <section class="flow-card queue-ready-card">
+      <strong>Tu turno esta habilitado</strong>
+      <span>Ya podes reservar y comprar entradas</span>
+    </section>
+  }
+
+  @if (store.soldOut()) {
+    <section class="flow-card warning-card">
+      <h2>Evento agotado</h2>
+      <p>No quedan entradas disponibles para este evento</p>
+    </section>
+  } @else if (store.requiresQueue() && !store.queueEnabled()) {
+    <section class="flow-card queue-card">
+      <span class="step-label">FILA VIRTUAL</span>
+      <h2>Este evento tiene alta demanda</h2>
+
+      @if (store.queueError(); as queueError) {
+        <div class="alert alert-danger" role="alert">{{ queueError }}</div>
+      }
+
+      @if (store.queue(); as queue) {
+        <div class="queue-position">
+          <span>Tu posicion</span>
+          <strong>#{{ queue.posicion }}</strong>
+        </div>
+        <p>La posicion se actualiza automaticamente cada pocos segundos</p>
+        <button
+          type="button"
+          class="btn btn-outline-light"
+          [disabled]="store.queueLoading()"
+          (click)="store.refreshQueuePosition()"
+        >
+          Actualizar ahora
+        </button>
+      } @else {
+        <p>Ingresa a la fila para obtener tu posicion y esperar tu turno de compra</p>
+        <button
+          type="button"
+          class="btn btn-primary"
+          [disabled]="store.queueLoading()"
+          (click)="store.joinQueue()"
+        >
+          @if (store.queueLoading()) {
+            Ingresando...
+          } @else {
+            Ingresar a la fila
+          }
+        </button>
+      }
+    </section>
+  } @else if (store.purchase(); as purchase) {
+    <section class="flow-card confirmation-card">
+      @if (purchase.estado === 'CONFIRMADA') {
+        <span class="status-success">COMPRA CONFIRMADA</span>
+        <h2>Tu compra se realizó correctamente</h2>
+        <p>Compra #{{ purchase.idCompra }} · {{ purchase.tickets.length }} entrada(s)</p>
+        <strong>{{ formatPrice(purchase.total) }}</strong>
+        <a routerLink="/mis-entradas" class="btn btn-outline-light">Ver mis entradas</a>
+      } @else {
+        <span class="status-pending">CONFIRMACION PENDIENTE</span>
+        <h2>El pago fue aprobado pero falta confirmar la venta</h2>
+        <p>No vuelvas a pagar. TicketYa puede reintentar la confirmación sin cobrar de nuevo</p>
+        <button
+          type="button"
+          class="btn btn-primary"
+          [disabled]="store.actionLoading()"
+          (click)="store.retryPendingPurchase()"
+        >
+          Reintentar confirmación
+        </button>
+      }
+    </section>
+  } @else {
+    <section class="flow-card">
+      <span class="step-label">1 · SECTOR</span>
+      <h2>Elegí dónde querés estar</h2>
+
+      @if (store.sectors().length === 0) {
+        <p>No hay sectores publicados para este evento</p>
+      } @else {
+        <label for="sector" class="form-label">Sector</label>
+        <select
+          id="sector"
+          class="form-select"
+          [disabled]="store.reservation() !== null"
+          (change)="selectSector($event)"
+        >
+          <option value="">Seleccionar sector</option>
+          @for (sector of store.sectors(); track sector.idSector) {
+            <option [value]="sector.idSector">
+              {{ sector.nombre }} · {{ formatPrice(sector.precio) }}
+            </option>
+          }
+        </select>
+      }
+    </section>
+
+    @if (store.selectedSector(); as sector) {
+      <section class="flow-card">
+        <span class="step-label">2 · ENTRADAS</span>
+        <div class="section-heading">
+          <div>
+            <h2>{{ sector.nombre }}</h2>
+            <p>{{ formatPrice(sector.precio) }} por entrada</p>
+          </div>
+          @if (sector.tipo === 'NUMERADO') {
+            <span class="sector-badge">ASIENTOS NUMERADOS</span>
+          }
+        </div>
+
+        @if (store.actionLoading() && !store.reservation()) {
+          <p>Cargando disponibilidad...</p>
+        } @else if (sector.tipo === 'NUMERADO') {
+          @if (store.seats().length === 0) {
+            <p>No hay asientos configurados para este sector</p>
+          } @else {
+            <div class="seat-map" aria-label="Asientos del sector">
+              @for (row of seatRows(); track row.row) {
+                <div class="seat-row">
+                  <span class="row-label">{{ row.row }}</span>
+                  <div class="seat-list">
+                    @for (seat of row.seats; track seat.idAsiento) {
+                      <button
+                        type="button"
+                        class="seat"
+                        [class.selected]="store.selectedSeatIds().includes(seat.idAsiento)"
+                        [class.unavailable]="seat.estado !== 'DISPONIBLE'"
+                        [disabled]="seat.estado !== 'DISPONIBLE' || store.reservation() !== null"
+                        (click)="store.toggleSeat(seat.idAsiento)"
+                        [attr.aria-label]="'Fila ' + seat.fila + ' asiento ' + seat.columna"
+                      >
+                        {{ seat.columna }}
+                      </button>
+                    }
+                  </div>
+                </div>
+              }
+            </div>
+            <p class="selection-summary">Seleccionados: {{ store.selectedSeatIds().length }} / 4</p>
+          }
+        } @else {
+          <p>
+            Disponibles: <strong>{{ store.availability() ?? 0 }}</strong>
+          </p>
+          <label for="quantity" class="form-label">Cantidad</label>
+          <input
+            id="quantity"
+            type="number"
+            class="form-control quantity-input"
+            min="1"
+            [max]="store.availability() ?? 1"
+            [value]="store.quantity()"
+            [disabled]="store.reservation() !== null"
+            (input)="changeQuantity($event)"
+          />
+          <small>Máximo 4 entradas por cliente para el mismo evento</small>
+        }
+
+        <div class="price-summary">
+          <span>Total estimado</span>
+          <strong>{{ formatPrice(store.total()) }}</strong>
+        </div>
+
+        @if (!store.reservation()) {
+          <button
+            type="button"
+            class="btn btn-primary"
+            [disabled]="!store.canReserve() || store.actionLoading()"
+            (click)="store.reserve()"
+          >
+            Reservar por 10 minutos
+          </button>
+        }
+      </section>
+    }
+
+    @if (store.reservation(); as reservation) {
+      <section class="flow-card reservation-card">
+        <span class="step-label">3 · RESERVA</span>
+        <div class="timer" [class.expired]="store.reservationExpired()">
+          @if (store.reservationExpired()) {
+            Reserva vencida
+          } @else {
+            Tiempo restante {{ formatTime(store.remainingSeconds()) }}
+          }
+        </div>
+
+        @if (reservation.kind === 'NUMERADO') {
+          <p>
+            Asientos reservados:
+            @for (seat of reservation.seats; track seat.id) {
+              <strong>{{ seat.fila }}{{ seat.columna }}</strong>
+            }
+          </p>
+        } @else {
+          <p>
+            <strong>{{ reservation.reservation.cantidad }}</strong>
+            {{
+              reservation.reservation.cantidad === 1 ? 'entrada reservada' : 'entradas reservadas'
+            }}
+          </p>
+        }
+
+        <label for="payment" class="form-label">Medio de pago</label>
+        <select
+          id="payment"
+          class="form-select"
+          [value]="store.paymentMethod()"
+          (change)="changePayment($event)"
+        >
+          <option value="TARJETA">Tarjeta</option>
+          <option value="TRANSFERENCIA">Transferencia</option>
+          <option value="BILLETERA_VIRTUAL">Billetera virtual</option>
+        </select>
+
+        <div class="reservation-actions">
+          <button
+            type="button"
+            class="btn btn-primary"
+            [disabled]="store.reservationExpired() || store.actionLoading()"
+            [attr.aria-busy]="store.actionLoading()"
+            (click)="store.buy()"
+          >
+            @if (store.actionLoading()) {
+              Procesando compra...
+            } @else {
+              Confirmar compra · {{ formatPrice(store.total()) }}
+            }
+          </button>
+
+          <button
+            type="button"
+            class="btn btn-outline-secondary"
+            [disabled]="store.actionLoading()"
+            (click)="store.cancelReservation()"
+          >
+            @if (store.actionLoading()) {
+              Esperá...
+            } @else {
+              Cancelar reserva
+            }
+          </button>
+        </div>
+
+        @if (store.error(); as error) {
+          <div class="alert alert-danger mt-3" role="alert">
+            {{ error }}
+          </div>
+}
+      </section>
+    }
+  }
+} @else {
+  <section class="flow-state error-state" role="alert">
+    <strong>No pudimos encontrar el evento</strong>
+    <a routerLink="/eventos">Volver a eventos</a>
+  </section>
+}
