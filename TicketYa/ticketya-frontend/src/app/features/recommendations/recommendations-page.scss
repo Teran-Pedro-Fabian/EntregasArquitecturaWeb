@@ -1,0 +1,135 @@
+.recommendations-page {
+  display: grid;
+  gap: 18px;
+}
+
+.page-header {
+  padding: clamp(28px, 5vw, 50px);
+  border: 1px solid var(--ty-line);
+  border-radius: var(--ty-radius-xl);
+  background:
+    radial-gradient(circle at 88% 20%, rgba(245, 158, 66, 0.15), transparent 16rem),
+    linear-gradient(135deg, #15120f, #0e0c0a);
+}
+
+.page-header h1 {
+  margin: 0;
+  color: var(--ty-text);
+  font-size: clamp(2.2rem, 5vw, 4.3rem);
+  font-weight: 880;
+  letter-spacing: -0.055em;
+}
+
+.page-header p {
+  margin: 12px 0 0;
+  color: var(--ty-muted);
+}
+
+.recommendations-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.recommendation-card {
+  display: flex;
+  flex-direction: column;
+  min-height: 310px;
+  padding: 22px;
+  border: 1px solid var(--ty-line);
+  border-radius: var(--ty-radius-lg);
+  background: linear-gradient(180deg, rgba(245, 158, 66, 0.04), transparent 35%), var(--ty-surface);
+}
+
+.card-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.event-type,
+.event-state {
+  padding: 5px 8px;
+  border: 1px solid var(--ty-line);
+  border-radius: 999px;
+  color: var(--ty-muted);
+  font-size: 0.64rem;
+  font-weight: 850;
+}
+
+.recommendation-card h2 {
+  margin: 18px 0 8px;
+  color: var(--ty-text);
+  font-size: 1.45rem;
+  letter-spacing: -0.035em;
+}
+
+.description {
+  color: var(--ty-muted);
+  line-height: 1.55;
+}
+
+.event-info {
+  display: grid;
+  gap: 6px;
+  margin-top: auto;
+  color: var(--ty-subtle);
+  font-size: 0.8rem;
+}
+
+.event-info strong {
+  color: var(--ty-text);
+}
+
+.detail-link {
+  width: max-content;
+  margin-top: 16px;
+  color: #140e08;
+  border-radius: 10px;
+  background: var(--ty-amber);
+  padding: 9px 12px;
+  text-decoration: none;
+  font-size: 0.8rem;
+  font-weight: 850;
+}
+
+.state-card {
+  min-height: 240px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 10px;
+  padding: 28px;
+  border: 1px solid var(--ty-line);
+  border-radius: var(--ty-radius-lg);
+  background: var(--ty-surface);
+  text-align: center;
+  color: var(--ty-muted);
+}
+
+.state-card h2 {
+  color: var(--ty-text);
+}
+
+.state-card a,
+.state-card button {
+  color: #150f09;
+  border: 0;
+  border-radius: 10px;
+  background: var(--ty-amber);
+  padding: 9px 12px;
+  text-decoration: none;
+  font-weight: 800;
+}
+
+@media (max-width: 980px) {
+  .recommendations-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 620px) {
+  .recommendations-grid {
+    grid-template-columns: 1fr;
+  }
+}

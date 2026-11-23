@@ -11,10 +11,16 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.Map;
+import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.UUID;
 
 @Service
 public class TicketService {
+    private static final String URL_LUGAR = System.getenv().getOrDefault("TICKETYA_LUGAR_URL", "http://localhost:8083");
+
+    private static final String URL_EVENTO = System.getenv().getOrDefault("TICKETYA_EVENTO_URL", "http://localhost:8082");
+
     @Autowired
     private TicketRepository ticketRepository;
     @Autowired
@@ -51,7 +57,7 @@ public class TicketService {
                 "idEvento", ticket.getIdEvento()
         );
         // 3) Validar la reserva en Lugar
-        String url = "http://localhost:8083/lugares/interno/reservas/validar";
+        String url = URL_LUGAR + "/lugares/interno/reservas/validar";
         restTemplate.postForEntity(
                 url,
                 datosReserva,
@@ -81,7 +87,7 @@ public class TicketService {
                 "idTicket", ticketGuardado.getId()
         );
         // 10) Confirmar la venta en MicroServicioLugar
-        String urlConfirmacion = "http://localhost:8083/lugares/asiento/confirmar";
+        String urlConfirmacion = URL_LUGAR + "/lugares/asiento/confirmar";
 
         restTemplate.postForEntity(
                 urlConfirmacion,
@@ -94,6 +100,17 @@ public class TicketService {
 
     public TicketEntity obtenerTicket(Long id) {
         return ticketRepository.findById(id).orElse(null);
+    }
+
+    public List<TicketEntity> obtenerTicketsCliente(String idCliente) {
+        return ticketRepository.findByIdClienteOrderByIdDesc(idCliente);
+    }
+
+    public List<TicketEntity> listarDevoluciones(String estado) {
+        if (estado == null || estado.isBlank()) {
+            return ticketRepository.findByEstadoDevolucionNotOrderByIdDesc("SIN_SOLICITUD");
+        }
+        return ticketRepository.findByEstadoDevolucionOrderByIdDesc(estado.trim().toUpperCase());
     }
 
     /**
@@ -117,7 +134,7 @@ public class TicketService {
             throw new RuntimeException("El ticket ya tiene una solicitud de devolucion");
         }
         // 4) Consultar la fecha del evento
-        String urlEvento = "http://localhost:8082/evento/" + ticket.getIdEvento();
+        String urlEvento = URL_EVENTO + "/evento/" + ticket.getIdEvento();
         Map<String, Object> evento = restTemplate.getForObject(urlEvento, Map.class);
         if (evento == null || evento.get("fechaHora") == null) {
             throw new RuntimeException("No se pudo consultar la fecha del evento");
@@ -249,10 +266,10 @@ public class TicketService {
         // 4) Liberar el asiento numerado o un cupo de Campo General
         String urlLugar;
         if (ticket.getIdAsiento() != null) {
-            urlLugar = "http://localhost:8083/lugares/interno/asientos/"
+            urlLugar = URL_LUGAR + "/lugares/interno/asientos/"
                     + ticket.getIdAsiento() + "/liberar-venta?idTicket=" + ticket.getId();
         } else if (ticket.getIdReservaGeneral() != null && ticket.getIdSector() != null) {
-            urlLugar = "http://localhost:8083/lugares/interno/sectores/generales/"
+            urlLugar = URL_LUGAR + "/lugares/interno/sectores/generales/"
                     + ticket.getIdSector() + "/liberar-venta?idTicket=" + ticket.getId();
         } else {
             throw new RuntimeException("El ticket no tiene un asiento ni una reserva general");
@@ -264,4 +281,48 @@ public class TicketService {
         // 8) Guardar el ticket en PostgreSQL
         return ticketRepository.save(ticket);
     }
+
+    /**
+     * validar un QR en la puerta y registrar el ingreso
+     * bloquear la fila hasta guardar para que no pueda usarse dos veces
+     */
+    @Transactional
+    public TicketEntity marcarEntradaUtilizada(String qrCode, String idEvento) {
+        if (qrCode == null || qrCode.isBlank() || idEvento == null || idEvento.isBlank()) {
+            throw new IllegalArgumentException("Debe indicar el QR y el evento");
+        }
+
+        // buscar con bloqueo para evitar dos escaneos simultaneos
+        TicketEntity ticket = ticketRepository.findByQrCodeParaRevision(qrCode)
+                .orElseThrow(() -> new NoSuchElementException("Ticket no encontrado"));
+
+        if (!idEvento.equals(ticket.getIdEvento())) {
+            throw new IllegalStateException("El QR no pertenece a este evento");
+        }
+        if (ticket.isUsado()) {
+            throw new IllegalStateException("La entrada ya fue utilizada");
+        }
+
+        // no permitir entradas que estan en proceso de devolucion o ya fueron devueltas
+        String devolucion = ticket.getEstadoDevolucion();
+        if (devolucion != null && !"SIN_SOLICITUD".equals(devolucion)
+                && !"RECHAZADA".equals(devolucion)) {
+            throw new IllegalStateException("La entrada no esta habilitada por su estado de devolucion");
+        }
+
+        // consultar que el evento siga habilitado
+        Map<?, ?> evento = restTemplate.getForObject(
+                URL_EVENTO + "/evento/" + idEvento, Map.class);
+        if (evento == null || !idEvento.equals(evento.get("id"))) {
+            throw new IllegalStateException("No se pudo validar el evento");
+        }
+        String estado = String.valueOf(evento.get("estado"));
+        if (!"PUBLICADO".equals(estado) && !"AGOTADO".equals(estado)) {
+            throw new IllegalStateException("El evento no admite ingresos en su estado actual");
+        }
+
+        ticket.setUsado(true);
+        return ticketRepository.saveAndFlush(ticket);
+    }
+
 }

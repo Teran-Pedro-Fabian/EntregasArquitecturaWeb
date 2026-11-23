@@ -1,0 +1,15 @@
+services:
+  postgres-lugar-test:
+    image: postgres:16-alpine
+    container_name: ticketya-postgres-lugar-test
+    environment:
+      POSTGRES_DB: ticketya_lugares_test
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: admin
+    ports:
+      - "127.0.0.1:5436:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d ticketya_lugares_test"]
+      interval: 2s
+      timeout: 2s
+      retries: 20

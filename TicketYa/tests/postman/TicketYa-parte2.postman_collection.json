@@ -1,0 +1,785 @@
+{
+  "info": {
+    "_postman_id": "6ee5182e-0cef-48c5-8a3e-1aaa1d459c05",
+    "name": "TicketYa Parte 2 (JWT, fila, compra y QR)",
+    "description": " ",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "01 Autenticación JWT",
+      "item": [
+        {
+          "name": "Login CLIENTE",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/clientes/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"idUsuario\": \"{{clienteId}}\",\n  \"password\": \"{{clientePassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const datos = pm.response.json();",
+                  "  pm.collectionVariables.set(\"tokenCliente\", datos.token);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Login ORGANIZADOR",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/clientes/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"idUsuario\": \"{{organizadorId}}\",\n  \"password\": \"{{organizadorPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const datos = pm.response.json();",
+                  "  pm.collectionVariables.set(\"tokenOrganizador\", datos.token);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Login ADMINISTRADOR",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/clientes/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"idUsuario\": \"{{adminId}}\",\n  \"password\": \"{{adminPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const datos = pm.response.json();",
+                  "  pm.collectionVariables.set(\"tokenAdmin\", datos.token);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Login PERSONAL_ACCESO",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/clientes/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"idUsuario\": \"{{personalId}}\",\n  \"password\": \"{{personalPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const datos = pm.response.json();",
+                  "  pm.collectionVariables.set(\"tokenPersonal\", datos.token);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "02 Fila virtual",
+      "item": [
+        {
+          "name": "Ingresar a fila virtual",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/ticket/cola/{{idEvento}}/entrar",
+            "description": "Devuelve posición y habilitado; las compras solo pueden seguir si habilitado es true.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"idCliente\": \"{{clienteId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenCliente}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Consultar posición",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/ticket/cola/{{idEvento}}/posicion?idCliente={{clienteId}}",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenCliente}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "03 Compra general (cambia la base)",
+      "item": [
+        {
+          "name": "Reservar entrada general",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/lugares/sectores/generales/reservar",
+            "description": "IMPORTANTE: reemplazar variable idSectorGeneral por el número del sector válido; el JSON requiere valor numérico. Editar el Body si Postman tratara el valor como cadena.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"idSector\": {{idSectorGeneral}},\n  \"idCliente\": \"{{clienteId}}\",\n  \"cantidad\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenCliente}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code >= 200 && pm.response.code < 300) {",
+                  "  const datos = pm.response.json();",
+                  "  pm.collectionVariables.set(\"idReserva\", datos.idReserva);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Comprar entrada general",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/ticket/comprar-general",
+            "description": "IMPORTANTE: idSector e idReserva deben ser números en el JSON. No repetir compras sin comprobar cupos; no usar el mismo guid para reintento deliberado.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"idCliente\": \"{{clienteId}}\",\n  \"idEvento\": \"{{idEvento}}\",\n  \"idSector\": {{idSectorGeneral}},\n  \"idReserva\": {{idReserva}},\n  \"cantidad\": 1,\n  \"medioPago\": \"TARJETA\",\n  \"claveIdempotencia\": \"{{$guid}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenCliente}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Compra confirmada (201)\", function () { pm.response.to.have.status(201); });",
+                  "if (pm.response.code === 201) {",
+                  "  const datos = pm.response.json();",
+                  "  pm.collectionVariables.set(\"idCompra\", datos.idCompra);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Consultar compra",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/ticket/compras/{{idCompra}}",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenCliente}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "Reintentar confirmación de compra pendiente",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/ticket/compras/{{idCompra}}/reintentar",
+            "description": "Usar solo ante estado PENDIENTE_CONFIRMACION, no genera un nuevo pago.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenCliente}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "04 QR y consultas",
+      "item": [
+        {
+          "name": "Escanear QR (PERSONAL_ACCESO)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/ticket/escanearQrcode?qrCode={{qrCode}}&idEvento={{idEvento}}",
+            "description": "Operación irreversible de control de acceso; solo PERSONAL_ACCESO o ADMINISTRADOR.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenPersonal}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Reporte organizador",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/ticket/reportes/eventos/{{idEvento}}?idOrganizador={{organizadorId}}",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenOrganizador}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "Recomendaciones cliente",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/clientes/{{clienteId}}/recomendaciones",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenCliente}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "Notificaciones cliente",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/clientes/{{clienteId}}/notificaciones",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenCliente}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "05 Seguridad: 401 y 403 (sin modificaciones)",
+      "description": "Ejecutar después de Login CLIENTE, ORGANIZADOR y PERSONAL_ACCESO. Los endpoints de lectura no cambian la base. El escaneo utiliza un QR deliberadamente inexistente y debe ser rechazado por permiso ANTES de llegar a validar el QR.",
+      "item": [
+        {
+          "name": "Sin JWT: notificaciones privadas -> 401",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/clientes/cliente-ajeno-de-prueba/notificaciones",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "clientes",
+                "cliente-ajeno-de-prueba",
+                "notificaciones"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Debe responder 401\", function () { pm.response.to.have.status(401); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Sin JWT: reporte de organizador -> 401",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/ticket/reportes/eventos/{{idEvento}}?idOrganizador={{organizadorId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ticket",
+                "reportes",
+                "eventos",
+                "{{idEvento}}?idOrganizador={{organizadorId}}"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Debe responder 401\", function () { pm.response.to.have.status(401); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "CLIENTE: notificaciones de otra cuenta -> 403",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/clientes/cliente-ajeno-de-prueba/notificaciones",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "clientes",
+                "cliente-ajeno-de-prueba",
+                "notificaciones"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenCliente}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Debe responder 403\", function () { pm.response.to.have.status(403); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "CLIENTE: reporte de organizador -> 403",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/ticket/reportes/eventos/{{idEvento}}?idOrganizador={{organizadorId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ticket",
+                "reportes",
+                "eventos",
+                "{{idEvento}}?idOrganizador={{organizadorId}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenCliente}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Debe responder 403\", function () { pm.response.to.have.status(403); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "PERSONAL_ACCESO: reporte de organizador -> 403",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/ticket/reportes/eventos/{{idEvento}}?idOrganizador={{organizadorId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ticket",
+                "reportes",
+                "eventos",
+                "{{idEvento}}?idOrganizador={{organizadorId}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenPersonal}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Debe responder 403\", function () { pm.response.to.have.status(403); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "CLIENTE: QR ajeno -> 403",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/ticket/escanearQrcode?qrCode=QR-SIN-VALOR-PRUEBA&idEvento={{idEvento}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ticket",
+                "escanearQrcode?qrCode=QR-SIN-VALOR-PRUEBA&idEvento={{idEvento}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenCliente}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Debe responder 403\", function () { pm.response.to.have.status(403); });"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080",
+      "type": "string"
+    },
+    {
+      "key": "clienteId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "clientePassword",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "organizadorId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "organizadorPassword",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "adminId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "adminPassword",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "personalId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "personalPassword",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "idEvento",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "idSectorGeneral",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "idReserva",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "idCompra",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "qrCode",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "tokenCliente",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "tokenOrganizador",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "tokenAdmin",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "tokenPersonal",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}

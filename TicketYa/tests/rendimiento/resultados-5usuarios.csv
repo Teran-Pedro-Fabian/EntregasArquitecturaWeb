@@ -1,0 +1,6 @@
+Label,# Samples,Average,Median,90% Line,95% Line,99% Line,Min,Max,Error %,Throughput,Received KB/sec,Sent KB/sec
+Login Cliente,5,85,87,88,88,88,82,88,0.000%,56.81818,44.11,15.43
+Ingresar a Fila Virtual,5,46,46,47,50,50,43,50,0.000%,100.00000,62.89,51.46
+Reservar Entrada,5,66,66,83,95,95,39,95,0.000%,52.63158,34.13,27.96
+Comprar Entrada,5,203,200,260,318,318,94,318,0.000%,13.36898,12.30,9.11
+TOTAL,20,100,83,200,260,318,39,318,0.000%,13.07190,9.72,6.53

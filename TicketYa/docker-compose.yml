@@ -2,6 +2,11 @@ services:
 
   # Base de datos del microservicio Lugar
   postgres-lugar:
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d ticketya_lugares"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
     image: postgres:16-alpine
     container_name: ticketya-postgres-lugar
     environment:
@@ -15,6 +20,11 @@ services:
 
   # Base de datos del microservicio Ticket
   postgres-ticket:
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d ticketya_tickets"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
     image: postgres:16-alpine
     container_name: ticketya-postgres-ticket
     environment:
@@ -28,6 +38,11 @@ services:
 
   # Cliente y Evento pasan a PostgreSQL sin afectar las bases existentes.
   postgres-cliente:
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d ticketya_clientes"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
     image: postgres:16-alpine
     container_name: ticketya-postgres-cliente
     environment:
@@ -40,6 +55,11 @@ services:
       - postgres_cliente_data:/var/lib/postgresql/data
 
   postgres-evento:
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d ticketya_eventos"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
     image: postgres:16-alpine
     container_name: ticketya-postgres-evento
     environment:
@@ -53,13 +73,223 @@ services:
 
   # Reservas temporales
   redis:
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
     image: redis:7-alpine
     container_name: ticketya-redis
     ports:
       - "6379:6379"
+
+  # http://localhost:8025
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: ticketya-mailpit
+    ports:
+      - "127.0.0.1:1025:1025"
+      - "127.0.0.1:8025:8025"
+
+  # MongoDB
+  mongodb:
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand({ping:1}).ok"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    image: mongo:7
+    container_name: ticketya-mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
+  cliente:
+    profiles: [apps]
+    build: ./MicroServicioCliente
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-cliente:5432/ticketya_clientes
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: admin
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      TICKETYA_MONGO_URI: mongodb://mongodb:27017/ticketya_preferencias
+      TICKETYA_SMTP_HOST: mailpit
+      TICKETYA_SMTP_PORT: 1025
+      TICKETYA_EVENTO_URL: http://evento:8082
+      TICKETYA_LUGAR_URL: http://lugar:8083
+      TICKETYA_JWT_SECRET: ${TICKETYA_JWT_SECRET:-ticketya-dev-only-change-this-jwt-secret-2026}
+      TICKETYA_INTERNAL_KEY: ${TICKETYA_INTERNAL_KEY:-ticketya-dev-only-change-this-internal-key-2026}
+      TICKETYA_DEMO_SEED: "true"
+      TICKETYA_ADMIN_ID: ${TICKETYA_ADMIN_ID:-admin}
+      TICKETYA_ADMIN_PASSWORD: ${TICKETYA_ADMIN_PASSWORD:-AdminDemo2026!}
+      TICKETYA_ORGANIZADOR_ID: ${TICKETYA_ORGANIZADOR_ID:-Tandil Producciones}
+      TICKETYA_ORGANIZADOR_PASSWORD: ${TICKETYA_ORGANIZADOR_PASSWORD:-OrganizadorDemo2026!}
+      TICKETYA_ACCESO_ID: ${TICKETYA_ACCESO_ID:-acceso}
+      TICKETYA_ACCESO_PASSWORD: ${TICKETYA_ACCESO_PASSWORD:-AccesoDemo2026!}
+      LOGGING_FILE_NAME: /logs/cliente.log
+    volumes:
+      - ./logs-centralizados:/logs
+    depends_on:
+      postgres-cliente: {condition: service_healthy}
+      mongodb: {condition: service_healthy}
+      mailpit: {condition: service_started}
+    restart: unless-stopped
+
+  evento:
+    profiles: [apps]
+    build: ./MicroservicioEvento
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-evento:5432/ticketya_eventos
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: admin
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      TICKETYA_REDIS_HOST: redis
+      TICKETYA_CLIENTE_URL: http://cliente:8081
+      TICKETYA_TICKET_URL: http://ticket:8084
+      TICKETYA_LUGAR_URL: http://lugar:8083
+      TICKETYA_JWT_SECRET: ${TICKETYA_JWT_SECRET:-ticketya-dev-only-change-this-jwt-secret-2026}
+      TICKETYA_INTERNAL_KEY: ${TICKETYA_INTERNAL_KEY:-ticketya-dev-only-change-this-internal-key-2026}
+      TICKETYA_DEMO_SEED: "true"
+      LOGGING_FILE_NAME: /logs/evento.log
+    volumes:
+      - ./logs-centralizados:/logs
+    depends_on:
+      postgres-evento: {condition: service_healthy}
+      redis: {condition: service_healthy}
+    restart: unless-stopped
+
+  lugar:
+    profiles: [apps]
+    build: ./MicroServicioLugar
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-lugar:5432/ticketya_lugares
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: admin
+      SPRING_DATA_REDIS_HOST: redis
+      TICKETYA_JWT_SECRET: ${TICKETYA_JWT_SECRET:-ticketya-dev-only-change-this-jwt-secret-2026}
+      TICKETYA_INTERNAL_KEY: ${TICKETYA_INTERNAL_KEY:-ticketya-dev-only-change-this-internal-key-2026}
+      TICKETYA_DEMO_SEED: "true"
+      LOGGING_FILE_NAME: /logs/lugar.log
+    volumes:
+      - ./logs-centralizados:/logs
+    depends_on:
+      postgres-lugar: {condition: service_healthy}
+      redis: {condition: service_healthy}
+    restart: unless-stopped
+
+  ticket:
+    profiles: [apps]
+    build: ./MicroServicioTicket
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-ticket:5432/ticketya_tickets
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: admin
+      TICKETYA_REDIS_HOST: redis
+      TICKETYA_CLIENTE_URL: http://cliente:8081
+      TICKETYA_EVENTO_URL: http://evento:8082
+      TICKETYA_LUGAR_URL: http://lugar:8083
+      TICKETYA_JWT_SECRET: ${TICKETYA_JWT_SECRET:-ticketya-dev-only-change-this-jwt-secret-2026}
+      TICKETYA_INTERNAL_KEY: ${TICKETYA_INTERNAL_KEY:-ticketya-dev-only-change-this-internal-key-2026}
+      TICKETYA_DEMO_SEED: "true"
+      TICKETYA_PAGOS_MOCK_PAGO_APROBADO: "true"
+      LOGGING_FILE_NAME: /logs/ticket.log
+    volumes:
+      - ./logs-centralizados:/logs
+    depends_on:
+      postgres-ticket: {condition: service_healthy}
+      redis: {condition: service_healthy}
+    restart: unless-stopped
+
+  migrate-ticket:
+    profiles: [apps]
+    image: postgres:16-alpine
+    environment:
+      PGPASSWORD: admin
+    volumes:
+      - ./db/migrations:/migrations:ro
+    depends_on:
+      postgres-ticket:
+        condition: service_healthy
+      ticket:
+        condition: service_started
+    command:
+      - /bin/sh
+      - -c
+      - |
+        echo "Esperando que Hibernate cree las tablas de Ticket..."
+        
+        until [ "$$(psql \
+          -h postgres-ticket \
+          -U postgres \
+          -d ticketya_tickets \
+          -tAc "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='public' AND table_name IN ('compra','ticket','aviso_cancelacion')")" = "3" ]
+        do
+          sleep 2
+        done
+
+        echo "Tablas base creadas"
+
+        for archivo in \
+          001_ticket_asiento_activo.sql \
+          002_idempotencia_p5.sql \
+          003_bloqueo_cancelacion_eventos.sql \
+          004_aviso_entrega_ticket.sql \
+          005_p11_ticket.sql
+        do
+          echo "Aplicando $$archivo"
+
+          psql \
+            -X \
+            -v ON_ERROR_STOP=1 \
+            -h postgres-ticket \
+            -U postgres \
+            -d ticketya_tickets \
+            -f "/migrations/$$archivo" || exit 1
+        done
+
+        echo "Migraciones de Ticket completadas"
+
+  gateway:
+    profiles: [apps]
+    build: ./MicroServicioGateway
+    ports:
+      - "8080:8080"
+    environment:
+      TICKETYA_CLIENTE_URL: http://cliente:8081
+      TICKETYA_EVENTO_URL: http://evento:8082
+      TICKETYA_LUGAR_URL: http://lugar:8083
+      TICKETYA_TICKET_URL: http://ticket:8084
+      TICKETYA_JWT_SECRET: ${TICKETYA_JWT_SECRET:-ticketya-dev-only-change-this-jwt-secret-2026}
+      LOGGING_FILE_NAME: /logs/gateway.log
+    volumes:
+      - ./logs-centralizados:/logs
+    depends_on:
+      cliente:
+        condition: service_started
+      evento:
+        condition: service_started
+      lugar:
+        condition: service_started
+      ticket:
+        condition: service_started
+      migrate-ticket:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  frontend:
+      profiles: [ apps ]
+      build: ./ticketya-frontend
+      ports:
+        - "4200:80"
+      depends_on:
+        gateway:
+          condition: service_started
+      restart: unless-stopped
 
 volumes:
   postgres_lugar_data:
   postgres_ticket_data:
   postgres_cliente_data:
   postgres_evento_data:
+  mongo_data:

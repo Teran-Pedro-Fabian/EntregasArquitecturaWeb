@@ -21,6 +21,8 @@ import java.util.HashSet;
  */
 @Service
 public class CancelacionEventoService {
+    private static final String URL_EVENTO = System.getenv().getOrDefault("TICKETYA_EVENTO_URL", "http://localhost:8082");
+
 
     @Autowired private TicketRepository ticketRepository;
     @Autowired private CompraRepository compraRepository;
@@ -38,7 +40,7 @@ public class CancelacionEventoService {
 
         // 1) Validar el estado actual del evento para evitar reintegros arbitrarios
         Map<String, Object> evento = restTemplate.getForObject(
-                "http://localhost:8082/evento/" + idEvento, Map.class);
+                URL_EVENTO + "/evento/" + idEvento, Map.class);
         if (evento == null || !"CANCELADO".equals(evento.get("estado"))) {
             throw new IllegalStateException("El evento no esta cancelado");
         }

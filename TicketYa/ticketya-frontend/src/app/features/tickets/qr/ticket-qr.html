@@ -1,0 +1,5 @@
+@if (imageUrl()) {
+  <img class="ticket-qr-image" [src]="imageUrl()" alt="Codigo QR de la entrada" />
+} @else {
+  <div class="ticket-qr-loading">Generando QR...</div>
+}

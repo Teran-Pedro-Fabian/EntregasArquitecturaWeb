@@ -1,9 +1,8 @@
 openapi: 3.0.3
 info:
   title: TicketYa - MicroServicioEvento
-  version: 1.0.0
-  description: 'Creacion, publicacion, administracion y busqueda de eventos'
-
+  version: 2.0.0
+  description: Creacion, publicacion, administracion, busqueda, cache y seguridad JWT de eventos
 servers:
 - url: http://localhost:8080
   description: API Gateway - entrada externa recomendada
@@ -48,6 +47,15 @@ paths:
               schema:
                 type: string
               example: Operacion no permitida
+        '401':
+          description: JWT faltante o invalido
+        '403':
+          description: Usuario autenticado pero sin permisos para esta operacion
+      security:
+      - bearerAuth: []
+      x-roles:
+      - ORGANIZADOR
+      description: El organizador autenticado crea eventos a su nombre
     get:
       tags:
       - Evento
@@ -142,12 +150,20 @@ paths:
               schema:
                 type: string
               example: Operacion no permitida
+        '401':
+          description: JWT faltante o invalido
+      security:
+      - bearerAuth: []
+      x-roles:
+      - ORGANIZADOR
+      description: Solo el organizador dueño puede modificar el borrador
   /evento/{id}/estado:
     put:
       tags:
       - Evento
       summary: Publicar borrador
-      description: Valida participantes, lugar, sectores y precios antes de publicar, no necesita body
+      description: Valida participantes, lugar, sectores y precios antes de publicar, no necesita body. Solo el organizador
+        dueño puede publicar el evento
       parameters: *id002
       responses:
         '200':
@@ -198,6 +214,12 @@ paths:
               schema:
                 type: string
               example: Operacion no permitida
+        '401':
+          description: JWT faltante o invalido
+      security:
+      - bearerAuth: []
+      x-roles:
+      - ORGANIZADOR
   /evento/{id}/suspender:
     patch:
       tags:
@@ -239,6 +261,14 @@ paths:
               schema:
                 type: string
               example: Operacion no permitida
+        '401':
+          description: JWT faltante o invalido
+        '403':
+          description: Usuario autenticado pero sin permisos para esta operacion
+      security:
+      - bearerAuth: []
+      x-roles:
+      - ADMINISTRADOR
   /evento/{id}/reactivar:
     patch:
       tags:
@@ -273,6 +303,14 @@ paths:
               schema:
                 type: string
               example: Operacion no permitida
+        '401':
+          description: JWT faltante o invalido
+        '403':
+          description: Usuario autenticado pero sin permisos para esta operacion
+      security:
+      - bearerAuth: []
+      x-roles:
+      - ADMINISTRADOR
   /evento/{id}/cancelar:
     patch:
       tags:
@@ -308,6 +346,14 @@ paths:
               schema:
                 type: string
               example: Operacion no permitida
+        '401':
+          description: JWT faltante o invalido
+        '403':
+          description: Usuario autenticado pero sin permisos para esta operacion
+      security:
+      - bearerAuth: []
+      x-roles:
+      - ADMINISTRADOR
   /evento/{id}/agotar:
     patch:
       tags:
@@ -342,6 +388,14 @@ paths:
               schema:
                 type: string
               example: Operacion no permitida
+        '401':
+          description: JWT faltante o invalido
+        '403':
+          description: Usuario autenticado pero sin permisos para esta operacion
+      security:
+      - bearerAuth: []
+      x-roles:
+      - ADMINISTRADOR
   /evento/{id}/finalizar:
     patch:
       tags:
@@ -376,6 +430,14 @@ paths:
               schema:
                 type: string
               example: Operacion no permitida
+        '401':
+          description: JWT faltante o invalido
+        '403':
+          description: Usuario autenticado pero sin permisos para esta operacion
+      security:
+      - bearerAuth: []
+      x-roles:
+      - ADMINISTRADOR
   /evento/{id}/reintentar-cancelacion:
     post:
       tags:
@@ -411,6 +473,14 @@ paths:
               schema:
                 type: string
               example: Operacion no permitida
+        '401':
+          description: JWT faltante o invalido
+        '403':
+          description: Usuario autenticado pero sin permisos para esta operacion
+      security:
+      - bearerAuth: []
+      x-roles:
+      - ADMINISTRADOR
   /evento/participantes:
     post:
       tags:
@@ -438,6 +508,15 @@ paths:
               schema:
                 type: string
               example: Operacion no permitida
+        '401':
+          description: JWT faltante o invalido
+        '403':
+          description: Usuario autenticado pero sin permisos para esta operacion
+      security:
+      - bearerAuth: []
+      x-roles:
+      - ORGANIZADOR
+      - ADMINISTRADOR
     get:
       tags:
       - Evento
@@ -512,6 +591,13 @@ paths:
               schema:
                 type: string
               example: Operacion no permitida
+        '401':
+          description: JWT faltante o invalido
+      security:
+      - bearerAuth: []
+      x-roles:
+      - ORGANIZADOR
+      description: Solo el organizador dueño puede asociar participantes
     delete:
       tags:
       - Evento
@@ -556,6 +642,13 @@ paths:
               schema:
                 type: string
               example: Operacion no permitida
+        '401':
+          description: JWT faltante o invalido
+      security:
+      - bearerAuth: []
+      x-roles:
+      - ORGANIZADOR
+      description: Solo el organizador dueño puede quitar participantes
   /evento/{idEvento}/participantes:
     get:
       tags:
@@ -692,7 +785,50 @@ paths:
               schema:
                 type: string
               example: Operacion no permitida
+  /evento/organizador/{idOrganizador}:
+    get:
+      tags: [Evento]
+      summary: Listar eventos propios del organizador
+      parameters:
+      - name: idOrganizador
+        in: path
+        required: true
+        schema: { type: string }
+      responses:
+        '200':
+          description: Eventos del organizador incluyendo borradores y otros estados
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Evento' }
+        '401': { description: JWT faltante o invalido }
+        '403': { description: Sin permisos }
+      security: [ { bearerAuth: [] } ]
+      x-roles: [ORGANIZADOR, ADMINISTRADOR]
+  /evento/admin/todos:
+    get:
+      tags: [Evento]
+      summary: Listar todos los eventos para administracion
+      responses:
+        '200':
+          description: Todos los eventos
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Evento' }
+        '401': { description: JWT faltante o invalido }
+        '403': { description: Sin permisos }
+      security: [ { bearerAuth: [] } ]
+      x-roles: [ADMINISTRADOR]
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT obtenido mediante POST /clientes/login
   schemas:
     Evento:
       type: object

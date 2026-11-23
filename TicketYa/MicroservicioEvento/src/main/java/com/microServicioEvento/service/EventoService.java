@@ -3,15 +3,21 @@ package com.microServicioEvento.service;
 import com.microServicioEvento.dto.BusquedaEventoFiltro;
 import com.microServicioEvento.dto.EventoBusquedaDTO;
 import com.microServicioEvento.entity.EventoEntity;
+import com.microServicioEvento.entity.CambioAvisoEntity;
+import com.microServicioEvento.repository.CambioAvisoRepository;
 import com.microServicioEvento.entity.EventoParticipanteEntity;
 import com.microServicioEvento.entity.ParticipanteEntity;
 import com.microServicioEvento.repository.EventoRepository;
 import com.microServicioEvento.repository.EventoParticipanteRepositoy;
 import com.microServicioEvento.repository.ParticipanteRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Caching;
 import jakarta.persistence.criteria.Predicate;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -31,9 +37,15 @@ import java.util.NoSuchElementException;
 
 @Service
 public class EventoService {
+    private static final String URL_TICKET = System.getenv().getOrDefault("TICKETYA_TICKET_URL", "http://localhost:8084");
+
+    private static final String URL_LUGAR = System.getenv().getOrDefault("TICKETYA_LUGAR_URL", "http://localhost:8083");
+
 
     @Autowired
     private EventoRepository eventoRepository;
+    @Autowired
+    private CambioAvisoRepository cambioAvisoRepository;
     @Autowired
     private EventoParticipanteRepositoy eventoParticipanteRepository;
     @Autowired
@@ -45,6 +57,10 @@ public class EventoService {
      * Crear un evento siempre en BORRADOR
      * El cliente no puede elegir el ID ni el estado
      */
+    @Caching(evict = {
+            @CacheEvict(cacheNames = "catalogo-eventos", allEntries = true),
+            @CacheEvict(cacheNames = "busqueda-eventos", allEntries = true)
+    })
     public EventoEntity crearEvento(EventoEntity evento) {
         validarDatos(evento);
         evento.setId(null);
@@ -57,6 +73,10 @@ public class EventoService {
      * Editar un borrador
      * Solo lo puede hacer el organizador que creo el evento
      */
+    @Caching(evict = {
+            @CacheEvict(cacheNames = "catalogo-eventos", allEntries = true),
+            @CacheEvict(cacheNames = "busqueda-eventos", allEntries = true)
+    })
     public EventoEntity actualizarBorrador(String id, String idOrganizador, EventoEntity datos) {
         EventoEntity original = buscarObligatorio(id);
         verificarOrganizador(original, idOrganizador);
@@ -78,6 +98,10 @@ public class EventoService {
     /**
      * Publicar un borrador solo cuando tiene los datos y sectores configurados
      */
+    @Caching(evict = {
+            @CacheEvict(cacheNames = "catalogo-eventos", allEntries = true),
+            @CacheEvict(cacheNames = "busqueda-eventos", allEntries = true)
+    })
     public EventoEntity publicarEvento(String id, String idOrganizador) {
         EventoEntity evento = buscarObligatorio(id);
         verificarOrganizador(evento, idOrganizador);
@@ -85,10 +109,47 @@ public class EventoService {
         validarDatos(evento);
         validarConfiguracionPublicacion(evento);
         evento.setEstado("PUBLICADO");
+        evento.setPublicacionAvisada(false);
         return eventoRepository.save(evento);
     }
 
+    /** Modificar un evento publicado sin alterar lugar, precios ni asientos */
+    @Caching(evict = {
+            @CacheEvict(cacheNames = "catalogo-eventos", allEntries = true),
+            @CacheEvict(cacheNames = "busqueda-eventos", allEntries = true)
+    })
+    @Transactional
+    public EventoEntity modificarPublicado(String id, String idOrganizador, EventoEntity datos) {
+        EventoEntity evento = buscarObligatorio(id);
+        verificarOrganizador(evento, idOrganizador);
+        exigirEstado(evento, "PUBLICADO");
+        if (datos == null || vacio(datos.getNombre()) || vacio(datos.getDescripcion()) ||
+                vacio(datos.getFechaHora())) {
+            throw new IllegalArgumentException("Nombre, descripcion y fecha son obligatorios");
+        }
+        try {
+            LocalDateTime.parse(datos.getFechaHora());
+        } catch (DateTimeParseException ex) {
+            throw new IllegalArgumentException("fechaHora debe tener formato yyyy-MM-ddTHH:mm:ss");
+        }
+        if (java.util.Objects.equals(evento.getNombre(), datos.getNombre()) &&
+                java.util.Objects.equals(evento.getDescripcion(), datos.getDescripcion()) &&
+                java.util.Objects.equals(evento.getFechaHora(), datos.getFechaHora())) return evento;
+        evento.setNombre(datos.getNombre());
+        evento.setDescripcion(datos.getDescripcion());
+        evento.setFechaHora(datos.getFechaHora());
+        EventoEntity actualizado = eventoRepository.save(evento);
+        cambioAvisoRepository.save(new CambioAvisoEntity(id,
+                "El evento " + evento.getNombre() + " fue modificado. Nueva fecha: "
+                        + evento.getFechaHora() + "."));
+        return actualizado;
+    }
+
     // Un administrador puede detener temporalmente la venta
+    @Caching(evict = {
+            @CacheEvict(cacheNames = "catalogo-eventos", allEntries = true),
+            @CacheEvict(cacheNames = "busqueda-eventos", allEntries = true)
+    })
     public EventoEntity suspenderEvento(String id, String idAdministrador) {
         verificarAdministrador(idAdministrador);
         EventoEntity evento = buscarObligatorio(id);
@@ -100,6 +161,10 @@ public class EventoService {
     }
 
     // Solo un administrador reactiva un evento suspendido
+    @Caching(evict = {
+            @CacheEvict(cacheNames = "catalogo-eventos", allEntries = true),
+            @CacheEvict(cacheNames = "busqueda-eventos", allEntries = true)
+    })
     public EventoEntity reactivarEvento(String id, String idAdministrador) {
         verificarAdministrador(idAdministrador);
         EventoEntity evento = buscarObligatorio(id);
@@ -114,6 +179,10 @@ public class EventoService {
      * Primero guardar CANCELADO para impedir nuevas compras
      * Si Ticket no responde, el evento queda cancelado y se puede reintentar
      */
+    @Caching(evict = {
+            @CacheEvict(cacheNames = "catalogo-eventos", allEntries = true, beforeInvocation = true),
+            @CacheEvict(cacheNames = "busqueda-eventos", allEntries = true, beforeInvocation = true)
+    })
     public EventoEntity cancelarEvento(String id, String idAdministrador) {
         verificarAdministrador(idAdministrador);
         EventoEntity evento = buscarObligatorio(id);
@@ -145,7 +214,7 @@ public class EventoService {
     }
 
     private void bloquearVentasAntesDeCancelar(String id) {
-        String url = "http://localhost:8084/ticket/interno/eventos/" + id + "/bloquear-ventas";
+        String url = URL_TICKET + "/ticket/interno/eventos/" + id + "/bloquear-ventas";
         try {
             restTemplate.postForEntity(url, null, String.class);
         } catch (org.springframework.web.client.RestClientException ex) {
@@ -155,7 +224,7 @@ public class EventoService {
 
     private Map<String, Object> procesarReintegrosCancelacion(String id, String idAdministrador) {
         String url = UriComponentsBuilder
-                .fromHttpUrl("http://localhost:8084/ticket/interno/eventos/" + id + "/procesar-cancelacion")
+                .fromHttpUrl(URL_TICKET + "/ticket/interno/eventos/" + id + "/procesar-cancelacion")
                 .queryParam("idAdministrador", idAdministrador)
                 .toUriString();
         Map<String, Object> resultado;
@@ -181,6 +250,10 @@ public class EventoService {
     }
 
     // Estado manual mientras no exista la sincronizacion automatica de disponibilidad
+    @Caching(evict = {
+            @CacheEvict(cacheNames = "catalogo-eventos", allEntries = true),
+            @CacheEvict(cacheNames = "busqueda-eventos", allEntries = true)
+    })
     public EventoEntity marcarAgotado(String id, String idAdministrador) {
         verificarAdministrador(idAdministrador);
         EventoEntity evento = buscarObligatorio(id);
@@ -190,6 +263,10 @@ public class EventoService {
     }
 
     // Finalizar un evento que ya ocurrio
+    @Caching(evict = {
+            @CacheEvict(cacheNames = "catalogo-eventos", allEntries = true),
+            @CacheEvict(cacheNames = "busqueda-eventos", allEntries = true)
+    })
     public EventoEntity finalizarEvento(String id, String idAdministrador) {
         verificarAdministrador(idAdministrador);
         EventoEntity evento = buscarObligatorio(id);
@@ -207,14 +284,28 @@ public class EventoService {
         return eventoRepository.findById(id).orElse(null);
     }
 
+    public List<EventoEntity> eventosDelOrganizador(String idOrganizador) {
+        if (vacio(idOrganizador)) throw new IllegalArgumentException("Organizador no valido");
+        return eventoRepository.findByOrganizadorOrderByFechaHoraAsc(idOrganizador);
+    }
+
+    public List<EventoEntity> listarTodosParaAdmin() {
+        return eventoRepository.findAllByOrderByFechaHoraAsc();
+    }
+
     /**
      * Listar publicados y agotados para que sigan apareciendo en el catalogo
      * Los compradores solo pueden adquirir tickets de PUBLICADO
      */
+    @Cacheable(cacheNames = "catalogo-eventos")
     public List<EventoEntity> buscarEventosPublicados() {
         return eventoRepository.findByEstadoIn(List.of("PUBLICADO", "AGOTADO"));
     }
 
+    @Caching(evict = {
+            @CacheEvict(cacheNames = "catalogo-eventos", allEntries = true),
+            @CacheEvict(cacheNames = "busqueda-eventos", allEntries = true)
+    })
     public ParticipanteEntity crearParticipante(ParticipanteEntity participante) {
         if (participante == null || vacio(participante.getNombre())) {
             throw new IllegalArgumentException("El participante necesita un nombre");
@@ -232,6 +323,10 @@ public class EventoService {
      * Asociar un participante existente con un evento borrador
      * Se evita duplicar la misma asociacion
      */
+    @Caching(evict = {
+            @CacheEvict(cacheNames = "catalogo-eventos", allEntries = true),
+            @CacheEvict(cacheNames = "busqueda-eventos", allEntries = true)
+    })
     public EventoParticipanteEntity agregarParticipante(String idEvento, String idParticipante,
                                                          String idOrganizador) {
         EventoEntity evento = buscarObligatorio(idEvento);
@@ -250,6 +345,10 @@ public class EventoService {
                 });
     }
 
+    @Caching(evict = {
+            @CacheEvict(cacheNames = "catalogo-eventos", allEntries = true),
+            @CacheEvict(cacheNames = "busqueda-eventos", allEntries = true)
+    })
     public void quitarParticipante(String idEvento, String idParticipante, String idOrganizador) {
         EventoEntity evento = buscarObligatorio(idEvento);
         verificarOrganizador(evento, idOrganizador);
@@ -276,7 +375,7 @@ public class EventoService {
             throw new IllegalStateException("El evento necesita al menos un participante");
         }
         String url = UriComponentsBuilder
-                .fromHttpUrl("http://localhost:8083/lugares/interno/eventos/" + evento.getId() + "/configuracion")
+                .fromHttpUrl(URL_LUGAR + "/lugares/interno/eventos/" + evento.getId() + "/configuracion")
                 .queryParam("idLugar", evento.getIdLugar())
                 .toUriString();
         Map<String, Object> datos = restTemplate.getForObject(url, Map.class);
@@ -341,6 +440,8 @@ public class EventoService {
      * 9) Buscar solo eventos publicos y combinar todos los criterios
      * Los participantes se filtran por sus relaciones reales, no por descripcion
      */
+    // Lombok @Data da a BusquedaEventoFiltro un toString estable segun sus campos.
+    @Cacheable(cacheNames = "busqueda-eventos", key = "#p0 == null ? 'sin-filtros' : #p0.toString()")
     public List<EventoBusquedaDTO> buscarEventos(BusquedaEventoFiltro filtro) {
         if (filtro == null) {
             filtro = new BusquedaEventoFiltro();
@@ -376,14 +477,14 @@ public class EventoService {
         Set<Long> idsLugares = null;
         String ciudad = limpiar(filtro.getCiudad());
         if (ciudad != null) {
-            java.net.URI url = UriComponentsBuilder.fromHttpUrl("http://localhost:8083/lugares/buscarPorCiudad")
+            java.net.URI url = UriComponentsBuilder.fromHttpUrl(URL_LUGAR + "/lugares/buscarPorCiudad")
                     .queryParam("ciudad", ciudad).build().encode().toUri();
             Long[] ids = restTemplate.getForObject(url, Long[].class);
             idsLugares = new HashSet<>();
             if (ids != null) idsLugares.addAll(List.of(ids));
         }
         if (filtro.getLat() != null) {
-            String url = UriComponentsBuilder.fromHttpUrl("http://localhost:8083/lugares/buscarPorUbicacion")
+            String url = UriComponentsBuilder.fromHttpUrl(URL_LUGAR + "/lugares/buscarPorUbicacion")
                     .queryParam("lat", filtro.getLat())
                     .queryParam("lon", filtro.getLon()).toUriString();
             Long[] ids = restTemplate.getForObject(url, Long[].class);
@@ -483,7 +584,7 @@ public class EventoService {
 
     private Map<String, Double> obtenerPreciosMinimos(List<String> idsEventos) {
         Map<?, ?> respuesta = restTemplate.postForObject(
-                "http://localhost:8083/lugares/interno/eventos/precios-minimos", idsEventos, Map.class);
+                URL_LUGAR + "/lugares/interno/eventos/precios-minimos", idsEventos, Map.class);
         if (respuesta == null) {
             throw new IllegalStateException("Lugar no devolvio los precios de los eventos");
         }

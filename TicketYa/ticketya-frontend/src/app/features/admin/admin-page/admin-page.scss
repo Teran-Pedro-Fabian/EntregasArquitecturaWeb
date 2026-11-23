@@ -1,0 +1,105 @@
+.admin-page {
+  display: grid;
+  gap: 14px;
+}
+
+.admin-page > h1 {
+  margin: 0 0 6px;
+  color: var(--ty-text);
+  font-size: clamp(2.1rem, 4vw, 3.6rem);
+  font-weight: 880;
+  letter-spacing: -0.05em;
+}
+
+.panel {
+  padding: 20px;
+  border: 1px solid var(--ty-line);
+  border-radius: var(--ty-radius-lg);
+  background: var(--ty-surface);
+}
+
+.panel h2 {
+  margin: 0 0 14px;
+  color: var(--ty-text);
+  font-size: 1.25rem;
+}
+
+.row {
+  --bs-gutter-x: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin: 0 0 8px;
+  padding: 13px 14px;
+  border: 1px solid var(--ty-line);
+  border-radius: 11px;
+  background: #100e0c;
+}
+
+.row > div:first-child {
+  display: grid;
+  gap: 4px;
+}
+
+.row strong {
+  color: var(--ty-text-soft);
+}
+
+.row small {
+  color: var(--ty-subtle);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 7px;
+}
+
+.actions button {
+  padding: 8px 10px;
+  border: 1px solid var(--ty-line-strong);
+  border-radius: 8px;
+  color: var(--ty-text-soft);
+  background: #17130f;
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.actions button:hover {
+  border-color: rgba(245, 158, 66, 0.34);
+}
+
+.actions .danger {
+  color: #ffc0bb;
+  border-color: rgba(237, 111, 103, 0.24);
+  background: rgba(237, 111, 103, 0.06);
+}
+
+.alert {
+  padding: 12px 14px;
+}
+
+.alert.ok {
+  color: var(--ty-success);
+  border-color: rgba(112, 200, 154, 0.24);
+  background: rgba(112, 200, 154, 0.06);
+}
+
+.alert.error {
+  color: #ffc0bb;
+  border-color: rgba(237, 111, 103, 0.24);
+  background: rgba(237, 111, 103, 0.06);
+}
+
+@media (max-width: 760px) {
+  .row {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .actions {
+    justify-content: flex-start;
+  }
+}

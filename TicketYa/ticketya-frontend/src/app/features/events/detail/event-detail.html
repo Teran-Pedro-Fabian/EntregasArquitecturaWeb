@@ -1,0 +1,80 @@
+@if (store.loading()) {
+  <section class="detail-state" aria-live="polite">
+    <div class="spinner-border" role="status" aria-hidden="true"></div>
+    <strong>Cargando evento...</strong>
+  </section>
+} @else if (store.error(); as error) {
+  <section class="detail-state error-state" role="alert">
+    <strong>{{ error }}</strong>
+    <span>Volvé al catálogo para elegir otro evento</span>
+    <a routerLink="/eventos" class="btn-secondary-action">Volver a eventos</a>
+  </section>
+} @else if (store.event(); as event) {
+  <a routerLink="/eventos" class="back-link">← Volver a eventos</a>
+
+  <section class="event-hero">
+    <div class="hero-copy">
+      <div class="event-badges">
+        <span>{{ event.tipo }}</span>
+        <span [class.sold-out]="store.soldOut()">{{ event.estado }}</span>
+        <span>DEMANDA {{ event.demanda }}</span>
+      </div>
+
+      <h1>{{ event.nombre }}</h1>
+      <p class="event-description">{{ event.descripcion }}</p>
+      <div class="event-date">{{ formatDate(event.fechaHora) }}</div>
+    </div>
+  </section>
+
+  <div class="detail-grid">
+    <section class="detail-card">
+      <span class="section-label">LUGAR</span>
+
+      @if (store.place(); as place) {
+        <h2>{{ place.nombre }}</h2>
+        <p>{{ place.direccion }}</p>
+        <p>{{ place.ciudad }}</p>
+      } @else {
+        <h2>Lugar del evento</h2>
+        <p>La información del lugar no esta disponible</p>
+      }
+    </section>
+
+    <section class="detail-card">
+      <span class="section-label">PARTICIPANTES</span>
+
+      @if (store.participants().length > 0) {
+        <div class="participants-list">
+          @for (participant of store.participants(); track participant.id) {
+            <span>{{ participant.nombre }}</span>
+          }
+        </div>
+      } @else {
+        <p>No hay participantes informados para este evento</p>
+      }
+    </section>
+
+    <section class="detail-card ticket-card">
+      <span class="section-label">ENTRADAS</span>
+      <h2>Elegí como querés vivir el evento</h2>
+
+      @if (store.soldOut()) {
+        <p>Este evento figura como agotado</p>
+        <button type="button" class="btn-primary-action" disabled>Entradas agotadas</button>
+      } @else if (event.demanda === 'ALTA') {
+          <p>Este evento usa fila virtual para ordenar el acceso a la compra</p>
+          <a
+            [routerLink]="['/eventos', event.id, 'compra']"
+            class="btn-primary-action"
+          >
+            Ingresar a la fila virtual
+          </a>
+      } @else {
+        <p>Elegí sector, reserva tus entradas por 10 minutos y completa la compra</p>
+        <a [routerLink]="['/eventos', event.id, 'compra']" class="btn-primary-action"
+          >Elegir entradas</a
+        >
+      }
+    </section>
+  </div>
+}

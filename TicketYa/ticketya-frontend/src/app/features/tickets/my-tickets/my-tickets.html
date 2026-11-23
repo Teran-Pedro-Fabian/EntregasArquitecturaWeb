@@ -1,0 +1,83 @@
+<section class="tickets-page">
+  <header class="tickets-header">
+    <div>
+      <span class="eyebrow">TUS COMPRAS</span>
+      <h1>Mis entradas</h1>
+      <p>Accede a tus entradas y presenta el QR al ingresar al evento.</p>
+    </div>
+
+    <a routerLink="/eventos" class="btn btn-outline-light"> Buscar eventos </a>
+  </header>
+
+  @if (store.loading()) {
+    <div class="state-card">Cargando tus entradas...</div>
+  } @else if (store.error()) {
+    <div class="state-card error-state">
+      <h2>No pudimos cargar tus entradas</h2>
+      <p>{{ store.error() }}</p>
+      <button type="button" class="btn btn-primary" (click)="store.load()">Reintentar</button>
+    </div>
+  } @else if (store.empty()) {
+    <div class="state-card">
+      <h2>Todavia no tenes entradas</h2>
+      <p>Cuando completes una compra van a aparecer aca.</p>
+      <a routerLink="/eventos" class="btn btn-primary">Ver eventos</a>
+    </div>
+  } @else {
+    <div class="tickets-grid">
+      @for (ticket of store.tickets(); track ticket.id) {
+        @let event = store.eventFor(ticket);
+
+        <article class="ticket-card" [class.ticket-used]="ticket.usado">
+          <div class="ticket-info">
+            <div class="ticket-top">
+              <span class="ticket-number">Entrada #{{ ticket.id }}</span>
+
+              @if (ticket.usado) {
+                <span class="status-badge used">Utilizada</span>
+              } @else {
+                <span class="status-badge active">Activa</span>
+              }
+            </div>
+
+            <h2>{{ event?.nombre ?? 'Evento' }}</h2>
+
+            @if (event) {
+              <p class="event-date">
+                {{ event.fechaHora | date: 'dd/MM/yyyy HH:mm' }}
+              </p>
+            }
+
+            <div class="ticket-data">
+              <div>
+                <span>Sector</span>
+                <strong>#{{ ticket.idSector }}</strong>
+              </div>
+              <div>
+                <span>Ubicacion</span>
+                <strong>{{ seatLabel(ticket) }}</strong>
+              </div>
+              <div>
+                <span>Precio</span>
+                <strong>{{ ticket.precio | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}</strong>
+              </div>
+              <div>
+                <span>Devolucion</span>
+                <strong>{{ ticket.estadoDevolucion }}</strong>
+              </div>
+            </div>
+
+            @if (event) {
+              <a [routerLink]="['/eventos', event.id]" class="event-link"> Ver evento </a>
+            }
+          </div>
+
+          <div class="ticket-qr">
+            <app-ticket-qr [value]="ticket.qrCode"></app-ticket-qr>
+            <span class="qr-help">Presenta este QR en el ingreso</span>
+          </div>
+        </article>
+      }
+    </div>
+  }
+</section>

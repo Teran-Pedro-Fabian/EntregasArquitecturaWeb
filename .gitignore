@@ -7,3 +7,5 @@ target/
 # Respaldo de datos (no subir a Git)
 migracion/backups/
 alan/*
+
+/TicketYa/logs/

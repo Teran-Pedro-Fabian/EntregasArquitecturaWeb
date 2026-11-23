@@ -12,6 +12,7 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 
 import java.util.Optional;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -62,4 +63,30 @@ public class LugarServiceTest {
         AsientoEntity asiento = lugarService.crearAsiento(5L, " a ", 10);
         assertEquals("A", asiento.getFila());
     }
+    @Test
+    void testListarAsientosPublicosDeSectorNumerado() {
+        SectorEntity sector = new SectorEntity();
+        sector.setId(5L);
+        sector.setTipo("NUMERADO");
+
+        AsientoEntity asiento = new AsientoEntity();
+        asiento.setId(20L);
+        asiento.setSector(sector);
+        asiento.setFila("A");
+        asiento.setColumna(5);
+        asiento.setEstado("DISPONIBLE");
+
+        when(sectorRepository.findById(5L)).thenReturn(Optional.of(sector));
+        when(asientoRepository.findBySector_IdOrderByFilaAscColumnaAsc(5L))
+                .thenReturn(List.of(asiento));
+
+        var resultado = lugarService.listarAsientosPublicos(5L);
+
+        assertEquals(1, resultado.size());
+        assertEquals(20L, resultado.get(0).getIdAsiento());
+        assertEquals("A", resultado.get(0).getFila());
+        assertEquals(5, resultado.get(0).getColumna());
+        assertEquals("DISPONIBLE", resultado.get(0).getEstado());
+    }
+
 }

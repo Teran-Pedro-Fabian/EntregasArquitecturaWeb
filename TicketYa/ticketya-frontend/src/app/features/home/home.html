@@ -1,0 +1,110 @@
+<section class="hero">
+  <div class="hero-copy">
+    <span class="etiqueta">TU PRÓXIMA EXPERIENCIA</span>
+
+    <h1 class="hero-title">
+      Encontrá tu próxima
+      <span class="destacado">salida</span>
+    </h1>
+
+    <p class="lead">Recitales, festivales, teatro y mucho mas en un solo lugar</p>
+
+    <a class="hero-action" routerLink="/eventos"> Explorar eventos </a>
+  </div>
+</section>
+
+<section class="featured-section">
+  <div class="section-heading">
+    <div>
+      <span class="section-kicker">DESCUBRÍ</span>
+      <h2>Próximos eventos</h2>
+      <p>Mirá qué hay disponible y elegí tu próxima experiencia</p>
+    </div>
+
+    <a routerLink="/eventos" class="all-events-link"> Ver todos los eventos → </a>
+  </div>
+
+  @if (loading()) {
+    <div class="featured-state">
+      <div class="spinner-border spinner-border-sm" role="status"></div>
+      <span>Cargando eventos...</span>
+    </div>
+  } @else if (error()) {
+    <div class="featured-state">
+      <strong>No pudimos cargar los eventos</strong>
+      <a routerLink="/eventos">Ir al catálogo</a>
+    </div>
+  } @else if (events().length === 0) {
+    <div class="featured-state">
+      <strong>Todavía no hay próximos eventos</strong>
+      <span>Volvé a revisar mas tarde</span>
+    </div>
+  } @else {
+    <div class="featured-grid">
+      @for (event of events(); track event.id) {
+        <article class="featured-card">
+          <div class="featured-visual">
+            <span class="featured-type">{{ event.tipo }}</span>
+            <span class="featured-date">
+              {{ event.fechaHora | date: 'dd MMM' }}
+            </span>
+          </div>
+
+          <div class="featured-content">
+            <span class="featured-time">
+              {{ event.fechaHora | date: 'EEEE d · HH:mm' }}
+            </span>
+
+            <h3>{{ event.nombre }}</h3>
+
+            <p>{{ event.descripcion }}</p>
+
+            <div class="featured-footer">
+              <div>
+                <span class="price-label">Desde</span>
+
+                @if (event.precioDesde !== null) {
+                  <strong>
+                    {{ event.precioDesde | currency: 'ARS' : 'symbol-narrow' : '1.0-0' }}
+                  </strong>
+                } @else {
+                  <strong>Consultar</strong>
+                }
+              </div>
+
+              <a [routerLink]="['/eventos', event.id]"> Ver evento → </a>
+            </div>
+          </div>
+        </article>
+      }
+    </div>
+  }
+</section>
+
+<section class="how-section">
+  <div class="how-heading">
+    <span class="section-kicker">SIN VUELTAS</span>
+    <h2>De encontrarlo a vivirlo</h2>
+    <p>Todo el recorrido de tu entrada en tres pasos</p>
+  </div>
+
+  <div class="how-grid">
+    <article class="how-card">
+      <span class="step-number">01</span>
+      <h3>Encontrá</h3>
+      <p>Buscá eventos por tipo, ciudad, fecha o lo que tengas ganas de hacer</p>
+    </article>
+
+    <article class="how-card">
+      <span class="step-number">02</span>
+      <h3>Elegí</h3>
+      <p>Seleccioná sector, asiento o cantidad y reservá tu lugar</p>
+    </article>
+
+    <article class="how-card">
+      <span class="step-number">03</span>
+      <h3>Vivilo</h3>
+      <p>Comprá tu entrada, guardá el QR y presentalo cuando llegue el momento</p>
+    </article>
+  </div>
+</section>

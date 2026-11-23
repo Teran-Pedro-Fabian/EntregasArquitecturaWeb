@@ -1,2 +1,13 @@
 # Respaldos y exportaciones de la migracion
 migracion/backups/
+# Configuracion Docker local y secretos
+.env
+
+/logs/
+/logs-centralizados/
+# Archivos generados por Maven
+**/target/
+
+# Archivos de IntelliJ
+*.iml
+.idea/

@@ -21,10 +21,11 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @EnabledIfEnvironmentVariable(named = "TICKETYA_TEST_DB", matches = "AISLADA")
 @SpringBootTest(classes = LugarServiceApplication.class,
-                properties = {"spring.datasource.url=jdbc:postgresql://localhost:5432/ticketya_lugares_test",
+                properties = {"spring.datasource.url=jdbc:postgresql://localhost:5436/ticketya_lugares_test",
                                 "spring.jpa.hibernate.ddl-auto=create-drop"
                             })
-public class LugarConcurrencyTest {
+public class
+LugarConcurrencyTest {
 
     @org.junit.jupiter.api.BeforeAll
     static void setupTimeZone() {
@@ -87,7 +88,7 @@ public class LugarConcurrencyTest {
         // 3. Ejecución y Cierre
         latch.countDown(); // Dispara todos los hilos al mismo tiempo
         executor.shutdown();
-        executor.awaitTermination(10, TimeUnit.SECONDS);
+        assertTrue(executor.awaitTermination(30, TimeUnit.SECONDS));
 
         // 4. Verificación Final
         System.out.println("--- RESULTADO CONCURRENCIA ---");
@@ -174,6 +175,70 @@ public class LugarConcurrencyTest {
         assertEquals(0,actualizado.getCuposVendidos());
     }
 
+    /** Dos confirmaciones distintas no deben vender dos veces una misma reserva general. */
+    @Test
+    public void testDosConfirmacionesGeneralesNoDuplicanElUltimoCupo() throws InterruptedException {
+        SectorEntity sector = new SectorEntity();
+        sector.setNombre("General - confirmaciones concurrentes");
+        sector.setTipo("NO_NUMERADO");
+        sector.setCupos(1);
+        sector.setCuposReservados(0);
+        sector.setCuposVendidos(0);
+        Long idSector = sectorRepository.saveAndFlush(sector).getId();
+
+        var reserva = servicioGeneral.reservar(idSector, "cliente-confirmacion", 1);
+        Long idReserva = reserva.getId();
+        ExecutorService ejecutor = Executors.newFixedThreadPool(2);
+        CountDownLatch inicio = new CountDownLatch(1);
+        AtomicInteger exitos = new AtomicInteger();
+        AtomicInteger rechazos = new AtomicInteger();
+        for (int i = 0; i < 2; i++) {
+            final Long idTicket = 9000000L + idSector * 2 + i;
+            ejecutor.execute(() -> {
+                try {
+                    inicio.await();
+                    servicioGeneral.confirmar(idSector, idReserva, "cliente-confirmacion", 900L, java.util.List.of(idTicket));
+                    exitos.incrementAndGet();
+                } catch (Exception e) {
+                    rechazos.incrementAndGet();
+                }
+            });
+        }
+        inicio.countDown();
+        ejecutor.shutdown();
+        assertTrue(ejecutor.awaitTermination(30, TimeUnit.SECONDS));
+        assertEquals(1, exitos.get(), "Una unica confirmacion puede vender la reserva");
+        assertEquals(1, rechazos.get());
+
+        SectorEntity finalSector = sectorRepository.findById(idSector).orElseThrow();
+        assertEquals(0, finalSector.getCuposReservados());
+        assertEquals(1, finalSector.getCuposVendidos());
+        assertEquals(1, ventaGeneralRepository.findByIdReservaGeneral(idReserva).size());
+    }
+
+    /** Reintentar la misma confirmacion no vuelve a vender ni agrega tickets. */
+    @Test
+    public void testReintentoConfirmacionGeneralEsIdempotente() {
+        SectorEntity sector = new SectorEntity();
+        sector.setNombre("General - confirmacion repetida");
+        sector.setTipo("NO_NUMERADO");
+        sector.setCupos(1);
+        sector.setCuposReservados(0);
+        sector.setCuposVendidos(0);
+        Long idSector = sectorRepository.saveAndFlush(sector).getId();
+        Long idReserva = servicioGeneral.reservar(idSector, "cliente-idempotencia", 1).getId();
+        Long idTicket = 9500000L + idSector;
+
+        servicioGeneral.confirmar(idSector, idReserva, "cliente-idempotencia", 950L, java.util.List.of(idTicket));
+        assertDoesNotThrow(() -> servicioGeneral.confirmar(idSector, idReserva, "cliente-idempotencia", 950L, java.util.List.of(idTicket)));
+        SectorEntity finalSector = sectorRepository.findById(idSector).orElseThrow();
+        assertEquals(0, finalSector.getCuposReservados());
+        assertEquals(1, finalSector.getCuposVendidos());
+        assertEquals(1, ventaGeneralRepository.findByIdReservaGeneral(idReserva).size());
+    }
+
+    @Autowired
+    private com.microserviciolugar.repository.VentaGeneralRepository ventaGeneralRepository;
     @Autowired
     private com.microserviciolugar.service.ReservaGeneralService servicioGeneral;
     private com.microserviciolugar.service.ReservaGeneralService contextoGeneral() {

@@ -6,6 +6,7 @@ import com.microservicioticket.entity.CompraEntity;
 import com.microservicioticket.entity.TicketEntity;
 import com.microservicioticket.service.BloqueoVentaEventoService;
 import com.microservicioticket.service.CompraService;
+import com.microservicioticket.service.ColaService;
 import com.microservicioticket.service.PagoMockService;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.Query;
@@ -35,6 +36,7 @@ class CompraReglasTest {
     @Mock private RestTemplate restTemplate;
     @Mock private PagoMockService pagoMockService;
     @Mock private BloqueoVentaEventoService bloqueoVentaEventoService;
+    @Mock private ColaService colaService;
     @InjectMocks private CompraService service;
 
     @BeforeEach void preparar(){ReflectionTestUtils.setField(service,"maxEntradas",4);}

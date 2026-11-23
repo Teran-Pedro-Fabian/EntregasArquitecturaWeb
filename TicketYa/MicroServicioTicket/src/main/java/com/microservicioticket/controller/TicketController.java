@@ -6,6 +6,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.client.ResourceAccessException;
+import org.springframework.web.client.HttpStatusCodeException;
+import java.util.NoSuchElementException;
 
 @RestController
 @RequestMapping("/ticket")
@@ -43,7 +47,20 @@ public class TicketController {
         }
     }
 
+    @GetMapping("/clientes/{idCliente}")
+    @PreAuthorize("hasRole('ADMINISTRADOR') or (hasRole('CLIENTE') and #idCliente == authentication.name)")
+    public ResponseEntity<?> obtenerPorCliente(@PathVariable String idCliente) {
+        return ResponseEntity.ok(ticketService.obtenerTicketsCliente(idCliente));
+    }
+
+    @GetMapping("/devoluciones")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
+    public ResponseEntity<?> listarDevoluciones(@RequestParam(required = false) String estado) {
+        return ResponseEntity.ok(ticketService.listarDevoluciones(estado));
+    }
+
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('ADMINISTRADOR') or @permisosTicket.esDuenioTicket(#id, authentication.name)")
     public ResponseEntity<TicketEntity> obtener(@PathVariable Long id) {
         TicketEntity ticket = ticketService.obtenerTicket(id);
         return ticket != null ? ResponseEntity.ok(ticket) : ResponseEntity.notFound().build();
@@ -57,6 +74,7 @@ public class TicketController {
      * @return resultado de la solicitud
      */
     @PostMapping("/{id}/solicitar-devolucion")
+    @PreAuthorize("hasRole('ADMINISTRADOR') or (hasRole('CLIENTE') and #idCliente == authentication.name and @permisosTicket.esDuenioTicket(#id, authentication.name))")
     public ResponseEntity<?> solicitarDevolucion(@PathVariable Long id, @RequestParam String idCliente) {
         try {
             // 1) Registrar la solicitud de devolucion
@@ -76,6 +94,7 @@ public class TicketController {
      * @return resultado del reintegro
      */
     @PatchMapping("/{id}/procesar-reintegro")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<?> procesarReintegro(@PathVariable Long id) {
         try {
             // 1) Procesar el reintegro simulado
@@ -96,6 +115,7 @@ public class TicketController {
      * @return ticket actualizado
      */
     @PatchMapping("/{id}/finalizar-devolucion")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<?> finalizarDevolucion(@PathVariable Long id) {
         try {
             // 1) Finalizar la devolucion
@@ -119,6 +139,7 @@ public class TicketController {
      * @return ticket actualizado
      */
     @PatchMapping("/{id}/revisar-devolucion")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<?> revisarDevolucion(
             @PathVariable Long id,
             @RequestParam String idAdministrador,
@@ -135,4 +156,30 @@ public class TicketController {
                     .body(e.getMessage());
         }
     }
+
+    /**
+     * escanear un QR en la puerta del evento
+     * la validacion de rol se agrega junto con JWT en la integracion 04
+     */
+    @PostMapping("/escanearQrcode")
+    @PreAuthorize("hasAnyRole('PERSONAL_ACCESO', 'ADMINISTRADOR')")
+    public ResponseEntity<?> escanearQrcode(@RequestParam String qrCode,
+                                             @RequestParam String idEvento) {
+        try {
+            return ResponseEntity.ok(ticketService.marcarEntradaUtilizada(qrCode, idEvento));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (ResourceAccessException e) {
+            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                    .body("No se pudo conectar con MicroServicioEvento");
+        } catch (HttpStatusCodeException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body("No se pudo validar el estado del evento");
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
+        }
+    }
+
 }

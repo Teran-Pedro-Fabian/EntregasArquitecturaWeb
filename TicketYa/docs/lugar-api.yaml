@@ -1,9 +1,8 @@
 openapi: 3.0.3
 info:
   title: TicketYa - MicroServicioLugar
-  version: 1.0.0
-  description: 'Recintos, sectores, asientos y reservas numeradas y generales'
-
+  version: 2.0.0
+  description: Recintos, sectores, asientos, reservas, concurrencia y seguridad JWT
 servers:
 - url: http://localhost:8080
   description: API Gateway - entrada externa recomendada
@@ -46,6 +45,15 @@ paths:
               schema:
                 type: string
               example: Operacion no permitida
+        '401':
+          description: JWT faltante o invalido
+        '403':
+          description: Usuario autenticado pero sin permisos para esta operacion
+      security:
+      - bearerAuth: []
+      x-roles:
+      - ORGANIZADOR
+      - ADMINISTRADOR
     get:
       tags:
       - Lugar
@@ -92,6 +100,15 @@ paths:
               schema:
                 type: string
               example: Operacion no permitida
+        '401':
+          description: JWT faltante o invalido
+        '403':
+          description: Usuario autenticado pero sin permisos para esta operacion
+      security:
+      - bearerAuth: []
+      x-roles:
+      - ORGANIZADOR
+      - ADMINISTRADOR
   /lugares/buscarPorCiudad:
     get:
       tags:
@@ -149,6 +166,35 @@ paths:
               schema:
                 type: array
                 items: *id001
+  /lugares/eventos/{idEvento}/sectores:
+    get:
+      tags:
+      - Lugar
+      summary: Listar sectores publicos de un evento
+      description: Devuelve los sectores necesarios para iniciar el flujo de compra sin exponer datos internos de reservas o ventas
+      parameters:
+      - name: idEvento
+        in: path
+        required: true
+        schema:
+          type: string
+        example: evento-01
+      responses:
+        '200':
+          description: Operacion correcta
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SectorPublico'
+        '400':
+          description: Evento invalido
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: Evento no valido
   /lugares/sectores:
     post:
       tags:
@@ -182,6 +228,15 @@ paths:
               schema:
                 type: string
               example: Operacion no permitida
+        '401':
+          description: JWT faltante o invalido
+        '403':
+          description: Usuario autenticado pero sin permisos para esta operacion
+      security:
+      - bearerAuth: []
+      x-roles:
+      - ORGANIZADOR
+      - ADMINISTRADOR
   /lugares/asientos:
     post:
       tags:
@@ -214,6 +269,40 @@ paths:
               schema:
                 type: string
               example: Operacion no permitida
+        '401':
+          description: JWT faltante o invalido
+        '403':
+          description: Usuario autenticado pero sin permisos para esta operacion
+      security:
+      - bearerAuth: []
+      x-roles:
+      - ORGANIZADOR
+      - ADMINISTRADOR
+  /lugares/sectores/{idSector}/asientos:
+    get:
+      tags:
+      - Lugar
+      summary: Listar asientos publicos de un sector numerado
+      parameters:
+      - name: idSector
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        '200':
+          description: Operacion correcta
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AsientoPublico'
+        '400':
+          description: Sector inexistente o invalido
+        '409':
+          description: El sector no es numerado
   /lugares/reservar:
     post:
       tags:
@@ -239,12 +328,23 @@ paths:
               schema:
                 type: string
               example: Operacion no permitida
+        '401':
+          description: JWT faltante o invalido
+        '403':
+          description: Usuario autenticado pero sin permisos para esta operacion
+      security:
+      - bearerAuth: []
+      x-roles:
+      - CLIENTE
+      - ADMINISTRADOR
+      description: CLIENTE solo puede reservar para su propio id
   /lugares/asiento/confirmar:
     post:
       tags:
       - Lugar
       summary: Confirmar venta de asiento
-      description: Invocado desde Ticket para completar la venta de un asiento reservado
+      description: Invocado desde Ticket para completar la venta de un asiento reservado. Operacion interna entre microservicios
+        no destinada al usuario final
       requestBody:
         required: true
         content:
@@ -266,6 +366,7 @@ paths:
               schema:
                 type: string
               example: Operacion no permitida
+      x-internal: true
   /lugares/reservas/{idAsiento}:
     delete:
       tags:
@@ -299,6 +400,16 @@ paths:
               schema:
                 type: string
               example: Operacion no permitida
+        '401':
+          description: JWT faltante o invalido
+        '403':
+          description: Usuario autenticado pero sin permisos para esta operacion
+      security:
+      - bearerAuth: []
+      x-roles:
+      - CLIENTE
+      - ADMINISTRADOR
+      description: CLIENTE solo puede cancelar su propia reserva
   /lugares/sectores/{idSector}/disponibilidad:
     get:
       tags:
@@ -351,6 +462,16 @@ paths:
               schema:
                 type: string
               example: Operacion no permitida
+        '401':
+          description: JWT faltante o invalido
+        '403':
+          description: Usuario autenticado pero sin permisos para esta operacion
+      security:
+      - bearerAuth: []
+      x-roles:
+      - CLIENTE
+      - ADMINISTRADOR
+      description: CLIENTE solo puede reservar para su propio id
   /lugares/sectores/generales/reservas/{idReserva}:
     delete:
       tags:
@@ -391,6 +512,16 @@ paths:
               schema:
                 type: string
               example: Operacion no permitida
+        '401':
+          description: JWT faltante o invalido
+        '403':
+          description: Usuario autenticado pero sin permisos para esta operacion
+      security:
+      - bearerAuth: []
+      x-roles:
+      - CLIENTE
+      - ADMINISTRADOR
+      description: CLIENTE solo puede cancelar su propia reserva
   /lugares/interno/eventos/precios-minimos:
     post:
       tags:
@@ -419,6 +550,8 @@ paths:
               example:
                 evento-01: 9000.0
                 evento-02: 12000.0
+      x-internal: true
+      description: Operacion interna entre microservicios no destinada al usuario final
   /lugares/interno/sectores/{idSector}/precio:
     get:
       tags:
@@ -459,6 +592,8 @@ paths:
               schema:
                 type: string
               example: Operacion no permitida
+      x-internal: true
+      description: Operacion interna entre microservicios no destinada al usuario final
   /lugares/interno/asientos/{idAsiento}/liberar-venta:
     post:
       tags:
@@ -492,6 +627,8 @@ paths:
               schema:
                 type: string
               example: Operacion no permitida
+      x-internal: true
+      description: Operacion interna entre microservicios no destinada al usuario final
   /lugares/interno/reservas/validar:
     post:
       tags:
@@ -517,6 +654,8 @@ paths:
               schema:
                 type: string
               example: Operacion no permitida
+      x-internal: true
+      description: Operacion interna entre microservicios no destinada al usuario final
   /lugares/interno/eventos/{idEvento}/configuracion:
     get:
       tags:
@@ -551,6 +690,8 @@ paths:
               schema:
                 type: string
               example: Operacion no permitida
+      x-internal: true
+      description: Operacion interna entre microservicios no destinada al usuario final
   /lugares/interno/sectores/generales/reservas/validar:
     post:
       tags:
@@ -576,6 +717,8 @@ paths:
               schema:
                 type: string
               example: Operacion no permitida
+      x-internal: true
+      description: Operacion interna entre microservicios no destinada al usuario final
   /lugares/interno/sectores/generales/confirmar:
     post:
       tags:
@@ -608,6 +751,8 @@ paths:
               schema:
                 type: string
               example: Operacion no permitida
+      x-internal: true
+      description: Operacion interna entre microservicios no destinada al usuario final
   /lugares/interno/sectores/generales/{idSector}/liberar-venta:
     post:
       tags:
@@ -641,7 +786,15 @@ paths:
               schema:
                 type: string
               example: Operacion no permitida
+      x-internal: true
+      description: Operacion interna entre microservicios no destinada al usuario final
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT obtenido mediante POST /clientes/login
   schemas:
     Lugar:
       type: object
@@ -659,6 +812,30 @@ components:
         ciudad: Tandil
         latitud: -37.32
         longitud: -59.13
+    SectorPublico:
+      type: object
+      properties:
+        idSector: *id001
+        idLugar: *id001
+        idEvento: *id002
+        nombre: *id002
+        tipo:
+          type: string
+          enum:
+          - NUMERADO
+          - NO_NUMERADO
+        precio: *id003
+        capacidad:
+          type: integer
+          format: int64
+      example:
+        idSector: 2
+        idLugar: 1
+        idEvento: evento-01
+        nombre: Campo
+        tipo: NO_NUMERADO
+        precio: 9000.0
+        capacidad: 100
     Sector:
       type: object
       properties:
@@ -691,6 +868,29 @@ components:
         precio: 9000.0
         cuposReservados: 0
         cuposVendidos: 0
+    AsientoPublico:
+      type: object
+      properties:
+        idAsiento:
+          type: integer
+          format: int64
+        idSector:
+          type: integer
+          format: int64
+        fila:
+          type: string
+        columna:
+          type: integer
+          format: int32
+        estado:
+          type: string
+          example: DISPONIBLE
+      example:
+        idAsiento: 20
+        idSector: 2
+        fila: A
+        columna: 5
+        estado: DISPONIBLE
     Asiento:
       type: object
       properties:
